@@ -1,14 +1,17 @@
-package main
+package token
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+)
 
-type Token uint
+type TokenType uint
 
 const (
-	// Special Tokens (learned from go source): go/src/go/token/token.go
-	ILLEGAL Token = iota
+	// Special Tokens (trick learned from go source): go/src/go/token/token.go
+	ILLEGAL TokenType = iota
 	EOF
-	COMMENT
+	COMMENT // //
 
 	literal_beg
 	// Literals
@@ -41,9 +44,10 @@ const (
 	LEQ // <=
 	GEQ // >=
 
-	EQL // ==
-	LSS // <
-	GTR // >
+	ASSIGN // =
+	EQL    // ==
+	LSS    // <
+	GTR    // >
 	operator_end
 
 	keyword_beg
@@ -99,9 +103,10 @@ var tokens = [...]string{
 	LEQ: "<=",
 	GEQ: ">=",
 
-	EQL: "==",
-	LSS: "<",
-	GTR: ">",
+	ASSIGN: "=",
+	EQL:    "==",
+	LSS:    "<",
+	GTR:    ">",
 
 	AND:   "and",
 	CLASS: "class",
@@ -122,13 +127,24 @@ var tokens = [...]string{
 	WHILE:  "while",
 }
 
-func (tok Token) String() string {
+func (tt TokenType) String() string {
 	s := ""
-	if 0 <= tok && tok < Token(len(tokens)) {
-		s = tokens[tok]
+	if 0 <= tt && tt < TokenType(len(tokens)) {
+		s = tokens[tt]
 	}
 	if s == "" {
-		s = "token(" + strconv.Itoa(int(tok)) + ")"
+		s = "token(" + strconv.Itoa(int(tt)) + ")"
 	}
 	return s
+}
+
+type Token struct {
+	TokType TokenType
+	Lexeme  string
+	Literal interface{}
+	Line    int
+}
+
+func (tok Token) String() string {
+	return fmt.Sprintf("%s %s %s", tok.TokType, tok.Lexeme, tok.Literal)
 }

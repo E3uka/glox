@@ -2,22 +2,9 @@ package main
 
 import (
 	"fmt"
+	"glox/error"
 	"os"
 )
-
-var GlobalError bool = false
-
-type error struct {
-	reason   string
-	position uint
-}
-
-// It's good engineering practive to separate the code that separate the code
-// that generates errors from the code that reports them.
-func (e error) report() string {
-	GlobalError = true
-	return fmt.Sprintf("[line: %d] Error: %s\n", e.position, e.reason)
-}
 
 func runFile(path string) {
 	file, err := os.ReadFile(path)
@@ -40,7 +27,7 @@ func main() {
 		os.Exit(64)
 	} else if len(os.Args) == 2 {
 		runFile(os.Args[1])
-		if GlobalError {
+		if error.GlobalError {
 			os.Exit(64)
 		}
 	} else {
