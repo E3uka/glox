@@ -1,9 +1,14 @@
 package scanner
 
 import (
+	"fmt"
 	gloxError "glox/error"
 	"glox/token"
+	"strconv"
 )
+
+// currently capturing too many strings instead of chopping it off at the point
+// where is adds the token. Figure out bounds rule / make it your own homie!
 
 type scanner struct {
 	source  string
@@ -23,13 +28,27 @@ func New(source string) *scanner {
 	}
 }
 
-func (s scanner) isAtEnd() bool {
+func (s *scanner) isAtEnd() bool {
 	return s.current >= len(s.source)
+}
+
+func (s scanner) isDigit(char rune) bool {
+	return char >= '0' && char <= '9'
+}
+
+func (s scanner) isAlpha(char rune) bool {
+	return (char >= 'a' && char <= 'z') ||
+		(char >= 'A' && char <= 'Z') ||
+		(char == '_')
+}
+
+func (s scanner) isAlphaNumeric(char rune) bool {
+	return s.isAlpha(char) || s.isDigit(char)
 }
 
 func (s *scanner) ScanTokens() []token.Token {
 	for !s.isAtEnd() {
-		s.Scan()
+		s.scan()
 	}
 
 	eof := token.Token{
@@ -43,17 +62,15 @@ func (s *scanner) ScanTokens() []token.Token {
 	return s.tokens
 }
 
-func (s *scanner) Scan() {
+func (s *scanner) scan() {
 	char := s.step()
 
 	switch char {
-
 	// ignore the following chars
 	case ' ':
 	case '\r':
 	case '\t':
 
-	//
 	case '\n':
 		s.line += 1
 
@@ -120,14 +137,20 @@ func (s *scanner) Scan() {
 		s.scanString()
 
 	default:
-		gloxError.Error(s.line, "Unexpected character.")
+		if s.isDigit(char) {
+			s.scanNumber()
+		} else if s.isAlpha(char) {
+			s.scanIdentifier()
+		} else {
+			gloxError.Error(s.line, "Unexpected character.")
+		}
 	}
 
 }
 
 func (s *scanner) step() rune {
-	next := s.current + 1
-	return rune(s.source[next])
+	s.current += 1
+	return rune(s.source[s.current-1])
 }
 
 func (s *scanner) stepAndCheck(char rune) bool {
@@ -143,27 +166,38 @@ func (s *scanner) stepAndCheck(char rune) bool {
 
 func (s *scanner) peek() rune {
 	if s.isAtEnd() {
-		return '\n'
+		return '\x00' // null terminated string in go
 	}
 	return rune(s.source[s.current])
 }
 
-func (s *scanner) addToken(token token.TokenType) {
-	s.addTokenWithLiteral(token, struct{}{})
+func (s *scanner) peekNext() rune {
+	if s.current+1 >= len(s.source) {
+		return '\x00'
+	}
+	return rune(s.source[s.current])
+}
+
+func (s *scanner) addToken(tokType token.TokenType) {
+	fmt.Println("add tok 1")
+	s.addTokenWithLiteral(tokType, struct{}{})
 }
 
 func (s *scanner) addTokenWithLiteral(
-	tok token.TokenType,
+	tokType token.TokenType,
 	literal interface{},
 ) {
+	fmt.Println("add tok 2")
 	text := s.source[s.start : s.current-s.start]
-	token := token.Token{
-		TokType: tok,
+	fmt.Println(text)
+	tok := token.Token{
+		TokType: tokType,
 		Lexeme:  text,
 		Literal: literal,
 		Line:    s.line,
 	}
-	s.tokens = append(s.tokens, token)
+
+	s.tokens = append(s.tokens, tok)
 }
 
 func (s *scanner) scanString() {
@@ -180,6 +214,39 @@ func (s *scanner) scanString() {
 	}
 
 	// Trim the surrounding quotes
-	value := s.source[s.start+1 : s.current-1]
+	value := s.source[s.start : s.current-1]
 	s.addTokenWithLiteral(token.STRING, value)
+}
+
+func (s *scanner) scanNumber() {
+	for s.isDigit(s.peek()) {
+		s.step()
+	}
+
+	// look for the fractional part of the number
+	if s.peek() == '.' && s.isDigit(s.peekNext()) {
+		s.step() // consume the '.'
+	}
+
+	for s.isDigit(s.peek()) {
+		s.step()
+	}
+
+	value := s.source[s.start : s.current-1]
+	floatVal, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		gloxError.Error(s.line, "Could not parse string value.")
+		return
+	}
+	s.addTokenWithLiteral(token.NUMBER, floatVal)
+}
+
+func (s *scanner) scanIdentifier() {
+	for s.isAlphaNumeric(s.peek()) {
+		s.step()
+	}
+
+	value := s.source[s.start : s.current-1]
+	tok := token.Lookup(value)
+	s.addToken(tok)
 }

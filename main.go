@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"glox/error"
+	gloxError "glox/error"
+	"glox/scanner"
 	"os"
 )
 
@@ -12,7 +13,10 @@ func runFile(path string) {
 		os.Exit(1)
 	}
 
-	fmt.Println(string(file))
+	source := string(file)
+	scanner := scanner.New(source)
+	scanner.ScanTokens()
+	fmt.Printf("%+v\n", scanner)
 
 }
 
@@ -27,7 +31,7 @@ func main() {
 		os.Exit(64)
 	} else if len(os.Args) == 2 {
 		runFile(os.Args[1])
-		if error.GlobalError {
+		if gloxError.GlobalError {
 			os.Exit(64)
 		}
 	} else {
