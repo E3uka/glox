@@ -56,6 +56,7 @@ const (
 	CLASS
 	ELSE
 	FALSE
+	FN
 	FOR
 
 	IF
@@ -113,6 +114,7 @@ var tokens = [...]string{
 	CLASS: "class",
 	ELSE:  "else",
 	FALSE: "false",
+	FN:    "fn",
 	FOR:   "for",
 
 	IF:    "if",
