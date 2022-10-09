@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	gloxError "glox/error"
 	"glox/token"
 	"strconv"
@@ -38,15 +39,16 @@ func (s scanner) isDigit(char rune) bool {
 func (s scanner) isAlpha(char rune) bool {
 	return (char >= 'a' && char <= 'z') ||
 		(char >= 'A' && char <= 'Z') ||
-		(char == '_')
+		char == '_'
 }
 
 func (s scanner) isAlphaNumeric(char rune) bool {
 	return s.isAlpha(char) || s.isDigit(char)
 }
 
-func (s *scanner) ScanTokens() []token.Token {
+func (s *scanner) ScanTokens() {
 	for !s.isAtEnd() {
+		s.start = s.current
 		s.scan()
 	}
 
@@ -54,24 +56,23 @@ func (s *scanner) ScanTokens() []token.Token {
 		TokType: token.EOF,
 		Lexeme:  "",
 		Literal: struct{}{},
-		Line:    s.line,
+		Line:    s.line, // append EOF at end of file
 	}
 	s.tokens = append(s.tokens, eof)
-
-	return s.tokens
 }
 
 func (s *scanner) scan() {
 	char := s.step()
 
 	switch char {
-	// ignore the following chars
+	case '\n':
+		s.line += 1
+		break
+
+	// ignore the following
 	case ' ':
 	case '\r':
 	case '\t':
-
-	case '\n':
-		s.line += 1
 
 	// single character lexemes
 	case '(':
@@ -122,10 +123,14 @@ func (s *scanner) scan() {
 		}
 	case '/':
 		if s.stepAndCheck('/') {
-			// comments go the to end of the line
-			for !s.isAtEnd() && s.peek() != '\n' {
+			// step past all remaining characters
+			for s.peek() != '\n' && !s.isAtEnd() {
 				s.step()
 			}
+			// currently at the newline char, step again and update start
+			// position to move past newline
+			s.step()
+			s.start = s.current
 		} else {
 			s.addToken(token.QUO)
 		}
@@ -184,15 +189,9 @@ func (s *scanner) addTokenWithLiteral(
 	tokType token.TokenType,
 	literal interface{},
 ) {
-	var text string
+	text := s.source[s.start:s.current]
 
-	// TODO: fixup later
-	// the below accounts for the initial string termination
-	if tokType == token.STRING {
-		text = s.source[s.start : s.current+1]
-	} else {
-		text = s.source[s.start:s.current]
-	}
+	fmt.Printf("found\t%v\n", text)
 
 	tok := token.Token{
 		TokType: tokType,
@@ -202,8 +201,6 @@ func (s *scanner) addTokenWithLiteral(
 	}
 
 	s.tokens = append(s.tokens, tok)
-	s.step()
-	s.start = s.current
 }
 
 func (s *scanner) scanString() {
@@ -219,8 +216,11 @@ func (s *scanner) scanString() {
 		return
 	}
 
+	// Step past the end of the string to the newline char.
+	s.step()
+
 	// Trim the surrounding quotes
-	value := s.source[s.start+1 : s.current]
+	value := s.source[s.start+1 : s.current-1]
 	s.addTokenWithLiteral(token.STRING, value)
 }
 
