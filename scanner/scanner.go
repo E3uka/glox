@@ -1,7 +1,6 @@
 package scanner
 
 import (
-	"fmt"
 	gloxError "glox/error"
 	"glox/token"
 	"strconv"
@@ -121,6 +120,24 @@ func (s *scanner) scan() {
 		} else {
 			s.addToken(token.GTR)
 		}
+	case ':':
+		if s.stepAndCheck('=') {
+			s.addToken(token.WALRUS)
+		} else {
+			s.addToken(token.COLON)
+		}
+	case '&':
+		if s.stepAndCheck('&') {
+			s.addToken(token.BITAND2)
+		} else {
+			s.addToken(token.BITAND)
+		}
+	case '|':
+		if s.stepAndCheck('|') {
+			s.addToken(token.BITOR2)
+		} else {
+			s.addToken(token.BITOR)
+		}
 	case '/':
 		if s.stepAndCheck('/') {
 			// step past all remaining characters
@@ -191,7 +208,7 @@ func (s *scanner) addTokenWithLiteral(
 ) {
 	text := s.source[s.start:s.current]
 
-	fmt.Printf("found\t%v\n", text)
+	//fmt.Printf("found\t%v\n", text)
 
 	tok := token.Token{
 		TokType: tokType,

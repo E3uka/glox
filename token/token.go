@@ -45,9 +45,16 @@ const (
 	GEQ // >=
 
 	ASSIGN // =
+	WALRUS // :=
 	EQL    // ==
 	LSS    // <
 	GTR    // >
+
+	BITAND  // &
+	BITAND2 // &&
+	BITOR   // &
+	BITOR2  // &&
+
 	operator_end
 
 	keyword_beg
@@ -106,9 +113,15 @@ var tokens = [...]string{
 	GEQ: ">=",
 
 	ASSIGN: "=",
+	WALRUS: ":=",
 	EQL:    "==",
 	LSS:    "<",
 	GTR:    ">",
+
+	BITAND:  "&",
+	BITAND2: "&&",
+	BITOR:   "|",
+	BITOR2:  "||",
 
 	AND:   "and",
 	CLASS: "class",
