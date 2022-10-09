@@ -1,7 +1,6 @@
 package scanner
 
 import (
-	"fmt"
 	gloxError "glox/error"
 	"glox/token"
 	"strconv"
@@ -127,7 +126,6 @@ func (s *scanner) scan() {
 			for !s.isAtEnd() && s.peek() != '\n' {
 				s.step()
 			}
-			s.addToken(token.GEQ)
 		} else {
 			s.addToken(token.QUO)
 		}
@@ -156,7 +154,7 @@ func (s *scanner) step() rune {
 func (s *scanner) stepAndCheck(char rune) bool {
 	if s.isAtEnd() {
 		return false
-	} else if rune(s.source[s.current+1]) != char {
+	} else if rune(s.source[s.current]) != char {
 		return false
 	} else {
 		s.current += 1
@@ -175,11 +173,10 @@ func (s *scanner) peekNext() rune {
 	if s.current+1 >= len(s.source) {
 		return '\x00'
 	}
-	return rune(s.source[s.current])
+	return rune(s.source[s.current+1])
 }
 
 func (s *scanner) addToken(tokType token.TokenType) {
-	fmt.Println("add tok 1")
 	s.addTokenWithLiteral(tokType, struct{}{})
 }
 
@@ -187,9 +184,16 @@ func (s *scanner) addTokenWithLiteral(
 	tokType token.TokenType,
 	literal interface{},
 ) {
-	fmt.Println("add tok 2")
-	text := s.source[s.start : s.current-s.start]
-	fmt.Println(text)
+	var text string
+
+	// TODO: fixup later
+	// the below accounts for the initial string termination
+	if tokType == token.STRING {
+		text = s.source[s.start : s.current+1]
+	} else {
+		text = s.source[s.start:s.current]
+	}
+
 	tok := token.Token{
 		TokType: tokType,
 		Lexeme:  text,
@@ -198,6 +202,8 @@ func (s *scanner) addTokenWithLiteral(
 	}
 
 	s.tokens = append(s.tokens, tok)
+	s.step()
+	s.start = s.current
 }
 
 func (s *scanner) scanString() {
@@ -214,7 +220,7 @@ func (s *scanner) scanString() {
 	}
 
 	// Trim the surrounding quotes
-	value := s.source[s.start : s.current-1]
+	value := s.source[s.start+1 : s.current]
 	s.addTokenWithLiteral(token.STRING, value)
 }
 
@@ -232,7 +238,7 @@ func (s *scanner) scanNumber() {
 		s.step()
 	}
 
-	value := s.source[s.start : s.current-1]
+	value := s.source[s.start:s.current]
 	floatVal, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		gloxError.Error(s.line, "Could not parse string value.")
@@ -246,7 +252,7 @@ func (s *scanner) scanIdentifier() {
 		s.step()
 	}
 
-	value := s.source[s.start : s.current-1]
+	value := s.source[s.start:s.current]
 	tok := token.Lookup(value)
 	s.addToken(tok)
 }
