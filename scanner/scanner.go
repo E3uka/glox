@@ -55,7 +55,7 @@ func (s *scanner) ScanTokens() {
 		TokType: token.EOF,
 		Lexeme:  "",
 		Literal: struct{}{},
-		Line:    s.line, // append EOF at end of file
+		Line:    s.line, // append EOF at end of source file
 	}
 	s.tokens = append(s.tokens, eof)
 }
@@ -148,12 +148,37 @@ func (s *scanner) scan() {
 		}
 	case '/':
 		if s.checkAndStep('/') {
-			// step past all remaining characters
+			// step past all remaining characters until newline
 			for s.peek() != '\n' && !s.isAtEnd() {
 				s.step()
 			}
 			// currently at the newline char, step again and update start
 			// position to move past newline
+			s.step()
+			s.start = s.current
+		} else if s.checkAndStep('*') {
+			// keep it stepping
+			for !s.isAtEnd() {
+				if s.peek() == '\n' {
+					s.line += 1
+				}
+				s.step()
+
+				if s.peek() == '*' {
+					if s.peekNext() == '/' {
+						s.step()
+						break
+					}
+				}
+			}
+
+			if s.isAtEnd() {
+				gloxError.Error(s.line, "Unterminated block comment.")
+				return
+			}
+
+			// currently at the '/' end of newline char, step again and update
+			// start position to move past it.
 			s.step()
 			s.start = s.current
 		} else {
@@ -242,10 +267,10 @@ func (s *scanner) scanString() {
 		return
 	}
 
-	// Step past the end of the string to the newline char.
+	// step past the end of the string to the newline char.
 	s.step()
 
-	// Trim the surrounding quotes
+	// trim the surrounding quotes
 	value := s.source[s.start+1 : s.current-1]
 	s.addTokenWithLiteral(token.STRING, value)
 }

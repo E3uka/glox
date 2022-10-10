@@ -16,7 +16,8 @@ func runFile(path string) {
 	source := string(file)
 	scanner := scanner.New(source)
 	scanner.ScanTokens()
-	fmt.Printf("%+v\n", scanner)
+
+	fmt.Printf("%+v\n", scanner) // uncomment for scanner output
 }
 
 func runPrompt() {

@@ -8,20 +8,21 @@ import (
 type TokenType uint
 
 const (
-	// Special Tokens (trick learned from go source): go/src/go/token/token.go
+	// Special Tokens
 	ILLEGAL TokenType = iota
-	EOF
-	COMMENT // //
+	EOF               // automatically appened to end of source file.
+	CMNT              // //
+	BLKCMNT           // /* */
 
-	literal_beg
 	// Literals
-	IDENT  // main
-	NUMBER // 123.45
-	STRING // "lets go"
+	literal_beg // (trick learned from go source): go/src/go/token/token.go
+	IDENT       // main
+	NUMBER      // 123.45
+	STRING      // "lets go"
 	literal_end
 
-	operator_beg
 	// Operators and delimiters
+	operator_beg
 	LPAREN // (
 	LBRACK // [
 	LBRACE // {
@@ -56,11 +57,9 @@ const (
 	BITAND2 // &&
 	BITOR   // &
 	BITOR2  // &&
-
 	operator_end
 
-	keyword_beg
-	// Keywords
+	keyword_beg // Keywords
 	AND
 	CLASS
 	STRUCT
@@ -87,7 +86,8 @@ const (
 var tokens = [...]string{
 	ILLEGAL: "ILLEGAL",
 	EOF:     "EOF",
-	COMMENT: "COMMENT",
+	CMNT:    "CMNT",
+	BLKCMNT: "BLKCMNT",
 
 	IDENT:  "IDENT",
 	NUMBER: "NUMBER",
@@ -174,7 +174,7 @@ func (tok Token) String() string {
 
 var keywords map[string]TokenType
 
-// Run on initialisation ~ taken from go source.
+// Run on initialisation ~ also gleaned from go source.
 func init() {
 	// make a map with the exact size of the length of keywords.
 	keywords = make(map[string]TokenType, keyword_end-(keyword_beg+1))
