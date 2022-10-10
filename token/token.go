@@ -39,16 +39,18 @@ const (
 	MUL // *
 	QUO // /
 
-	NOT // !
-	NEQ // !=
-	LEQ // <=
-	GEQ // >=
+	NOT        // !
+	NEQ        // !=
+	OWNPOINTER // !*
+	LEQ        // <=
+	GEQ        // >=
 
-	ASSIGN // =
-	WALRUS // :=
-	EQL    // ==
-	LSS    // <
-	GTR    // >
+	ASSIGN    // =
+	WALRUS    // :=
+	MODASSIGN // ::
+	EQL       // ==
+	LSS       // <
+	GTR       // >
 
 	BITAND  // &
 	BITAND2 // &&
@@ -61,6 +63,7 @@ const (
 	// Keywords
 	AND
 	CLASS
+	STRUCT
 	ELSE
 	FALSE
 	FN
@@ -107,28 +110,31 @@ var tokens = [...]string{
 	MUL: "*",
 	QUO: "/",
 
-	NOT: "!",
-	NEQ: "!=",
-	LEQ: "<=",
-	GEQ: ">=",
+	NOT:        "!",
+	NEQ:        "!=",
+	OWNPOINTER: "!*",
+	LEQ:        "<=",
+	GEQ:        ">=",
 
-	ASSIGN: "=",
-	WALRUS: ":=",
-	EQL:    "==",
-	LSS:    "<",
-	GTR:    ">",
+	ASSIGN:    "=",
+	WALRUS:    ":=",
+	MODASSIGN: "::",
+	EQL:       "==",
+	LSS:       "<",
+	GTR:       ">",
 
 	BITAND:  "&",
 	BITAND2: "&&",
 	BITOR:   "|",
 	BITOR2:  "||",
 
-	AND:   "and",
-	CLASS: "class",
-	ELSE:  "else",
-	FALSE: "false",
-	FN:    "fn",
-	FOR:   "for",
+	AND:    "and",
+	CLASS:  "class",
+	STRUCT: "struct",
+	ELSE:   "else",
+	FALSE:  "false",
+	FN:     "fn",
+	FOR:    "for",
 
 	IF:    "if",
 	LET:   "let",

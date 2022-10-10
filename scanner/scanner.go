@@ -78,6 +78,10 @@ func (s *scanner) scan() {
 		s.addToken(token.LPAREN)
 	case ')':
 		s.addToken(token.RPAREN)
+	case '[':
+		s.addToken(token.LBRACK)
+	case ']':
+		s.addToken(token.RBRACK)
 	case '{':
 		s.addToken(token.LBRACE)
 	case '}':
@@ -97,49 +101,53 @@ func (s *scanner) scan() {
 
 	// double-character lexemes
 	case '!':
-		if s.stepAndCheck('=') {
+		if s.checkAndStep('=') {
 			s.addToken(token.NEQ)
+		} else if s.checkAndStep('*') {
+			s.addToken(token.OWNPOINTER)
 		} else {
 			s.addToken(token.NOT)
 		}
 	case '=':
-		if s.stepAndCheck('=') {
+		if s.checkAndStep('=') {
 			s.addToken(token.EQL)
 		} else {
 			s.addToken(token.ASSIGN)
 		}
 	case '<':
-		if s.stepAndCheck('=') {
+		if s.checkAndStep('=') {
 			s.addToken(token.LEQ)
 		} else {
 			s.addToken(token.LSS)
 		}
 	case '>':
-		if s.stepAndCheck('=') {
+		if s.checkAndStep('=') {
 			s.addToken(token.GEQ)
 		} else {
 			s.addToken(token.GTR)
 		}
 	case ':':
-		if s.stepAndCheck('=') {
+		if s.checkAndStep('=') {
 			s.addToken(token.WALRUS)
+		} else if s.checkAndStep(':') {
+			s.addToken(token.MODASSIGN)
 		} else {
 			s.addToken(token.COLON)
 		}
 	case '&':
-		if s.stepAndCheck('&') {
+		if s.checkAndStep('&') {
 			s.addToken(token.BITAND2)
 		} else {
 			s.addToken(token.BITAND)
 		}
 	case '|':
-		if s.stepAndCheck('|') {
+		if s.checkAndStep('|') {
 			s.addToken(token.BITOR2)
 		} else {
 			s.addToken(token.BITOR)
 		}
 	case '/':
-		if s.stepAndCheck('/') {
+		if s.checkAndStep('/') {
 			// step past all remaining characters
 			for s.peek() != '\n' && !s.isAtEnd() {
 				s.step()
@@ -173,12 +181,13 @@ func (s *scanner) step() rune {
 	return rune(s.source[s.current-1])
 }
 
-func (s *scanner) stepAndCheck(char rune) bool {
+func (s *scanner) checkAndStep(char rune) bool {
 	if s.isAtEnd() {
 		return false
 	} else if rune(s.source[s.current]) != char {
 		return false
 	} else {
+		// a match is found, it is safe to step
 		s.current += 1
 		return true
 	}
