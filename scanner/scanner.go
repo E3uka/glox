@@ -23,7 +23,7 @@ func New(source string) *scanner {
 		tokens:  []token.Token{},
 		start:   0,
 		current: 0,
-		line:    1, // beginning line of the file
+		line:    1, // beginning line of file.
 	}
 }
 
@@ -90,21 +90,33 @@ func (s *scanner) scan() {
 		s.addToken(token.COMMA)
 	case '.':
 		s.addToken(token.PERIOD)
-	case '-':
-		s.addToken(token.SUB)
-	case '+':
-		s.addToken(token.ADD)
 	case ';':
 		s.addToken(token.SEMICOLON)
 	case '*':
 		s.addToken(token.MUL)
 
 	// double-character lexemes
+	case '+':
+		if s.checkAndStep('+') {
+			s.addToken(token.INCR)
+		} else if s.checkAndStep('=') {
+			s.addToken(token.INCRBY)
+		} else {
+			s.addToken(token.ADD)
+		}
+	case '-':
+		if s.checkAndStep('>') {
+			s.addToken(token.FUNRET)
+		} else if s.checkAndStep('-') {
+			s.addToken(token.DECR)
+		} else if s.checkAndStep('=') {
+			s.addToken(token.DECRYBY)
+		} else {
+			s.addToken(token.SUB)
+		}
 	case '!':
 		if s.checkAndStep('=') {
 			s.addToken(token.NEQ)
-		} else if s.checkAndStep('*') {
-			s.addToken(token.OWNPOINTER)
 		} else {
 			s.addToken(token.NOT)
 		}
@@ -136,13 +148,13 @@ func (s *scanner) scan() {
 		}
 	case '&':
 		if s.checkAndStep('&') {
-			s.addToken(token.BITAND2)
+			s.addToken(token.AND)
 		} else {
 			s.addToken(token.BITAND)
 		}
 	case '|':
 		if s.checkAndStep('|') {
-			s.addToken(token.BITOR2)
+			s.addToken(token.OR)
 		} else {
 			s.addToken(token.BITOR)
 		}
@@ -191,7 +203,7 @@ func (s *scanner) scan() {
 
 	default:
 		if s.isDigit(char) {
-			s.scanNumber()
+			s.scanFloat()
 		} else if s.isAlpha(char) {
 			s.scanIdentifier()
 		} else {
@@ -275,7 +287,7 @@ func (s *scanner) scanString() {
 	s.addTokenWithLiteral(token.STRING, value)
 }
 
-func (s *scanner) scanNumber() {
+func (s *scanner) scanFloat() {
 	for s.isDigit(s.peek()) {
 		s.step()
 	}
@@ -295,7 +307,7 @@ func (s *scanner) scanNumber() {
 		gloxError.Error(s.line, "Could not parse string value.")
 		return
 	}
-	s.addTokenWithLiteral(token.NUMBER, floatVal)
+	s.addTokenWithLiteral(token.FLOAT, floatVal)
 }
 
 func (s *scanner) scanIdentifier() {

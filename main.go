@@ -14,10 +14,10 @@ func runFile(path string) {
 	}
 
 	source := string(file)
-	scanner := scanner.New(source)
-	scanner.ScanTokens()
+	sourceScanner := scanner.New(source)
+	sourceScanner.ScanTokens()
 
-	fmt.Printf("%+v\n", scanner) // uncomment for scanner output
+	fmt.Printf("%+v\n", sourceScanner) // uncomment for sourceScanner output
 }
 
 func runPrompt() {

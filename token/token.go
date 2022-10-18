@@ -11,13 +11,12 @@ const (
 	// Special Tokens
 	ILLEGAL TokenType = iota
 	EOF               // automatically appened to end of source file.
-	CMNT              // //
-	BLKCMNT           // /* */
+	CMNT              // // - /* */
 
 	// Literals
 	literal_beg // (trick learned from go source): go/src/go/token/token.go
 	IDENT       // main
-	NUMBER      // 123.45
+	FLOAT       // 123.45
 	STRING      // "lets go"
 	literal_end
 
@@ -35,16 +34,19 @@ const (
 	SEMICOLON // ;
 	COLON     // :
 
-	ADD // +
-	SUB // -
-	MUL // *
-	QUO // /
+	ADD     // +
+	INCR    // ++
+	INCRBY  // +=
+	SUB     // -
+	DECR    // --
+	DECRYBY // -=
+	MUL     // *
+	QUO     // /
 
-	NOT        // !
-	NEQ        // !=
-	OWNPOINTER // !*
-	LEQ        // <=
-	GEQ        // >=
+	NOT // !
+	NEQ // !=
+	LEQ // <=
+	GEQ // >=
 
 	ASSIGN    // =
 	WALRUS    // :=
@@ -52,17 +54,19 @@ const (
 	EQL       // ==
 	LSS       // <
 	GTR       // >
+	FUNRET    // ->
 
-	BITAND  // &
-	BITAND2 // &&
-	BITOR   // &
-	BITOR2  // &&
+	BITAND // &
+	AND    // &&
+	BITOR  // |
+	OR     // ||
 	operator_end
 
 	keyword_beg // Keywords
-	AND
 	CLASS
+	DEFER // cool to implement
 	STRUCT
+	SOA // also cool to implement
 	ELSE
 	FALSE
 	FN
@@ -71,14 +75,14 @@ const (
 	IF
 	LET
 	NIL
-	OR
 	PRINT
 
 	RETURN
 	SUPER
 	THIS
+	IT
+	ITERINDEX
 	TRUE
-	VAR
 	WHILE
 	keyword_end
 )
@@ -87,10 +91,9 @@ var tokens = [...]string{
 	ILLEGAL: "ILLEGAL",
 	EOF:     "EOF",
 	CMNT:    "CMNT",
-	BLKCMNT: "BLKCMNT",
 
 	IDENT:  "IDENT",
-	NUMBER: "NUMBER",
+	FLOAT:  "float",
 	STRING: "STRING",
 
 	LPAREN: "(",
@@ -105,16 +108,19 @@ var tokens = [...]string{
 	SEMICOLON: ";",
 	COLON:     ":",
 
-	ADD: "+",
-	SUB: "-",
-	MUL: "*",
-	QUO: "/",
+	ADD:     "+",
+	INCR:    "++",
+	INCRBY:  "+=",
+	SUB:     "-",
+	DECR:    "--",
+	DECRYBY: "-=",
+	MUL:     "*",
+	QUO:     "/",
 
-	NOT:        "!",
-	NEQ:        "!=",
-	OWNPOINTER: "!*",
-	LEQ:        "<=",
-	GEQ:        ">=",
+	NOT: "!",
+	NEQ: "!=",
+	LEQ: "<=",
+	GEQ: ">=",
 
 	ASSIGN:    "=",
 	WALRUS:    ":=",
@@ -122,15 +128,17 @@ var tokens = [...]string{
 	EQL:       "==",
 	LSS:       "<",
 	GTR:       ">",
+	FUNRET:    "->",
 
-	BITAND:  "&",
-	BITAND2: "&&",
-	BITOR:   "|",
-	BITOR2:  "||",
+	BITAND: "&",
+	AND:    "&&",
+	BITOR:  "|",
+	OR:     "||",
 
-	AND:    "and",
 	CLASS:  "class",
+	DEFER:  "defer",
 	STRUCT: "struct",
+	SOA:    "SOA",
 	ELSE:   "else",
 	FALSE:  "false",
 	FN:     "fn",
@@ -139,15 +147,15 @@ var tokens = [...]string{
 	IF:    "if",
 	LET:   "let",
 	NIL:   "nil",
-	OR:    "or",
 	PRINT: "print",
 
-	RETURN: "return",
-	SUPER:  "super",
-	THIS:   "this",
-	TRUE:   "true",
-	VAR:    "var",
-	WHILE:  "while",
+	RETURN:    "return",
+	SUPER:     "super",
+	THIS:      "this",
+	IT:        "it",
+	ITERINDEX: "it_index",
+	TRUE:      "true",
+	WHILE:     "while",
 }
 
 func (tt TokenType) String() string {
