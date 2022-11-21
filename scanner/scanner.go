@@ -6,9 +6,6 @@ import (
 	"strconv"
 )
 
-// currently capturing too many strings instead of chopping it off at the point
-// where is adds the token. Figure out bounds rule / make it your own homie!
-
 type scanner struct {
 	source  string
 	tokens  []token.Token
@@ -25,6 +22,10 @@ func New(source string) *scanner {
 		current: 0,
 		line:    1, // beginning line of file.
 	}
+}
+
+func (s *scanner) Tokens() []token.Token {
+	return s.tokens
 }
 
 func (s *scanner) isAtEnd() bool {
@@ -45,7 +46,7 @@ func (s scanner) isAlphaNumeric(char rune) bool {
 	return s.isAlpha(char) || s.isDigit(char)
 }
 
-func (s *scanner) ScanTokens() {
+func (s *scanner) ScanTokens() []token.Token {
 	for !s.isAtEnd() {
 		s.start = s.current
 		s.scan()
@@ -58,6 +59,8 @@ func (s *scanner) ScanTokens() {
 		Line:    s.line, // append EOF at end of source file
 	}
 	s.tokens = append(s.tokens, eof)
+
+	return s.tokens
 }
 
 func (s *scanner) scan() {

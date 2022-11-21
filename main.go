@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	gloxError "glox/error"
+	"glox/parser"
 	"glox/scanner"
 	"os"
 )
@@ -14,10 +15,10 @@ func runFile(path string) {
 	}
 
 	source := string(file)
-	sourceScanner := scanner.New(source)
-	sourceScanner.ScanTokens()
-
-	fmt.Printf("%+v\n", sourceScanner) // uncomment for sourceScanner output
+	tokScanner := scanner.New(source)
+	parser := parser.New(tokScanner.ScanTokens())
+	parser.Parse()
+	fmt.Printf("%+v\n", parser) // uncomment for sourceScanner output
 }
 
 func runPrompt() {

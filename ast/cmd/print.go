@@ -34,6 +34,8 @@ func (a astPrinter) VisitUnaryExpr(expr ast.UnaryExpr) interface{} {
 	return a.parenthesize(expr.Operator.Lexeme, expr.Rhs)
 }
 
+// recursively traverses the tree by taking as argument a variadic list of
+// expressions that themselves call the parenthesize method by dispatch.
 func (a astPrinter) parenthesize(name string, exprs ...ast.Expr) string {
 	var str string
 	str += "(" + name
@@ -64,13 +66,6 @@ func main() {
 			Literal: nil,
 			Line:    1,
 		},
-		/*
-			Rhs: ast.GroupingExpr{
-				Expression: ast.LiteralExpr{
-					Value: 45.67,
-				},
-			},
-		*/
 		Rhs: ast.GroupingExpr{
 			Expression: ast.BinaryExpr{
 				Lhs: ast.LiteralExpr{
