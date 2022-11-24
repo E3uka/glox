@@ -18,7 +18,7 @@ func runFile(path string) {
 	tokScanner := scanner.New(source)
 	parser := parser.New(tokScanner.ScanTokens())
 	parser.Parse()
-	fmt.Printf("%+v\n", parser) // uncomment for sourceScanner output
+	//fmt.Println(ast.AstPrinter{}.Print(parser.Parse()))
 }
 
 func runPrompt() {
