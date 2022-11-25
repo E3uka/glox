@@ -18,110 +18,166 @@ func New(tokens []token.Token) parser {
 	}
 }
 
-func (p *parser) Parse() ast.Expr {
-	defer func() {
-		if r := recover(); r != nil {
-			return
-		}
-	}()
-	return p.expression()
+func (p *parser) Parse() (ast.Expr, error) {
+	if expr, err := p.expression(); err != nil {
+		return nil, err
+	} else {
+		return expr, nil
+	}
 }
 
-func (p *parser) expression() ast.Expr {
-	return p.equality()
+func (p *parser) expression() (ast.Expr, error) {
+	if expr, err := p.equality(); err != nil {
+		return nil, err
+	} else {
+		return expr, nil
+	}
 }
 
-func (p *parser) equality() ast.Expr {
-	expr := p.comparison()
+func (p *parser) equality() (ast.Expr, error) {
+	var expr ast.Expr
+	var err error
+	expr, err = p.comparison()
+	if err != nil {
+		return nil, err
+	}
 	for p.match(token.NEQ, token.EQL) {
 		operator := p.previous()
-		right := p.comparison()
+		right, err := p.comparison()
+		if err != nil {
+			return nil, err
+		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      right,
 		}
 	}
-	return expr
+	return expr, nil
 }
 
-func (p *parser) comparison() ast.Expr {
-	expr := p.term()
+func (p *parser) comparison() (ast.Expr, error) {
+	var expr ast.Expr
+	var err error
+	expr, err = p.term()
+	if err != nil {
+		return nil, err
+	}
 	for p.match(token.GTR, token.GEQ, token.LSS, token.LEQ) {
 		operator := p.previous()
-		right := p.term()
+		right, err := p.term()
+		if err != nil {
+			return nil, err
+		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      right,
 		}
 	}
-	return expr
+	return expr, nil
 }
 
-func (p *parser) term() ast.Expr {
-	expr := p.factor()
+func (p *parser) term() (ast.Expr, error) {
+	var expr ast.Expr
+	var err error
+	expr, err = p.factor()
+	if err != nil {
+		return nil, err
+	}
 	for p.match(token.ADD, token.SUB) {
 		operator := p.previous()
-		right := p.factor()
+		right, err := p.factor()
+		if err != nil {
+			return nil, err
+		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      right,
 		}
 	}
-	return expr
+	return expr, nil
 }
 
-func (p *parser) factor() ast.Expr {
-	expr := p.unary()
+func (p *parser) factor() (ast.Expr, error) {
+	var expr ast.Expr
+	var err error
+	expr, err = p.unary()
+	if err != nil {
+		return nil, err
+	}
 	for p.match(token.QUO, token.MUL) {
 		operator := p.previous()
-		right := p.unary()
+		right, err := p.unary()
+		if err != nil {
+			return nil, err
+		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      right,
 		}
 	}
-	return expr
+	return expr, nil
 }
 
-func (p *parser) unary() ast.Expr {
+func (p *parser) unary() (ast.Expr, error) {
 	if p.match(token.NOT, token.SUB) {
 		operator := p.previous()
-		right := p.unary()
-		return ast.UnaryExpr{
-			Operator: operator,
-			Rhs:      right,
+		right, err := p.unary()
+		if err != nil {
+			return nil, err
 		}
+		return ast.UnaryExpr{Operator: operator, Rhs: right}, nil
 	}
 	return p.primary()
 }
 
-func (p *parser) primary() ast.Expr {
+func (p *parser) primary() (ast.Expr, error) {
+	var err error
+	var expr ast.Expr
 	if p.match(token.FALSE) {
-		return ast.LiteralExpr{Value: false}
+		return ast.LiteralExpr{Value: false}, nil
 	}
 	if p.match(token.TRUE) {
-		return ast.LiteralExpr{Value: true}
+		return ast.LiteralExpr{Value: true}, nil
 	}
 	if p.match(token.NIL) {
-		return ast.LiteralExpr{Value: nil}
+		return ast.LiteralExpr{Value: nil}, nil
 	}
 
 	if p.match(token.FLOAT, token.STRING) {
-		return ast.LiteralExpr{Value: p.previous().Literal}
+		return ast.LiteralExpr{Value: p.previous().Literal}, nil
 	}
 
 	if p.match(token.LPAREN) {
-		expr := p.expression()
-		p.consume(token.RPAREN, "Expected ')' after expression.")
-		return ast.GroupingExpr{Expression: expr}
+		expr, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+		err = p.consume(
+			token.Token{
+				TokType: token.RPAREN,
+				Lexeme:  token.RPAREN.String(),
+				Line:    p.current,
+			},
+			"Expected ')' after expression.",
+		)
+		if err != nil {
+			return nil, err
+		}
+		return ast.GroupingExpr{Expression: expr}, nil
 	}
-
-	p.reportGloxError(p.peek(), "Expected expression")
-	panic(struct{}{}) // signal;
+	return nil, gloxError.ParseError(
+		token.Token{
+			TokType: p.peek().TokType,
+			Lexeme:  p.peek().Lexeme,
+			Literal: p.peek().Literal,
+			Line:    p.current,
+		},
+		"unrecognised token",
+	)
 }
 
 func (p *parser) match(tokTypes ...token.TokenType) bool {
@@ -134,11 +190,12 @@ func (p *parser) match(tokTypes ...token.TokenType) bool {
 	return false
 }
 
-func (p *parser) consume(tokType token.TokenType, msg string) token.Token {
-	if p.check(tokType) {
-		return p.advance()
+func (p *parser) consume(token token.Token, msg string) error {
+	if p.check(token.TokType) {
+		p.advance()
+		return nil
 	}
-	panic(p.peek())
+	return gloxError.ParseError(token, msg)
 }
 
 func (p *parser) synchronize() {
@@ -177,10 +234,6 @@ func (p *parser) peek() token.Token {
 
 func (p *parser) previous() token.Token {
 	return p.tokens[p.current-1]
-}
-
-func (p *parser) reportGloxError(tok token.Token, msg string) {
-	gloxError.ReportParserError(tok, msg)
 }
 
 func (p *parser) isAtEnd() bool {

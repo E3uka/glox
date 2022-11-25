@@ -1,11 +1,26 @@
 package error
 
 import (
+	"errors"
 	"fmt"
 	"glox/token"
 )
 
 var GlobalError bool = false
+
+func ScanError(line int, reason string) error {
+	GlobalError = true
+	msg := fmt.Sprintf("%d: %s\n", line, reason)
+	fmt.Printf(msg)
+	return errors.New(msg)
+}
+
+func ParseError(tok token.Token, reason string) error {
+	GlobalError = true
+	msg := fmt.Sprintf("%d: %s: %s\n", tok.Line, tok.Lexeme, reason)
+	fmt.Printf(msg)
+	return errors.New(msg)
+}
 
 func Error(line int, reason string) {
 	report(line, "", reason)

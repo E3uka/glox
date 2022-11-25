@@ -256,16 +256,12 @@ func (s *scanner) addTokenWithLiteral(
 	literal interface{},
 ) {
 	text := s.source[s.start:s.current]
-
-	//fmt.Printf("found\t%v\n", text)
-
 	tok := token.Token{
 		TokType: tokType,
 		Lexeme:  text,
 		Literal: literal,
 		Line:    s.line,
 	}
-
 	s.tokens = append(s.tokens, tok)
 }
 

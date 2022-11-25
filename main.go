@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"glox/ast"
 	gloxError "glox/error"
 	"glox/parser"
 	"glox/scanner"
@@ -17,8 +18,11 @@ func runFile(path string) {
 	source := string(file)
 	tokScanner := scanner.New(source)
 	parser := parser.New(tokScanner.ScanTokens())
-	parser.Parse()
-	//fmt.Println(ast.AstPrinter{}.Print(parser.Parse()))
+	if expression, err := parser.Parse(); err != nil {
+		return
+	} else {
+		fmt.Println(ast.AstPrinter{}.Print(expression))
+	}
 }
 
 func runPrompt() {
