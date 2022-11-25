@@ -7,6 +7,7 @@ import (
 )
 
 type scanner struct {
+	path    *string
 	source  string
 	tokens  []token.Token
 	start   int
@@ -14,9 +15,10 @@ type scanner struct {
 	line    int
 }
 
-func New(source string) *scanner {
+func New(path *string, source *string) *scanner {
 	return &scanner{
-		source:  source,
+		path:    path,
+		source:  *source,
 		tokens:  []token.Token{},
 		start:   0,
 		current: 0,
@@ -46,10 +48,15 @@ func (s scanner) isAlphaNumeric(char rune) bool {
 	return s.isAlpha(char) || s.isDigit(char)
 }
 
-func (s *scanner) ScanTokens() []token.Token {
+func (s *scanner) ScanTokens() ([]token.Token, error) {
+	var err error
+
 	for !s.isAtEnd() {
 		s.start = s.current
-		s.scan()
+		err = s.scan()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	eof := token.Token{
@@ -60,10 +67,10 @@ func (s *scanner) ScanTokens() []token.Token {
 	}
 	s.tokens = append(s.tokens, eof)
 
-	return s.tokens
+	return s.tokens, nil
 }
 
-func (s *scanner) scan() {
+func (s *scanner) scan() error {
 	char := s.step()
 
 	switch char {
@@ -188,8 +195,7 @@ func (s *scanner) scan() {
 			}
 
 			if s.isAtEnd() {
-				gloxError.Error(s.line, "Unterminated block comment.")
-				return
+				return gloxError.ScanError(s.path, s.line, "unterminated block comment")
 			}
 
 			// currently at the '/' end of newline char, step again and update
@@ -210,10 +216,10 @@ func (s *scanner) scan() {
 		} else if s.isAlpha(char) {
 			s.scanIdentifier()
 		} else {
-			gloxError.Error(s.line, "Unexpected character.")
+			return gloxError.ScanError(s.path, s.line, "unexpected character")
 		}
 	}
-
+	return nil
 }
 
 func (s *scanner) step() rune {
@@ -265,7 +271,7 @@ func (s *scanner) addTokenWithLiteral(
 	s.tokens = append(s.tokens, tok)
 }
 
-func (s *scanner) scanString() {
+func (s *scanner) scanString() error {
 	for s.peek() != '"' && !s.isAtEnd() {
 		if s.peek() == '\n' {
 			s.line += 1
@@ -274,8 +280,8 @@ func (s *scanner) scanString() {
 	}
 
 	if s.isAtEnd() {
-		gloxError.Error(s.line, "Unterminated string.")
-		return
+		return gloxError.ScanError(s.path, s.line, "unterminated string")
+
 	}
 
 	// step past the end of the string to the newline char.
@@ -284,9 +290,10 @@ func (s *scanner) scanString() {
 	// trim the surrounding quotes
 	value := s.source[s.start+1 : s.current-1]
 	s.addTokenWithLiteral(token.STRING, value)
+	return nil
 }
 
-func (s *scanner) scanFloat() {
+func (s *scanner) scanFloat() error {
 	for s.isDigit(s.peek()) {
 		s.step()
 	}
@@ -303,10 +310,10 @@ func (s *scanner) scanFloat() {
 	value := s.source[s.start:s.current]
 	floatVal, err := strconv.ParseFloat(value, 64)
 	if err != nil {
-		gloxError.Error(s.line, "Could not parse string value.")
-		return
+		return gloxError.ScanError(s.path, s.line, "could not parse string value")
 	}
 	s.addTokenWithLiteral(token.FLOAT, floatVal)
+	return nil
 }
 
 func (s *scanner) scanIdentifier() {

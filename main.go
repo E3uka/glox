@@ -9,37 +9,39 @@ import (
 	"os"
 )
 
-func runFile(path string) {
-	file, err := os.ReadFile(path)
+var GlobalPath string
+
+func run() {
+	file, err := os.ReadFile(GlobalPath)
 	if err != nil {
 		os.Exit(1)
 	}
 
 	source := string(file)
-	tokScanner := scanner.New(source)
-	parser := parser.New(tokScanner.ScanTokens())
-	if expression, err := parser.Parse(); err != nil {
+	tokens, err := scanner.New(&GlobalPath, &source).ScanTokens()
+	if err != nil {
 		return
-	} else {
-		fmt.Println(ast.AstPrinter{}.Print(expression))
 	}
-}
-
-func runPrompt() {
-	fmt.Println("expected at least one input file")
+	parser := parser.New(&GlobalPath, &tokens)
+	expression, err := parser.Parse()
+	if err != nil {
+		return
+	}
+	fmt.Println(ast.AstPrinter{}.Print(expression))
 }
 
 // TODO: implement a REPL later.
 func main() {
 	if len(os.Args) > 2 {
-		fmt.Println("Usage: glox [script]")
+		fmt.Println("usage: glox [script]")
 		os.Exit(64)
 	} else if len(os.Args) == 2 {
-		runFile(os.Args[1])
+		GlobalPath = os.Args[1]
+		run()
 		if gloxError.GlobalError {
 			os.Exit(64)
 		}
 	} else {
-		runPrompt()
+		fmt.Println("expected at least one input file")
 	}
 }

@@ -7,13 +7,15 @@ import (
 )
 
 type parser struct {
+	path    *string
 	tokens  []token.Token
 	current int
 }
 
-func New(tokens []token.Token) parser {
+func New(path *string, tokens *[]token.Token) parser {
 	return parser{
-		tokens:  tokens,
+		path:    path,
+		tokens:  *tokens,
 		current: 0,
 	}
 }
@@ -162,7 +164,7 @@ func (p *parser) primary() (ast.Expr, error) {
 				Lexeme:  token.RPAREN.String(),
 				Line:    p.current,
 			},
-			"Expected ')' after expression.",
+			"expected ')' after expression.",
 		)
 		if err != nil {
 			return nil, err
@@ -170,6 +172,7 @@ func (p *parser) primary() (ast.Expr, error) {
 		return ast.GroupingExpr{Expression: expr}, nil
 	}
 	return nil, gloxError.ParseError(
+		p.path,
 		token.Token{
 			TokType: p.peek().TokType,
 			Lexeme:  p.peek().Lexeme,
@@ -195,7 +198,7 @@ func (p *parser) consume(token token.Token, msg string) error {
 		p.advance()
 		return nil
 	}
-	return gloxError.ParseError(token, msg)
+	return gloxError.ParseError(p.path, token, msg)
 }
 
 func (p *parser) synchronize() {
