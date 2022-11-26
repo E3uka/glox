@@ -27,6 +27,7 @@ func run() {
 	if err != nil {
 		return
 	}
+	fmt.Printf("%+v\n", expression)
 	fmt.Println(ast.AstPrinter{}.Print(expression))
 }
 

@@ -21,28 +21,17 @@ func New(path *string, tokens *[]token.Token) parser {
 }
 
 func (p *parser) Parse() (ast.Expr, error) {
-	if expr, err := p.expression(); err != nil {
-		return nil, err
-	} else {
-		return expr, nil
-	}
+	expr, err := p.expression()
+	return expr, err
 }
 
 func (p *parser) expression() (ast.Expr, error) {
-	if expr, err := p.equality(); err != nil {
-		return nil, err
-	} else {
-		return expr, nil
-	}
+	expr, err := p.equality()
+	return expr, err
 }
 
 func (p *parser) equality() (ast.Expr, error) {
-	var expr ast.Expr
-	var err error
-	expr, err = p.comparison()
-	if err != nil {
-		return nil, err
-	}
+	expr, err := p.comparison()
 	for p.match(token.NEQ, token.EQL) {
 		operator := p.previous()
 		right, err := p.comparison()
@@ -55,16 +44,11 @@ func (p *parser) equality() (ast.Expr, error) {
 			Rhs:      right,
 		}
 	}
-	return expr, nil
+	return expr, err
 }
 
 func (p *parser) comparison() (ast.Expr, error) {
-	var expr ast.Expr
-	var err error
-	expr, err = p.term()
-	if err != nil {
-		return nil, err
-	}
+	expr, err := p.term()
 	for p.match(token.GTR, token.GEQ, token.LSS, token.LEQ) {
 		operator := p.previous()
 		right, err := p.term()
@@ -77,16 +61,11 @@ func (p *parser) comparison() (ast.Expr, error) {
 			Rhs:      right,
 		}
 	}
-	return expr, nil
+	return expr, err
 }
 
 func (p *parser) term() (ast.Expr, error) {
-	var expr ast.Expr
-	var err error
-	expr, err = p.factor()
-	if err != nil {
-		return nil, err
-	}
+	expr, err := p.factor()
 	for p.match(token.ADD, token.SUB) {
 		operator := p.previous()
 		right, err := p.factor()
@@ -99,16 +78,11 @@ func (p *parser) term() (ast.Expr, error) {
 			Rhs:      right,
 		}
 	}
-	return expr, nil
+	return expr, err
 }
 
 func (p *parser) factor() (ast.Expr, error) {
-	var expr ast.Expr
-	var err error
-	expr, err = p.unary()
-	if err != nil {
-		return nil, err
-	}
+	expr, err := p.unary()
 	for p.match(token.QUO, token.MUL) {
 		operator := p.previous()
 		right, err := p.unary()
@@ -121,7 +95,7 @@ func (p *parser) factor() (ast.Expr, error) {
 			Rhs:      right,
 		}
 	}
-	return expr, nil
+	return expr, err
 }
 
 func (p *parser) unary() (ast.Expr, error) {
@@ -137,8 +111,6 @@ func (p *parser) unary() (ast.Expr, error) {
 }
 
 func (p *parser) primary() (ast.Expr, error) {
-	var err error
-	var expr ast.Expr
 	if p.match(token.FALSE) {
 		return ast.LiteralExpr{Value: false}, nil
 	}
@@ -148,13 +120,14 @@ func (p *parser) primary() (ast.Expr, error) {
 	if p.match(token.NIL) {
 		return ast.LiteralExpr{Value: nil}, nil
 	}
-
 	if p.match(token.FLOAT, token.STRING) {
 		return ast.LiteralExpr{Value: p.previous().Literal}, nil
 	}
 
 	if p.match(token.LPAREN) {
-		expr, err = p.expression()
+		expr, err := p.expression()
+		// must explicitly handle the error below to prevent the consume call
+		// from hiding the error
 		if err != nil {
 			return nil, err
 		}
@@ -166,11 +139,9 @@ func (p *parser) primary() (ast.Expr, error) {
 			},
 			"expected ')' after expression.",
 		)
-		if err != nil {
-			return nil, err
-		}
-		return ast.GroupingExpr{Expression: expr}, nil
+		return ast.GroupingExpr{Expression: expr}, err
 	}
+
 	return nil, gloxError.ParseError(
 		p.path,
 		token.Token{
@@ -207,7 +178,6 @@ func (p *parser) synchronize() {
 		if p.previous().TokType == token.SEMICOLON {
 			return
 		}
-
 		switch p.peek().TokType {
 		case token.CLASS, token.FOR, token.FN, token.IF, token.PRINT,
 			token.RETURN, token.LET, token.WHILE:

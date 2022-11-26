@@ -22,7 +22,7 @@ func New(path *string, source *string) *scanner {
 		tokens:  []token.Token{},
 		start:   0,
 		current: 0,
-		line:    1, // beginning line of file.
+		line:    1, // beginning line of file
 	}
 }
 
@@ -58,7 +58,6 @@ func (s *scanner) ScanTokens() ([]token.Token, error) {
 			return nil, err
 		}
 	}
-
 	eof := token.Token{
 		TokType: token.EOF,
 		Lexeme:  "",
