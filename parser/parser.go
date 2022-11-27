@@ -66,7 +66,7 @@ func (p *parser) comparison() (ast.Expr, error) {
 
 func (p *parser) term() (ast.Expr, error) {
 	expr, err := p.factor()
-	for p.match(token.ADD, token.SUB) {
+	for p.match(token.SUB, token.ADD) {
 		operator := p.previous()
 		right, err := p.factor()
 		if err != nil {

@@ -283,7 +283,7 @@ func (s *scanner) scanString() error {
 
 	}
 
-	// step past the end of the string to the newline char.
+	// step past the end of the string to the newline char
 	s.step()
 
 	// trim the surrounding quotes
