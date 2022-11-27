@@ -8,7 +8,7 @@ import (
 
 var GlobalError bool = false
 
-func ScanError(path *string, line int, reason string) error {
+func LexError(path *string, line int, reason string) error {
 	GlobalError = true
 	msg := fmt.Sprintf("%s:%d: %s\n", *path, line, reason)
 	fmt.Printf(msg)

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"glox/ast"
 	gloxError "glox/error"
+	"glox/lexer"
 	"glox/parser"
-	"glox/scanner"
 	"os"
 )
 
@@ -18,7 +18,7 @@ func run() {
 	}
 
 	source := string(file)
-	tokens, err := scanner.New(&GlobalPath, &source).ScanTokens()
+	tokens, err := lexer.New(&GlobalPath, &source).LexTokens()
 	if err != nil {
 		return
 	}
@@ -27,7 +27,7 @@ func run() {
 	if err != nil {
 		return
 	}
-	fmt.Printf("%+v\n", expression)
+	fmt.Printf("%#v\n", expression)
 	fmt.Println(ast.AstPrinter{}.Print(expression))
 }
 
