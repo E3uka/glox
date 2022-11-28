@@ -10,19 +10,34 @@ type parser struct {
 	path    *string
 	tokens  []token.Token
 	current int
+	expr    ast.Expr
 }
 
-func New(path *string, tokens *[]token.Token) parser {
-	return parser{
+func New(path *string, tokens *[]token.Token) (*parser, error) {
+	parser := &parser{
 		path:    path,
 		tokens:  *tokens,
 		current: 0,
+		expr:    nil,
 	}
+
+	if err := parser.init(); err != nil {
+		return nil, err
+	}
+	return parser, nil
 }
 
-func (p *parser) Parse() (ast.Expr, error) {
+func (p *parser) Expr() *ast.Expr {
+	return &p.expr
+}
+
+func (p *parser) init() error {
 	expr, err := p.expression()
-	return expr, err
+	if err != nil {
+		return err
+	}
+	p.expr = expr
+	return nil
 }
 
 func (p *parser) expression() (ast.Expr, error) {
@@ -145,9 +160,7 @@ func (p *parser) primary() (ast.Expr, error) {
 	return nil, gloxError.ParseError(
 		p.path,
 		token.Token{
-			TokType: p.peek().TokType,
-			Lexeme:  p.peek().Lexeme,
-			Literal: p.peek().Literal,
+			TokType: token.ILLEGAL,
 			Line:    p.current,
 		},
 		"unrecognised token",

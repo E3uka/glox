@@ -169,6 +169,18 @@ func (tt TokenType) String() string {
 	return s
 }
 
+/*
+TODO add information of line and character for both lexer and parser i.e.
+lexer:
+
+	l0 int
+	c0 int
+
+parser:
+
+	l1 int
+	c1 int
+*/
 type Token struct {
 	TokType TokenType
 	Lexeme  string

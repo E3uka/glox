@@ -15,8 +15,8 @@ type lexer struct {
 	line    int
 }
 
-func New(path *string, source *string) *lexer {
-	return &lexer{
+func New(path *string, source *string) (*lexer, error) {
+	lexer := &lexer{
 		path:    path,
 		source:  *source,
 		tokens:  []token.Token{},
@@ -24,10 +24,15 @@ func New(path *string, source *string) *lexer {
 		current: 0,
 		line:    1, // beginning line of file
 	}
+
+	if err := lexer.init(); err != nil {
+		return nil, err
+	}
+	return lexer, nil
 }
 
-func (l *lexer) Tokens() []token.Token {
-	return l.tokens
+func (l *lexer) Tokens() *[]token.Token {
+	return &l.tokens
 }
 
 func (l *lexer) isAtEnd() bool {
@@ -48,14 +53,14 @@ func (l lexer) isAlphaNumeric(char rune) bool {
 	return l.isAlpha(char) || l.isDigit(char)
 }
 
-func (l *lexer) LexTokens() ([]token.Token, error) {
+func (l *lexer) init() error {
 	var err error
 
 	for !l.isAtEnd() {
 		l.start = l.current
 		err = l.lex()
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	eof := token.Token{
@@ -66,7 +71,7 @@ func (l *lexer) LexTokens() ([]token.Token, error) {
 	}
 	l.tokens = append(l.tokens, eof)
 
-	return l.tokens, nil
+	return nil
 }
 
 func (l *lexer) lex() error {

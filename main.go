@@ -16,19 +16,17 @@ func run() {
 	if err != nil {
 		os.Exit(1)
 	}
-
 	source := string(file)
-	tokens, err := lexer.New(&GlobalPath, &source).LexTokens()
+	lexer, err := lexer.New(&GlobalPath, &source)
 	if err != nil {
 		return
 	}
-	parser := parser.New(&GlobalPath, &tokens)
-	expression, err := parser.Parse()
+	parser, err := parser.New(&GlobalPath, lexer.Tokens())
 	if err != nil {
 		return
 	}
-	fmt.Printf("%#v\n", expression)
-	fmt.Println(ast.AstPrinter{}.Print(expression))
+	fmt.Printf("%#v\n", *parser.Expr())
+	fmt.Println(ast.AstPrinter{}.Print(*parser.Expr()))
 }
 
 // TODO: implement a REPL later.
