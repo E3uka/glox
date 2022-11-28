@@ -9,8 +9,9 @@ type Expr interface {
 	Accept(visitor ExprVisitor) interface{}
 }
 
+// TODO change expressions to pointers them to pointers
 type AssignExpr struct {
-	Name  token.Token
+	Name  token.TokenType
 	Value Expr
 }
 
@@ -20,7 +21,7 @@ func (a AssignExpr) Accept(visitor ExprVisitor) interface{} {
 
 type BinaryExpr struct {
 	Lhs      Expr
-	Operator token.Token
+	Operator token.TokenType
 	Rhs      Expr
 }
 
@@ -46,7 +47,7 @@ func (l LiteralExpr) Accept(visitor ExprVisitor) interface{} {
 }
 
 type UnaryExpr struct {
-	Operator token.Token
+	Operator token.TokenType
 	Rhs      Expr
 }
 
@@ -74,11 +75,11 @@ func (a AstPrinter) Print(expr Expr) string {
 }
 
 func (a AstPrinter) VisitAssignExpr(expr AssignExpr) interface{} {
-	return a.parenthesize("= "+expr.Name.Lexeme, expr.Value)
+	return a.parenthesize("= "+expr.Name.String(), expr.Value)
 }
 
 func (a AstPrinter) VisitBinaryExpr(expr BinaryExpr) interface{} {
-	return a.parenthesize(expr.Operator.Lexeme, expr.Lhs, expr.Rhs)
+	return a.parenthesize(expr.Operator.String(), expr.Lhs, expr.Rhs)
 }
 
 func (a AstPrinter) VisitGroupingExpr(expr GroupingExpr) interface{} {
@@ -92,7 +93,7 @@ func (a AstPrinter) VisitLiteralExpr(expr LiteralExpr) interface{} {
 }
 
 func (a AstPrinter) VisitUnaryExpr(expr UnaryExpr) interface{} {
-	return a.parenthesize(expr.Operator.Lexeme, expr.Rhs)
+	return a.parenthesize(expr.Operator.String(), expr.Rhs)
 }
 
 // recursively traverses the tree by taking as argument a variadic list of

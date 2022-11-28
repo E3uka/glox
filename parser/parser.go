@@ -55,7 +55,7 @@ func (p *parser) equality() (ast.Expr, error) {
 		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
-			Operator: operator,
+			Operator: operator.TokType,
 			Rhs:      right,
 		}
 	}
@@ -72,7 +72,7 @@ func (p *parser) comparison() (ast.Expr, error) {
 		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
-			Operator: operator,
+			Operator: operator.TokType,
 			Rhs:      right,
 		}
 	}
@@ -89,7 +89,7 @@ func (p *parser) term() (ast.Expr, error) {
 		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
-			Operator: operator,
+			Operator: operator.TokType,
 			Rhs:      right,
 		}
 	}
@@ -106,7 +106,7 @@ func (p *parser) factor() (ast.Expr, error) {
 		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
-			Operator: operator,
+			Operator: operator.TokType,
 			Rhs:      right,
 		}
 	}
@@ -120,7 +120,7 @@ func (p *parser) unary() (ast.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return ast.UnaryExpr{Operator: operator, Rhs: right}, nil
+		return ast.UnaryExpr{Operator: operator.TokType, Rhs: right}, nil
 	}
 	return p.primary()
 }
