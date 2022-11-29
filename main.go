@@ -31,7 +31,7 @@ func run() {
 	*/
 
 	pratt := parser.NewPratt(&GlobalPath, lexer.Tokens())
-	//fmt.Printf("%#v\n", pratt.Expr())
+	fmt.Printf("%#v\n", pratt.Expr())
 	fmt.Println(ast.AstPrinter{}.Print(pratt.Expr()))
 }
 

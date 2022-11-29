@@ -35,15 +35,22 @@ const (
 	LOWEST precedence = iota + 1
 	EQUALITY
 	LESSGREATER
-	SUM
-	PRODUCT
+	SUB
+	ADD
+	MUL
+	QUO
+	UNARY
 )
 
 type precedence_map = map[token.TokenType]precedence
 
 var prec_map precedence_map
 
-type null_denotation = map[token.TokenType]func(item interface{}) ast.Expr
+type null_denotation = map[token.TokenType]func(
+	parser *pratt,
+	item interface{},
+) ast.Expr
+
 type left_denotation = map[token.TokenType]func(
 	parser *pratt,
 	op token.TokenType,
@@ -59,12 +66,15 @@ func init() {
 	left_deno = make(left_denotation)
 
 	// populate maps
-	prec_map[token.ADD] = SUM
-	prec_map[token.SUB] = SUM
-	prec_map[token.MUL] = PRODUCT
-	prec_map[token.QUO] = PRODUCT
+	prec_map[token.ADD] = ADD
+	prec_map[token.SUB] = SUB
+	prec_map[token.MUL] = MUL
+	prec_map[token.QUO] = QUO
+	prec_map[token.NOT] = UNARY
 
 	null_deno[token.FLOAT] = nd_parse_float
+	null_deno[token.SUB] = nd_parse_unary
+	null_deno[token.NOT] = nd_parse_unary
 
 	left_deno[token.ADD] = ld_parse_infix
 	left_deno[token.SUB] = ld_parse_infix
@@ -72,17 +82,24 @@ func init() {
 	left_deno[token.QUO] = ld_parse_infix
 }
 
-func nd_parse_float(item interface{}) ast.Expr {
+func nd_parse_float(parser *pratt, item interface{}) ast.Expr {
 	token, _ := item.(token.Token) // error elided; would not happen
 	fmt.Printf("nd_parse_float: %v\n", token.Literal)
 	return ast.LiteralExpr{Value: token.Literal}
+}
+
+func nd_parse_unary(parser *pratt, item interface{}) ast.Expr {
+	token, _ := item.(token.Token) // error elided; would not happen
+	right := parser.parse_expression(UNARY)
+	fmt.Printf("nd_parse_unary: %v\n", token.Lexeme)
+	return ast.UnaryExpr{Operator: token.TokType, Rhs: right}
 }
 
 func ld_parse_infix(parser *pratt, op token.TokenType, lhs ast.Expr) ast.Expr {
 	parser.advance()
 	op_prec := prec_map[parser.peek().TokType]
 	right := parser.parse_expression(op_prec)
-	fmt.Printf("ld_parse_infix: resolving binary expr\n")
+	fmt.Printf("ld_parse_infix\n")
 	return ast.BinaryExpr{Lhs: lhs, Operator: op, Rhs: right}
 }
 
@@ -92,18 +109,16 @@ func (p *pratt) init() {
 
 func (p *pratt) parse_expression(prec precedence) ast.Expr {
 	var left ast.Expr
-
 	var outer_tok token.Token
 	var inner_tok token.Token
 
 	outer_tok = p.peek()
 	inner_tok = p.advance()
 
-	left = null_deno[outer_tok.TokType](outer_tok)
+	left = null_deno[outer_tok.TokType](p, outer_tok)
 
 	for !p.isAtEnd() && prec < prec_map[inner_tok.TokType] {
 		outer_tok = inner_tok
-		//inner_tok = p.advance()
 		left = left_deno[outer_tok.TokType](p, outer_tok.TokType, left)
 	}
 
@@ -123,4 +138,9 @@ func (p *pratt) peek() token.Token {
 
 func (p *pratt) isAtEnd() bool {
 	return p.peek().TokType == token.EOF
+}
+
+func (p *pratt) isAtStart() bool {
+	// respects inital step in parse_expression method
+	return p.current == 1
 }
