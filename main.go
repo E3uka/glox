@@ -21,12 +21,18 @@ func run() {
 	if err != nil {
 		return
 	}
-	parser, err := parser.New(&GlobalPath, lexer.Tokens())
-	if err != nil {
-		return
-	}
-	fmt.Printf("%#v\n", *parser.Expr())
-	fmt.Println(ast.AstPrinter{}.Print(*parser.Expr()))
+	/*
+		parser, err := parser.New(&GlobalPath, lexer.Tokens())
+		if err != nil {
+			return
+		}
+		fmt.Printf("%#v\n", *parser.Expr())
+		fmt.Println(ast.AstPrinter{}.Print(*parser.Expr()))
+	*/
+
+	pratt := parser.NewPratt(&GlobalPath, lexer.Tokens())
+	fmt.Println(ast.AstPrinter{}.Print(pratt.Expr()))
+	//fmt.Printf("%#v\n", pratt.Expr())
 }
 
 // TODO: implement a REPL later.

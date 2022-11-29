@@ -9,7 +9,6 @@ type Expr interface {
 	Accept(visitor ExprVisitor) interface{}
 }
 
-// TODO change expressions to pointers them to pointers
 type AssignExpr struct {
 	Name  token.TokenType
 	Value Expr
@@ -85,6 +84,7 @@ func (a AstPrinter) VisitBinaryExpr(expr BinaryExpr) interface{} {
 func (a AstPrinter) VisitGroupingExpr(expr GroupingExpr) interface{} {
 	return a.parenthesize("group", expr.Expression)
 }
+
 func (a AstPrinter) VisitLiteralExpr(expr LiteralExpr) interface{} {
 	if expr.Value == nil {
 		return "nil"
