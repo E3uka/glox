@@ -64,8 +64,6 @@ func init() {
 	prec_map[token.MUL] = PRODUCT
 	prec_map[token.QUO] = PRODUCT
 
-	null_deno[token.ADD] = nd_terminate_early
-
 	null_deno[token.FLOAT] = nd_parse_float
 
 	left_deno[token.ADD] = ld_parse_infix
@@ -80,15 +78,11 @@ func nd_parse_float(item interface{}) ast.Expr {
 	return ast.LiteralExpr{Value: token.Literal}
 }
 
-func nd_terminate_early(item interface{}) ast.Expr {
-	return nil
-}
-
 func ld_parse_infix(parser *pratt, op token.TokenType, lhs ast.Expr) ast.Expr {
-	op_prec := prec_map[op]
 	parser.advance()
+	op_prec := prec_map[parser.peek().TokType]
 	right := parser.parse_expression(op_prec)
-	fmt.Printf("resolving binary expr\n")
+	fmt.Printf("ld_parse_infix: resolving binary expr\n")
 	return ast.BinaryExpr{Lhs: lhs, Operator: op, Rhs: right}
 }
 
@@ -97,18 +91,20 @@ func (p *pratt) init() {
 }
 
 func (p *pratt) parse_expression(prec precedence) ast.Expr {
-	fmt.Printf("current precedence: %v\n", prec)
-	var tok token.Token
 	var left ast.Expr
 
-	tok = p.peek()
-	fmt.Printf("current token: %v\n", tok.Literal)
-	left = null_deno[tok.TokType](tok)
-	tok = p.advance()
+	var outer_tok token.Token
+	var inner_tok token.Token
 
-	for !p.isAtEnd() && prec < prec_map[tok.TokType] {
-		fmt.Printf("inner current token: %v\n", tok.TokType)
-		left = left_deno[tok.TokType](p, tok.TokType, left)
+	outer_tok = p.peek()
+	inner_tok = p.advance()
+
+	left = null_deno[outer_tok.TokType](outer_tok)
+
+	for !p.isAtEnd() && prec < prec_map[inner_tok.TokType] {
+		outer_tok = inner_tok
+		//inner_tok = p.advance()
+		left = left_deno[outer_tok.TokType](p, outer_tok.TokType, left)
 	}
 
 	return left

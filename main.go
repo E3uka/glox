@@ -31,8 +31,8 @@ func run() {
 	*/
 
 	pratt := parser.NewPratt(&GlobalPath, lexer.Tokens())
-	fmt.Println(ast.AstPrinter{}.Print(pratt.Expr()))
 	//fmt.Printf("%#v\n", pratt.Expr())
+	fmt.Println(ast.AstPrinter{}.Print(pratt.Expr()))
 }
 
 // TODO: implement a REPL later.
