@@ -21,3 +21,9 @@ func ParseError(path *string, tok token.Token, reason string) error {
 	fmt.Printf(msg)
 	return errors.New(msg)
 }
+
+func ParsePanic(path *string, tok token.Token, reason string) error {
+	GlobalError = true
+	msg := fmt.Sprintf("%s:%d: %s: %s", *path, tok.Line, tok.Lexeme, reason)
+	panic(msg)
+}
