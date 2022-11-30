@@ -33,13 +33,13 @@ func (p *pratt) init() {
 	p.expr = p.parse_expression(LOWEST)
 }
 
-func (p *pratt) parse_expression(prec precedence) ast.Expr {
+func (p *pratt) parse_expression(cur_prec precedence) ast.Expr {
 	var left ast.Expr
 	cur_tok := p.peek()
 	// step past the first token then parse its subexpression
 	p.advance()
 	left = null_deno[cur_tok.TokType](p, cur_tok)
-	for !p.isAtEnd() && prec < prec_map[p.peek().TokType] {
+	for !p.isAtEnd() && cur_prec < prec_map[p.peek().TokType] {
 		cur_tok = p.peek()
 		left = left_deno[cur_tok.TokType](p, cur_tok.TokType, left)
 	}
