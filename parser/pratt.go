@@ -29,6 +29,39 @@ func NewPratt(path *string, tokens *[]token.Token) *pratt {
 	return pratt
 }
 
+func (p *pratt) init() {
+	p.expr = p.parse_expression(LOWEST)
+}
+
+func (p *pratt) parse_expression(prec precedence) ast.Expr {
+	var left ast.Expr
+	cur_tok := p.peek()
+	// step past the first token then parse its subexpression
+	p.advance()
+	left = null_deno[cur_tok.TokType](p, cur_tok)
+	for !p.isAtEnd() && prec < prec_map[p.peek().TokType] {
+		cur_tok = p.peek()
+		left = left_deno[cur_tok.TokType](p, cur_tok.TokType, left)
+	}
+
+	return left
+}
+
+func (p *pratt) advance() token.Token {
+	if !p.isAtEnd() {
+		p.current++
+	}
+	return p.peek()
+}
+
+func (p *pratt) peek() token.Token {
+	return p.tokens[p.current]
+}
+
+func (p *pratt) isAtEnd() bool {
+	return p.peek().TokType == token.EOF
+}
+
 type precedence uint
 
 const (
@@ -45,7 +78,11 @@ const (
 
 type precedence_map = map[token.TokenType]precedence
 type null_denotation = map[token.TokenType]func(*pratt, token.Token) ast.Expr
-type left_denotation = map[token.TokenType]func(*pratt, token.TokenType, ast.Expr) ast.Expr
+type left_denotation = map[token.TokenType]func(
+	*pratt,
+	token.TokenType,
+	ast.Expr,
+) ast.Expr
 
 var prec_map precedence_map
 var null_deno null_denotation
@@ -104,6 +141,7 @@ func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
 	if parser.peek().TokType == token.EOF {
 		gloxError.ParsePanic(parser.path, tok, "expected ')'")
 	}
+	// step past the closing ')'
 	parser.advance()
 	return ast.GroupingExpr{Expression: expr}
 }
@@ -115,40 +153,9 @@ func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 
 func ld_parse_binary(parser *pratt, op token.TokenType, lhs ast.Expr) ast.Expr {
 	cur_prec := prec_map[parser.peek().TokType]
+	// step past the infix operator then parse and capture the rhs subexpression
+	// using the operators precedence
 	parser.advance()
 	expr := parser.parse_expression(cur_prec)
 	return ast.BinaryExpr{Lhs: lhs, Operator: op, Rhs: expr}
-}
-
-func (p *pratt) init() {
-	p.expr = p.parse_expression(LOWEST)
-}
-
-func (p *pratt) parse_expression(prec precedence) ast.Expr {
-	var left ast.Expr
-	cur_tok := p.peek()
-	p.advance()
-	left = null_deno[cur_tok.TokType](p, cur_tok)
-
-	for !p.isAtEnd() && prec < prec_map[p.peek().TokType] {
-		cur_tok = p.peek()
-		left = left_deno[cur_tok.TokType](p, cur_tok.TokType, left)
-	}
-
-	return left
-}
-
-func (p *pratt) advance() token.Token {
-	if !p.isAtEnd() {
-		p.current++
-	}
-	return p.peek()
-}
-
-func (p *pratt) peek() token.Token {
-	return p.tokens[p.current]
-}
-
-func (p *pratt) isAtEnd() bool {
-	return p.peek().TokType == token.EOF
 }
