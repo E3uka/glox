@@ -38,10 +38,10 @@ func (p *pratt) parse_expression(cur_prec precedence) ast.Expr {
 	cur_tok := p.peek()
 	// step past the first token then parse its subexpression
 	p.advance()
-	left = null_deno[cur_tok.TokType](p, cur_tok)
-	for !p.isAtEnd() && cur_prec < prec_map[p.peek().TokType] {
+	left = null_deno[cur_tok.Type](p, cur_tok)
+	for !p.isAtEnd() && cur_prec < prec_map[p.peek().Type] {
 		cur_tok = p.peek()
-		left = left_deno[cur_tok.TokType](p, cur_tok.TokType, left)
+		left = left_deno[cur_tok.Type](p, cur_tok.Type, left)
 	}
 
 	return left
@@ -59,7 +59,7 @@ func (p *pratt) peek() token.Token {
 }
 
 func (p *pratt) isAtEnd() bool {
-	return p.peek().TokType == token.EOF
+	return p.peek().Type == token.EOF
 }
 
 type precedence uint
@@ -76,11 +76,11 @@ const (
 	PRIMARY
 )
 
-type precedence_map = map[token.TokenType]precedence
-type null_denotation = map[token.TokenType]func(*pratt, token.Token) ast.Expr
-type left_denotation = map[token.TokenType]func(
+type precedence_map = map[token.TOKEN_TYPE]precedence
+type null_denotation = map[token.TOKEN_TYPE]func(*pratt, token.Token) ast.Expr
+type left_denotation = map[token.TOKEN_TYPE]func(
 	*pratt,
-	token.TokenType,
+	token.TOKEN_TYPE,
 	ast.Expr,
 ) ast.Expr
 
@@ -133,12 +133,12 @@ func nd_parse_literal(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_identity(parser *pratt, tok token.Token) ast.Expr {
-	return ast.LiteralExpr{Value: tok.TokType}
+	return ast.LiteralExpr{Value: tok.Type}
 }
 
 func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
 	expr := parser.parse_expression(LOWEST)
-	if parser.peek().TokType == token.EOF {
+	if parser.peek().Type == token.EOF {
 		gloxError.ParsePanic(parser.path, tok, "expected ')'")
 	}
 	// step past the closing ')'
@@ -148,11 +148,15 @@ func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
 
 func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 	expr := parser.parse_expression(UNARY)
-	return ast.UnaryExpr{Operator: tok.TokType, Rhs: expr}
+	return ast.UnaryExpr{Operator: tok.Type, Rhs: expr}
 }
 
-func ld_parse_binary(parser *pratt, op token.TokenType, lhs ast.Expr) ast.Expr {
-	cur_prec := prec_map[parser.peek().TokType]
+func ld_parse_binary(
+	parser *pratt,
+	op token.TOKEN_TYPE,
+	lhs ast.Expr,
+) ast.Expr {
+	cur_prec := prec_map[parser.peek().Type]
 	// step past the infix operator then parse and capture the rhs subexpression
 	// using the operators precedence
 	parser.advance()

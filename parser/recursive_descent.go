@@ -13,7 +13,7 @@ type parser struct {
 	expr    ast.Expr
 }
 
-func New(path *string, tokens *[]token.Token) (*parser, error) {
+func NewRD(path *string, tokens *[]token.Token) (*parser, error) {
 	parser := &parser{
 		path:    path,
 		tokens:  *tokens,
@@ -55,7 +55,7 @@ func (p *parser) equality() (ast.Expr, error) {
 		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
-			Operator: operator.TokType,
+			Operator: operator.Type,
 			Rhs:      right,
 		}
 	}
@@ -72,7 +72,7 @@ func (p *parser) comparison() (ast.Expr, error) {
 		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
-			Operator: operator.TokType,
+			Operator: operator.Type,
 			Rhs:      right,
 		}
 	}
@@ -89,7 +89,7 @@ func (p *parser) term() (ast.Expr, error) {
 		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
-			Operator: operator.TokType,
+			Operator: operator.Type,
 			Rhs:      right,
 		}
 	}
@@ -106,7 +106,7 @@ func (p *parser) factor() (ast.Expr, error) {
 		}
 		expr = ast.BinaryExpr{
 			Lhs:      expr,
-			Operator: operator.TokType,
+			Operator: operator.Type,
 			Rhs:      right,
 		}
 	}
@@ -120,7 +120,7 @@ func (p *parser) unary() (ast.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return ast.UnaryExpr{Operator: operator.TokType, Rhs: right}, nil
+		return ast.UnaryExpr{Operator: operator.Type, Rhs: right}, nil
 	}
 	return p.primary()
 }
@@ -148,9 +148,9 @@ func (p *parser) primary() (ast.Expr, error) {
 		}
 		err = p.consume(
 			token.Token{
-				TokType: token.RPAREN,
-				Lexeme:  token.RPAREN.String(),
-				Line:    p.current,
+				Type:   token.RPAREN,
+				Lexeme: token.RPAREN.String(),
+				Line:   p.current,
 			},
 			"expected ')' after expression.",
 		)
@@ -160,15 +160,15 @@ func (p *parser) primary() (ast.Expr, error) {
 	return nil, gloxError.ParseError(
 		p.path,
 		token.Token{
-			TokType: token.ILLEGAL,
-			Line:    p.current,
+			Type: token.ILLEGAL,
+			Line: p.current,
 		},
 		"unrecognised token",
 	)
 }
 
-func (p *parser) match(tokTypes ...token.TokenType) bool {
-	for _, tt := range tokTypes {
+func (p *parser) match(tok_types ...token.TOKEN_TYPE) bool {
+	for _, tt := range tok_types {
 		if p.check(tt) {
 			p.advance()
 			return true
@@ -178,7 +178,7 @@ func (p *parser) match(tokTypes ...token.TokenType) bool {
 }
 
 func (p *parser) consume(token token.Token, msg string) error {
-	if p.check(token.TokType) {
+	if p.check(token.Type) {
 		p.advance()
 		return nil
 	}
@@ -187,11 +187,11 @@ func (p *parser) consume(token token.Token, msg string) error {
 
 func (p *parser) synchronize() {
 	p.advance()
-	for !p.isAtEnd() {
-		if p.previous().TokType == token.SEMICOLON {
+	for !p.is_at_end() {
+		if p.previous().Type == token.SEMICOLON {
 			return
 		}
-		switch p.peek().TokType {
+		switch p.peek().Type {
 		case token.CLASS, token.FOR, token.FN, token.IF, token.PRINT,
 			token.RETURN, token.LET, token.WHILE:
 			return
@@ -200,15 +200,15 @@ func (p *parser) synchronize() {
 	}
 }
 
-func (p *parser) check(tokType token.TokenType) bool {
-	if p.isAtEnd() {
+func (p *parser) check(tokType token.TOKEN_TYPE) bool {
+	if p.is_at_end() {
 		return false
 	}
-	return p.peek().TokType == tokType
+	return p.peek().Type == tokType
 }
 
 func (p *parser) advance() token.Token {
-	if !p.isAtEnd() {
+	if !p.is_at_end() {
 		p.current++
 	}
 	return p.previous()
@@ -222,6 +222,6 @@ func (p *parser) previous() token.Token {
 	return p.tokens[p.current-1]
 }
 
-func (p *parser) isAtEnd() bool {
-	return p.peek().TokType == token.EOF
+func (p *parser) is_at_end() bool {
+	return p.peek().Type == token.EOF
 }

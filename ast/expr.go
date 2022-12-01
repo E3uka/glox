@@ -9,18 +9,9 @@ type Expr interface {
 	Accept(visitor ExprVisitor) interface{}
 }
 
-type AssignExpr struct {
-	Name  token.TokenType
-	Value Expr
-}
-
-func (a AssignExpr) Accept(visitor ExprVisitor) interface{} {
-	return visitor.VisitAssignExpr(a)
-}
-
 type BinaryExpr struct {
 	Lhs      Expr
-	Operator token.TokenType
+	Operator token.TOKEN_TYPE
 	Rhs      Expr
 }
 
@@ -46,7 +37,7 @@ func (l LiteralExpr) Accept(visitor ExprVisitor) interface{} {
 }
 
 type UnaryExpr struct {
-	Operator token.TokenType
+	Operator token.TOKEN_TYPE
 	Rhs      Expr
 }
 
@@ -55,7 +46,6 @@ func (u UnaryExpr) Accept(visitor ExprVisitor) interface{} {
 }
 
 type ExprVisitor interface {
-	VisitAssignExpr(expr AssignExpr) interface{}
 	VisitBinaryExpr(expr BinaryExpr) interface{}
 	VisitGroupingExpr(expr GroupingExpr) interface{}
 	VisitLiteralExpr(expr LiteralExpr) interface{}
@@ -71,10 +61,6 @@ type AstPrinter struct{}
 
 func (a AstPrinter) Print(expr Expr) string {
 	return expr.Accept(a).(string)
-}
-
-func (a AstPrinter) VisitAssignExpr(expr AssignExpr) interface{} {
-	return a.parenthesize("= "+expr.Name.String(), expr.Value)
 }
 
 func (a AstPrinter) VisitBinaryExpr(expr BinaryExpr) interface{} {

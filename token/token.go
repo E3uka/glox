@@ -5,13 +5,13 @@ import (
 	"strconv"
 )
 
-type TokenType uint
+type TOKEN_TYPE uint
 
 const (
 	// Special Tokens
-	ILLEGAL TokenType = iota
-	EOF               // automatically appened to end of source file.
-	CMNT              // // - /* */
+	ILLEGAL TOKEN_TYPE = iota
+	EOF                // automatically appened to end of source file.
+	CMNT               // // - /* */
 
 	// Literals
 	literal_beg // (trick learned from go source): go/src/go/token/token.go
@@ -158,9 +158,9 @@ var tokens = [...]string{
 	WHILE:     "while",
 }
 
-func (tt TokenType) String() string {
+func (tt TOKEN_TYPE) String() string {
 	s := ""
-	if 0 <= tt && tt < TokenType(len(tokens)) {
+	if 0 <= tt && tt < TOKEN_TYPE(len(tokens)) {
 		s = tokens[tt]
 	}
 	if s == "" {
@@ -182,22 +182,22 @@ parser:
 	c1 int
 */
 type Token struct {
-	TokType TokenType
+	Type    TOKEN_TYPE
 	Lexeme  string
 	Literal interface{}
 	Line    int
 }
 
 func (tok Token) String() string {
-	return fmt.Sprintf("%s %s %s", tok.TokType, tok.Lexeme, tok.Literal)
+	return fmt.Sprintf("%s %s %s", tok.Type, tok.Lexeme, tok.Literal)
 }
 
-var keywords map[string]TokenType
+var keywords map[string]TOKEN_TYPE
 
 // Run on initialisation ~ also gleaned from go source.
 func init() {
 	// make a map with the exact size of the length of keywords.
-	keywords = make(map[string]TokenType, keyword_end-(keyword_beg+1))
+	keywords = make(map[string]TOKEN_TYPE, keyword_end-(keyword_beg+1))
 
 	// loop through tokens and add to map
 	for i := keyword_beg + 1; i < keyword_end; i++ {
@@ -205,9 +205,9 @@ func init() {
 	}
 }
 
-// Lookup maps an identifier to its keyword token or IDENT TokenType.
+// Lookup maps an identifier to its keyword token or IDENT TOKEN_TYPE.
 // keywords)
-func Lookup(ident string) TokenType {
+func Lookup(ident string) TOKEN_TYPE {
 	if tok, is_keyword := keywords[ident]; is_keyword {
 		return tok
 	}

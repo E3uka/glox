@@ -34,7 +34,7 @@ func main() {
 	} else if len(os.Args) == 2 {
 		GlobalPath = os.Args[1]
 		run()
-		if gloxError.GlobalError {
+		if gloxError.GLOBAL_ERROR {
 			os.Exit(64)
 		}
 	} else {

@@ -35,28 +35,28 @@ func (l *lexer) Tokens() *[]token.Token {
 	return &l.tokens
 }
 
-func (l *lexer) isAtEnd() bool {
+func (l *lexer) is_at_end() bool {
 	return l.current >= len(l.source)
 }
 
-func (l lexer) isDigit(char rune) bool {
+func (l lexer) is_digit(char rune) bool {
 	return char >= '0' && char <= '9'
 }
 
-func (l lexer) isAlpha(char rune) bool {
+func (l lexer) is_alpha(char rune) bool {
 	return (char >= 'a' && char <= 'z') ||
 		(char >= 'A' && char <= 'Z') ||
 		char == '_'
 }
 
-func (l lexer) isAlphaNumeric(char rune) bool {
-	return l.isAlpha(char) || l.isDigit(char)
+func (l lexer) is_alphanumeric(char rune) bool {
+	return l.is_alpha(char) || l.is_digit(char)
 }
 
 func (l *lexer) init() error {
 	var err error
 
-	for !l.isAtEnd() {
+	for !l.is_at_end() {
 		l.start = l.current
 		err = l.lex()
 		if err != nil {
@@ -64,7 +64,7 @@ func (l *lexer) init() error {
 		}
 	}
 	eof := token.Token{
-		TokType: token.EOF,
+		Type:    token.EOF,
 		Lexeme:  "",
 		Literal: struct{}{},
 		Line:    l.line, // append EOF at end of source file
@@ -89,116 +89,116 @@ func (l *lexer) lex() error {
 
 	// single character lexemes
 	case '(':
-		l.addToken(token.LPAREN)
+		l.add_token(token.LPAREN)
 	case ')':
-		l.addToken(token.RPAREN)
+		l.add_token(token.RPAREN)
 	case '[':
-		l.addToken(token.LBRACK)
+		l.add_token(token.LBRACK)
 	case ']':
-		l.addToken(token.RBRACK)
+		l.add_token(token.RBRACK)
 	case '{':
-		l.addToken(token.LBRACE)
+		l.add_token(token.LBRACE)
 	case '}':
-		l.addToken(token.RBRACE)
+		l.add_token(token.RBRACE)
 	case ',':
-		l.addToken(token.COMMA)
+		l.add_token(token.COMMA)
 	case '.':
-		l.addToken(token.PERIOD)
+		l.add_token(token.PERIOD)
 	case ';':
-		l.addToken(token.SEMICOLON)
+		l.add_token(token.SEMICOLON)
 	case '*':
-		l.addToken(token.MUL)
+		l.add_token(token.MUL)
 
 	// double-character lexemes
 	case '+':
-		if l.checkAndStep('+') {
-			l.addToken(token.INCR)
-		} else if l.checkAndStep('=') {
-			l.addToken(token.INCRBY)
+		if l.match_advance('+') {
+			l.add_token(token.INCR)
+		} else if l.match_advance('=') {
+			l.add_token(token.INCRBY)
 		} else {
-			l.addToken(token.ADD)
+			l.add_token(token.ADD)
 		}
 	case '-':
-		if l.checkAndStep('>') {
-			l.addToken(token.FUNRET)
-		} else if l.checkAndStep('-') {
-			l.addToken(token.DECR)
-		} else if l.checkAndStep('=') {
-			l.addToken(token.DECRYBY)
+		if l.match_advance('>') {
+			l.add_token(token.FUNRET)
+		} else if l.match_advance('-') {
+			l.add_token(token.DECR)
+		} else if l.match_advance('=') {
+			l.add_token(token.DECRYBY)
 		} else {
-			l.addToken(token.SUB)
+			l.add_token(token.SUB)
 		}
 	case '!':
-		if l.checkAndStep('=') {
-			l.addToken(token.NEQ)
+		if l.match_advance('=') {
+			l.add_token(token.NEQ)
 		} else {
-			l.addToken(token.NOT)
+			l.add_token(token.NOT)
 		}
 	case '=':
-		if l.checkAndStep('=') {
-			l.addToken(token.EQL)
+		if l.match_advance('=') {
+			l.add_token(token.EQL)
 		} else {
-			l.addToken(token.ASSIGN)
+			l.add_token(token.ASSIGN)
 		}
 	case '<':
-		if l.checkAndStep('=') {
-			l.addToken(token.LEQ)
+		if l.match_advance('=') {
+			l.add_token(token.LEQ)
 		} else {
-			l.addToken(token.LSS)
+			l.add_token(token.LSS)
 		}
 	case '>':
-		if l.checkAndStep('=') {
-			l.addToken(token.GEQ)
+		if l.match_advance('=') {
+			l.add_token(token.GEQ)
 		} else {
-			l.addToken(token.GTR)
+			l.add_token(token.GTR)
 		}
 	case ':':
-		if l.checkAndStep('=') {
-			l.addToken(token.WALRUS)
-		} else if l.checkAndStep(':') {
-			l.addToken(token.MODASSIGN)
+		if l.match_advance('=') {
+			l.add_token(token.WALRUS)
+		} else if l.match_advance(':') {
+			l.add_token(token.MODASSIGN)
 		} else {
-			l.addToken(token.COLON)
+			l.add_token(token.COLON)
 		}
 	case '&':
-		if l.checkAndStep('&') {
-			l.addToken(token.AND)
+		if l.match_advance('&') {
+			l.add_token(token.AND)
 		} else {
-			l.addToken(token.BITAND)
+			l.add_token(token.BITAND)
 		}
 	case '|':
-		if l.checkAndStep('|') {
-			l.addToken(token.OR)
+		if l.match_advance('|') {
+			l.add_token(token.OR)
 		} else {
-			l.addToken(token.BITOR)
+			l.add_token(token.BITOR)
 		}
 	case '/':
-		if l.checkAndStep('/') {
+		if l.match_advance('/') {
 			// step past all remaining characters until newline
-			for l.peek() != '\n' && !l.isAtEnd() {
+			for l.peek() != '\n' && !l.is_at_end() {
 				l.step()
 			}
 			// currently at the newline char, step again and update start
 			// position to move past newline
 			l.step()
 			l.start = l.current
-		} else if l.checkAndStep('*') {
+		} else if l.match_advance('*') {
 			// keep it stepping
-			for !l.isAtEnd() {
+			for !l.is_at_end() {
 				if l.peek() == '\n' {
 					l.line += 1
 				}
 				l.step()
 
 				if l.peek() == '*' {
-					if l.peekNext() == '/' {
+					if l.peek_next() == '/' {
 						l.step()
 						break
 					}
 				}
 			}
 
-			if l.isAtEnd() {
+			if l.is_at_end() {
 				return gloxError.LexError(l.path, l.line, "unterminated block comment")
 			}
 
@@ -207,18 +207,18 @@ func (l *lexer) lex() error {
 			l.step()
 			l.start = l.current
 		} else {
-			l.addToken(token.QUO)
+			l.add_token(token.QUO)
 		}
 
 		// string literals
 	case '"':
-		l.lexString()
+		l.lex_string()
 
 	default:
-		if l.isDigit(char) {
-			l.lexFloat()
-		} else if l.isAlpha(char) {
-			l.lexIdentifier()
+		if l.is_digit(char) {
+			l.lex_float()
+		} else if l.is_alpha(char) {
+			l.lex_identifier()
 		} else {
 			return gloxError.LexError(l.path, l.line, "unexpected character")
 		}
@@ -231,8 +231,8 @@ func (l *lexer) step() rune {
 	return rune(l.source[l.current-1])
 }
 
-func (l *lexer) checkAndStep(char rune) bool {
-	if l.isAtEnd() {
+func (l *lexer) match_advance(char rune) bool {
+	if l.is_at_end() {
 		return false
 	} else if rune(l.source[l.current]) != char {
 		return false
@@ -244,30 +244,30 @@ func (l *lexer) checkAndStep(char rune) bool {
 }
 
 func (l *lexer) peek() rune {
-	if l.isAtEnd() {
+	if l.is_at_end() {
 		return '\x00' // null terminated string in go
 	}
 	return rune(l.source[l.current])
 }
 
-func (l *lexer) peekNext() rune {
+func (l *lexer) peek_next() rune {
 	if l.current+1 >= len(l.source) {
 		return '\x00'
 	}
 	return rune(l.source[l.current+1])
 }
 
-func (l *lexer) addToken(tokType token.TokenType) {
-	l.addTokenWithLiteral(tokType, struct{}{})
+func (l *lexer) add_token(tok_type token.TOKEN_TYPE) {
+	l.add_token_with_literal(tok_type, struct{}{})
 }
 
-func (l *lexer) addTokenWithLiteral(
-	tokType token.TokenType,
+func (l *lexer) add_token_with_literal(
+	tok_type token.TOKEN_TYPE,
 	literal interface{},
 ) {
 	text := l.source[l.start:l.current]
 	tok := token.Token{
-		TokType: tokType,
+		Type:    tok_type,
 		Lexeme:  text,
 		Literal: literal,
 		Line:    l.line,
@@ -275,15 +275,15 @@ func (l *lexer) addTokenWithLiteral(
 	l.tokens = append(l.tokens, tok)
 }
 
-func (l *lexer) lexString() error {
-	for l.peek() != '"' && !l.isAtEnd() {
+func (l *lexer) lex_string() error {
+	for l.peek() != '"' && !l.is_at_end() {
 		if l.peek() == '\n' {
 			l.line += 1
 		}
 		l.step()
 	}
 
-	if l.isAtEnd() {
+	if l.is_at_end() {
 		return gloxError.LexError(l.path, l.line, "unterminated string")
 
 	}
@@ -293,21 +293,21 @@ func (l *lexer) lexString() error {
 
 	// trim the surrounding quotes
 	value := l.source[l.start+1 : l.current-1]
-	l.addTokenWithLiteral(token.STRING, value)
+	l.add_token_with_literal(token.STRING, value)
 	return nil
 }
 
-func (l *lexer) lexFloat() error {
-	for l.isDigit(l.peek()) {
+func (l *lexer) lex_float() error {
+	for l.is_digit(l.peek()) {
 		l.step()
 	}
 
 	// look for the fractional part of the number
-	if l.peek() == '.' && l.isDigit(l.peekNext()) {
+	if l.peek() == '.' && l.is_digit(l.peek_next()) {
 		l.step() // consume the '.'
 	}
 
-	for l.isDigit(l.peek()) {
+	for l.is_digit(l.peek()) {
 		l.step()
 	}
 
@@ -316,16 +316,16 @@ func (l *lexer) lexFloat() error {
 	if err != nil {
 		return gloxError.LexError(l.path, l.line, "could not parse string value")
 	}
-	l.addTokenWithLiteral(token.FLOAT, floatVal)
+	l.add_token_with_literal(token.FLOAT, floatVal)
 	return nil
 }
 
-func (l *lexer) lexIdentifier() {
-	for l.isAlphaNumeric(l.peek()) {
+func (l *lexer) lex_identifier() {
+	for l.is_alphanumeric(l.peek()) {
 		l.step()
 	}
 
 	value := l.source[l.start:l.current]
 	tok := token.Lookup(value)
-	l.addToken(tok)
+	l.add_token(tok)
 }
