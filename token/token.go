@@ -11,7 +11,6 @@ const (
 	// Special Tokens
 	ILLEGAL TOKEN_TYPE = iota
 	EOF                // automatically appened to end of source file.
-	CMNT               // // - /* */
 
 	// Literals
 	literal_beg // (trick learned from go source): go/src/go/token/token.go
@@ -49,8 +48,7 @@ const (
 	GEQ // >=
 
 	ASSIGN    // =
-	WALRUS    // :=
-	MODASSIGN // ::
+	FUNASSIGN // ::
 	EQL       // ==
 	LSS       // <
 	GTR       // >
@@ -64,9 +62,7 @@ const (
 
 	keyword_beg // Keywords
 	CLASS
-	DEFER // cool to implement
 	STRUCT
-	SOA // also cool to implement
 	ELSE
 	FALSE
 	FN
@@ -79,9 +75,7 @@ const (
 
 	RETURN
 	SUPER
-	THIS
 	IT
-	ITERINDEX
 	TRUE
 	WHILE
 	keyword_end
@@ -90,7 +84,6 @@ const (
 var tokens = [...]string{
 	ILLEGAL: "ILLEGAL",
 	EOF:     "EOF",
-	CMNT:    "CMNT",
 
 	IDENT:  "IDENT",
 	FLOAT:  "float",
@@ -123,8 +116,7 @@ var tokens = [...]string{
 	GEQ: ">=",
 
 	ASSIGN:    "=",
-	WALRUS:    ":=",
-	MODASSIGN: "::",
+	FUNASSIGN: "::",
 	EQL:       "==",
 	LSS:       "<",
 	GTR:       ">",
@@ -136,9 +128,7 @@ var tokens = [...]string{
 	OR:     "||",
 
 	CLASS:  "class",
-	DEFER:  "defer",
 	STRUCT: "struct",
-	SOA:    "SOA",
 	ELSE:   "else",
 	FALSE:  "false",
 	FN:     "fn",
@@ -149,13 +139,11 @@ var tokens = [...]string{
 	NIL:   "nil",
 	PRINT: "print",
 
-	RETURN:    "return",
-	SUPER:     "super",
-	THIS:      "this",
-	IT:        "it",
-	ITERINDEX: "it_index",
-	TRUE:      "true",
-	WHILE:     "while",
+	RETURN: "return",
+	SUPER:  "super",
+	IT:     "it",
+	TRUE:   "true",
+	WHILE:  "while",
 }
 
 func (tt TOKEN_TYPE) String() string {

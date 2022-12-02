@@ -153,10 +153,8 @@ func (l *lexer) lex() error {
 			l.add_token(token.GTR)
 		}
 	case ':':
-		if l.match_advance('=') {
-			l.add_token(token.WALRUS)
-		} else if l.match_advance(':') {
-			l.add_token(token.MODASSIGN)
+		if l.match_advance(':') {
+			l.add_token(token.FUNASSIGN)
 		} else {
 			l.add_token(token.COLON)
 		}
