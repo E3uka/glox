@@ -100,7 +100,11 @@ func init() {
 	prec_map[token.LSS] = LESSGREATER
 	prec_map[token.LEQ] = LESSGREATER
 	prec_map[token.ADD] = ADD
+	prec_map[token.INCR] = UNARY
+	prec_map[token.INCRBY] = ADD
 	prec_map[token.SUB] = SUB
+	prec_map[token.DECR] = UNARY
+	prec_map[token.DECRYBY] = SUB
 	prec_map[token.MUL] = MUL
 	prec_map[token.QUO] = QUO
 
@@ -111,12 +115,17 @@ func init() {
 	left_deno[token.LSS] = ld_parse_binary
 	left_deno[token.LEQ] = ld_parse_binary
 	left_deno[token.ADD] = ld_parse_binary
+	left_deno[token.INCRBY] = ld_parse_binary
 	left_deno[token.SUB] = ld_parse_binary
+	left_deno[token.DECRYBY] = ld_parse_binary
 	left_deno[token.MUL] = ld_parse_binary
 	left_deno[token.QUO] = ld_parse_binary
 
 	null_deno[token.SUB] = nd_parse_unary
 	null_deno[token.NOT] = nd_parse_unary
+
+	left_deno[token.INCR] = ld_parse_unary
+	left_deno[token.DECR] = ld_parse_unary
 
 	null_deno[token.FLOAT] = nd_parse_literal
 	null_deno[token.STRING] = nd_parse_literal
@@ -149,6 +158,16 @@ func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
 func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 	expr := parser.parse_expression(UNARY)
 	return ast.UnaryExpr{Operator: tok.Type, Rhs: expr}
+}
+
+func ld_parse_unary(
+	parser *pratt,
+	op token.TOKEN_TYPE,
+	lhs ast.Expr,
+) ast.Expr {
+	// step past the postfix operator
+	parser.advance()
+	return ast.UnaryExpr{Operator: op, Rhs: lhs}
 }
 
 func ld_parse_binary(
