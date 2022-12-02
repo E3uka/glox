@@ -76,22 +76,17 @@ const (
 	PRIMARY
 )
 
-type precedence_map = map[token.TOKEN_TYPE]precedence
-type null_denotation = map[token.TOKEN_TYPE]func(*pratt, token.Token) ast.Expr
-type left_denotation = map[token.TOKEN_TYPE]func(
-	*pratt,
-	token.TOKEN_TYPE,
-	ast.Expr,
-) ast.Expr
+var (
+	prec_map  map[token.TOKEN_TYPE]precedence
+	null_deno map[token.TOKEN_TYPE]func(*pratt, token.Token) ast.Expr
+	left_deno map[token.TOKEN_TYPE]func(*pratt, token.TOKEN_TYPE, ast.Expr) ast.Expr
+)
 
-var prec_map precedence_map
-var null_deno null_denotation
-var left_deno left_denotation
-
+// init maps and populate with the appropriate parser dispatch functions
 func init() {
-	prec_map = make(precedence_map)
-	null_deno = make(null_denotation)
-	left_deno = make(left_denotation)
+	prec_map = make(map[token.TOKEN_TYPE]precedence)
+	null_deno = make(map[token.TOKEN_TYPE]func(*pratt, token.Token) ast.Expr)
+	left_deno = make(map[token.TOKEN_TYPE]func(*pratt, token.TOKEN_TYPE, ast.Expr) ast.Expr)
 
 	prec_map[token.EQL] = EQUALITY
 	prec_map[token.NEQ] = EQUALITY
@@ -108,6 +103,21 @@ func init() {
 	prec_map[token.MUL] = MUL
 	prec_map[token.QUO] = QUO
 
+	null_deno[token.FLOAT] = nd_parse_literal
+	null_deno[token.STRING] = nd_parse_literal
+
+	null_deno[token.SUB] = nd_parse_unary
+	null_deno[token.NOT] = nd_parse_unary
+
+	null_deno[token.TRUE] = nd_parse_identity
+	null_deno[token.FALSE] = nd_parse_identity
+	null_deno[token.NIL] = nd_parse_identity
+
+	null_deno[token.LPAREN] = nd_parse_grouping
+
+	left_deno[token.INCR] = ld_parse_unary
+	left_deno[token.DECR] = ld_parse_unary
+
 	left_deno[token.EQL] = ld_parse_binary
 	left_deno[token.NEQ] = ld_parse_binary
 	left_deno[token.GTR] = ld_parse_binary
@@ -121,20 +131,6 @@ func init() {
 	left_deno[token.MUL] = ld_parse_binary
 	left_deno[token.QUO] = ld_parse_binary
 
-	null_deno[token.SUB] = nd_parse_unary
-	null_deno[token.NOT] = nd_parse_unary
-
-	left_deno[token.INCR] = ld_parse_unary
-	left_deno[token.DECR] = ld_parse_unary
-
-	null_deno[token.FLOAT] = nd_parse_literal
-	null_deno[token.STRING] = nd_parse_literal
-
-	null_deno[token.TRUE] = nd_parse_identity
-	null_deno[token.FALSE] = nd_parse_identity
-	null_deno[token.NIL] = nd_parse_identity
-
-	null_deno[token.LPAREN] = nd_parse_grouping
 }
 
 func nd_parse_literal(parser *pratt, tok token.Token) ast.Expr {
@@ -175,10 +171,9 @@ func ld_parse_binary(
 	op token.TOKEN_TYPE,
 	lhs ast.Expr,
 ) ast.Expr {
-	cur_prec := prec_map[parser.peek().Type]
-	// step past the infix operator then parse and capture the rhs subexpression
-	// using the operators precedence
+	op_prec := prec_map[parser.peek().Type]
+	// step past the infix operator
 	parser.advance()
-	expr := parser.parse_expression(cur_prec)
+	expr := parser.parse_expression(op_prec)
 	return ast.BinaryExpr{Lhs: lhs, Operator: op, Rhs: expr}
 }
