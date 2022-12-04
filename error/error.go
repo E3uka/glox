@@ -23,15 +23,15 @@ func ParseError(path *string, tok token.Token, reason string) error {
 	return errors.New(msg)
 }
 
+func ParsePanic(path *string, tok token.Token, reason string) error {
+	GLOBAL_ERROR = true
+	msg := fmt.Sprintf("%s:%d: %s: %s", *path, tok.Line, tok.Lexeme, reason)
+	panic(msg)
+}
+
 func RuntimeError(path *string, expr ast.Expr, reason string) error {
 	GLOBAL_ERROR = true
 	msg := fmt.Sprintf("%s: %s: %s\n", *path, expr, reason)
 	fmt.Printf(msg)
 	return errors.New(msg)
-}
-
-func ParsePanic(path *string, tok token.Token, reason string) error {
-	GLOBAL_ERROR = true
-	msg := fmt.Sprintf("%s:%d: %s: %s", *path, tok.Line, tok.Lexeme, reason)
-	panic(msg)
 }
