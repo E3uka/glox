@@ -13,7 +13,7 @@ type parser struct {
 	expr    ast.Expr
 }
 
-func NewRD(path *string, tokens *[]token.Token) (*parser, error) {
+func NewRdParser(path *string, tokens *[]token.Token) (*parser, error) {
 	parser := &parser{
 		path:    path,
 		tokens:  *tokens,

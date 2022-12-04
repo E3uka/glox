@@ -19,7 +19,7 @@ func New(path *string, source *string) (*lexer, error) {
 	lexer := &lexer{
 		path:    path,
 		source:  *source,
-		tokens:  []token.Token{},
+		tokens:  []token.Token{}, // TODO: use a channel to pipe lexed tokens
 		start:   0,
 		current: 0,
 		line:    1, // beginning line of file

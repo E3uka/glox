@@ -8,7 +8,7 @@ import (
 
 type pratt struct {
 	path    *string
-	tokens  []token.Token
+	tokens  []token.Token // TODO: read from channel to speed up ast formation
 	current int
 	expr    ast.Expr
 }
@@ -17,7 +17,7 @@ func (p *pratt) Expr() ast.Expr {
 	return p.expr
 }
 
-func NewPratt(path *string, tokens *[]token.Token) *pratt {
+func NewPrattParser(path *string, tokens *[]token.Token) *pratt {
 	pratt := &pratt{
 		path:    path,
 		tokens:  *tokens,

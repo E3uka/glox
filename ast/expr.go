@@ -6,7 +6,7 @@ import (
 )
 
 type Expr interface {
-	Accept(visitor ExprVisitor) interface{}
+	Evaluate(visitor ExprVisitor) interface{}
 }
 
 type BinaryExpr struct {
@@ -15,7 +15,7 @@ type BinaryExpr struct {
 	Rhs      Expr
 }
 
-func (b BinaryExpr) Accept(visitor ExprVisitor) interface{} {
+func (b BinaryExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitBinaryExpr(b)
 }
 
@@ -24,7 +24,7 @@ type GroupingExpr struct {
 }
 
 // a group uses parentheses to control execution order
-func (g GroupingExpr) Accept(visitor ExprVisitor) interface{} {
+func (g GroupingExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitGroupingExpr(g)
 }
 
@@ -32,7 +32,7 @@ type LiteralExpr struct {
 	Value interface{}
 }
 
-func (l LiteralExpr) Accept(visitor ExprVisitor) interface{} {
+func (l LiteralExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitLiteralExpr(l)
 }
 
@@ -41,7 +41,7 @@ type UnaryExpr struct {
 	Rhs      Expr
 }
 
-func (u UnaryExpr) Accept(visitor ExprVisitor) interface{} {
+func (u UnaryExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitUnaryExpr(u)
 }
 
@@ -60,7 +60,7 @@ type ExprVisitor interface {
 type AstPrinter struct{}
 
 func (a AstPrinter) Print(expr Expr) string {
-	return expr.Accept(a).(string)
+	return expr.Evaluate(a).(string)
 }
 
 func (a AstPrinter) VisitBinaryExpr(expr BinaryExpr) interface{} {
