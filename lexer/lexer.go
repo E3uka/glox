@@ -325,5 +325,14 @@ func (l *lexer) lex_identifier() {
 
 	value := l.source[l.start:l.current]
 	tok := token.Lookup(value)
-	l.add_token(tok)
+
+	if tok == token.NIL {
+		l.add_token_with_literal(tok, nil)
+	} else if tok == token.TRUE {
+		l.add_token_with_literal(tok, true)
+	} else if tok == token.FALSE {
+		l.add_token_with_literal(tok, false)
+	} else {
+		l.add_token(tok)
+	}
 }

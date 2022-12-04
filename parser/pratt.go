@@ -105,13 +105,12 @@ func init() {
 
 	null_deno[token.FLOAT] = nd_parse_literal
 	null_deno[token.STRING] = nd_parse_literal
+	null_deno[token.NIL] = nd_parse_literal
+	null_deno[token.TRUE] = nd_parse_literal
+	null_deno[token.FALSE] = nd_parse_literal
 
 	null_deno[token.SUB] = nd_parse_unary
 	null_deno[token.NOT] = nd_parse_unary
-
-	null_deno[token.TRUE] = nd_parse_identity
-	null_deno[token.FALSE] = nd_parse_identity
-	null_deno[token.NIL] = nd_parse_identity
 
 	null_deno[token.LPAREN] = nd_parse_grouping
 
@@ -130,15 +129,10 @@ func init() {
 	left_deno[token.DECRYBY] = ld_parse_binary
 	left_deno[token.MUL] = ld_parse_binary
 	left_deno[token.QUO] = ld_parse_binary
-
 }
 
 func nd_parse_literal(parser *pratt, tok token.Token) ast.Expr {
 	return ast.LiteralExpr{Value: tok.Literal}
-}
-
-func nd_parse_identity(parser *pratt, tok token.Token) ast.Expr {
-	return ast.LiteralExpr{Value: tok.Type}
 }
 
 func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
