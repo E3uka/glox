@@ -2,6 +2,7 @@ package ast
 
 import (
 	"glox/token"
+	"reflect"
 )
 
 type interpreter struct {
@@ -34,8 +35,25 @@ func (i *interpreter) VisitBinaryExpr(expr BinaryExpr) interface{} {
 		return lhs.(float64) * rhs.(float64)
 	case token.QUO:
 		return lhs.(float64) / rhs.(float64)
-	}
 
+	case token.INCRBY:
+		return lhs.(float64) + rhs.(float64)
+	case token.DECRYBY:
+		return lhs.(float64) - rhs.(float64)
+
+	case token.GTR:
+		return lhs.(float64) > rhs.(float64)
+	case token.GEQ:
+		return lhs.(float64) >= rhs.(float64)
+	case token.LSS:
+		return lhs.(float64) < rhs.(float64)
+	case token.LEQ:
+		return lhs.(float64) <= rhs.(float64)
+	case token.EQL:
+		return is_equal(lhs, rhs)
+	case token.NEQ:
+		return !is_equal(lhs, rhs)
+	}
 	return nil // unreachable
 }
 
@@ -52,6 +70,9 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 	switch expr.Operator {
 	case token.SUB:
 		return -rhs.(float64)
+	case token.NOT:
+		return !is_truth(rhs)
+
 	case token.INCR:
 		return rhs.(float64) + 1
 	case token.DECR:
@@ -59,6 +80,16 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 	default:
 		return nil // unreachable
 	}
+}
+
+func is_truth(expr interface{}) bool {
+	if expr == nil {
+		return false
+	}
+	if found_bool, ok := expr.(bool); ok {
+		return found_bool
+	}
+	return true
 }
 
 func instance_of_string(expr interface{}) bool {
@@ -69,4 +100,14 @@ func instance_of_string(expr interface{}) bool {
 func instance_of_float(expr interface{}) bool {
 	_, ok := expr.(float64)
 	return ok
+}
+
+func is_equal(left, right interface{}) bool {
+	if left == nil && right == nil {
+		return true
+	}
+	if left == nil {
+		return false
+	}
+	return reflect.DeepEqual(left, right)
 }
