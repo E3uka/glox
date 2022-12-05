@@ -45,11 +45,21 @@ func (u UnaryExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitUnaryExpr(u)
 }
 
+type StmtExpr struct {
+	Ident interface{}
+	Rhs   Expr
+}
+
+func (f StmtExpr) Evaluate(visitor ExprVisitor) interface{} {
+	return visitor.VisitStmtExpr(f)
+}
+
 type ExprVisitor interface {
 	VisitBinaryExpr(expr BinaryExpr) interface{}
 	VisitGroupingExpr(expr GroupingExpr) interface{}
 	VisitLiteralExpr(expr LiteralExpr) interface{}
 	VisitUnaryExpr(expr UnaryExpr) interface{}
+	VisitStmtExpr(expr StmtExpr) interface{}
 }
 
 // ==============================================================================
@@ -80,6 +90,10 @@ func (a AstPrinter) VisitLiteralExpr(expr LiteralExpr) interface{} {
 
 func (a AstPrinter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 	return a.parenthesize(expr.Operator.String(), expr.Rhs)
+}
+
+func (a AstPrinter) VisitStmtExpr(expr StmtExpr) interface{} {
+	return a.parenthesize(expr.Ident.(string)+" =", expr.Rhs)
 }
 
 // recursively traverses the tree by taking as argument a variadic list of

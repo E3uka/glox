@@ -19,7 +19,7 @@ func New(path *string, source *string) (*lexer, error) {
 	lexer := &lexer{
 		path:    path,
 		source:  *source,
-		tokens:  []token.Token{}, // TODO: use a channel to pipe lexed tokens
+		tokens:  []token.Token{},
 		start:   0,
 		current: 0,
 		line:    1, // beginning line of file
@@ -333,6 +333,6 @@ func (l *lexer) lex_identifier() {
 	} else if tok == token.FALSE {
 		l.add_token_with_literal(tok, false)
 	} else {
-		l.add_token(tok)
+		l.add_token_with_literal(tok, value)
 	}
 }

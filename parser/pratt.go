@@ -8,7 +8,7 @@ import (
 
 type pratt struct {
 	path    *string
-	tokens  []token.Token // TODO: read from channel to speed up ast formation
+	tokens  []token.Token
 	current int
 	expr    ast.Expr
 }
@@ -88,6 +88,8 @@ func init() {
 	null_deno = make(map[token.TOKEN_TYPE]func(*pratt, token.Token) ast.Expr)
 	left_deno = make(map[token.TOKEN_TYPE]func(*pratt, token.TOKEN_TYPE, ast.Expr) ast.Expr)
 
+	prec_map[token.LET] = LOWEST
+	prec_map[token.ASSIGN] = LOWEST
 	prec_map[token.EQL] = EQUALITY
 	prec_map[token.NEQ] = EQUALITY
 	prec_map[token.GTR] = LESSGREATER
@@ -102,6 +104,7 @@ func init() {
 	prec_map[token.DECRYBY] = SUB
 	prec_map[token.MUL] = MUL
 	prec_map[token.QUO] = QUO
+	prec_map[token.IDENT] = PRIMARY
 
 	null_deno[token.FLOAT] = nd_parse_literal
 	null_deno[token.STRING] = nd_parse_literal
@@ -113,6 +116,8 @@ func init() {
 	null_deno[token.NOT] = nd_parse_unary
 
 	null_deno[token.LPAREN] = nd_parse_grouping
+
+	null_deno[token.LET] = nd_parse_statement
 
 	left_deno[token.INCR] = ld_parse_unary
 	left_deno[token.DECR] = ld_parse_unary
@@ -148,6 +153,19 @@ func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
 func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 	expr := parser.parse_expression(UNARY)
 	return ast.UnaryExpr{Operator: tok.Type, Rhs: expr}
+}
+
+func nd_parse_statement(parser *pratt, tok token.Token) ast.Expr {
+	identifier := parser.peek().Literal
+	// step past the identifer to the assignment operator
+	parser.advance()
+	if parser.peek().Type != token.ASSIGN {
+		gloxError.ParsePanic(parser.path, tok, "expected assignment after IDENT")
+	}
+	// step past assignment operator
+	parser.advance()
+	expr := parser.parse_expression(prec_map[parser.peek().Type])
+	return ast.StmtExpr{Ident: identifier, Rhs: expr}
 }
 
 func ld_parse_unary(

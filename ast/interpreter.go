@@ -1,16 +1,18 @@
 package ast
 
 import (
+	"fmt"
 	"glox/token"
 	"reflect"
 )
 
 type interpreter struct {
-	ast Expr
+	ast  Expr
+	stmt map[string]interface{}
 }
 
 func NewInterpreter(ast Expr) *interpreter {
-	return &interpreter{ast}
+	return &interpreter{ast: ast, stmt: make(map[string]interface{})}
 }
 
 func (i *interpreter) Interpret() interface{} {
@@ -80,6 +82,13 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 	default:
 		return nil // unreachable
 	}
+}
+
+func (i *interpreter) VisitStmtExpr(expr StmtExpr) interface{} {
+	name := expr.Ident.(string)
+	rhs := expr.Rhs.Evaluate(i)
+	i.stmt[name] = rhs // add to identifier lookup table
+	return fmt.Sprintf("%v = %v", name, rhs)
 }
 
 func is_truth(expr interface{}) bool {
