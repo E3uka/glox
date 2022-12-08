@@ -18,14 +18,14 @@ func LexError(path *string, line int, reason string) error {
 
 func ParseError(path *string, tok token.Token, reason string) error {
 	GLOBAL_ERROR = true
-	msg := fmt.Sprintf("%s:%d: %s: %s\n", *path, tok.Line, tok.Lexeme, reason)
+	msg := fmt.Sprintf("%s:%d: %s: %s\n", *path, tok.Line, tok.Literal, reason)
 	fmt.Printf(msg)
 	return errors.New(msg)
 }
 
 func ParsePanic(path *string, tok token.Token, reason string) error {
 	GLOBAL_ERROR = true
-	msg := fmt.Sprintf("%s:%d: %s: %s", *path, tok.Line, tok.Lexeme, reason)
+	msg := fmt.Sprintf("%s:%d: %s: %s", *path, tok.Line, tok.Literal, reason)
 	panic(msg)
 }
 

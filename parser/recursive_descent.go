@@ -148,9 +148,9 @@ func (p *parser) primary() (ast.Expr, error) {
 		}
 		err = p.consume(
 			token.Token{
-				Type:   token.RPAREN,
-				Lexeme: token.RPAREN.String(),
-				Line:   p.current,
+				Type:    token.RPAREN,
+				Literal: struct{}{},
+				Line:    p.current,
 			},
 			"expected ')' after expression.",
 		)

@@ -171,13 +171,12 @@ parser:
 */
 type Token struct {
 	Type    TOKEN_TYPE
-	Lexeme  string
 	Literal interface{}
 	Line    int
 }
 
 func (tok Token) String() string {
-	return fmt.Sprintf("%s %s %s", tok.Type, tok.Lexeme, tok.Literal)
+	return fmt.Sprintf("%s %s", tok.Type, tok.Literal)
 }
 
 var keywords map[string]TOKEN_TYPE

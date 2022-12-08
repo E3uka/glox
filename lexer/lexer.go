@@ -58,14 +58,12 @@ func (l *lexer) init() error {
 
 	for !l.is_at_end() {
 		l.start = l.current
-		err = l.lex()
-		if err != nil {
+		if err = l.lex(); err != nil {
 			return err
 		}
 	}
 	eof := token.Token{
 		Type:    token.EOF,
-		Lexeme:  "",
 		Literal: struct{}{},
 		Line:    l.line, // append EOF at end of source file
 	}
@@ -263,10 +261,8 @@ func (l *lexer) add_token_with_literal(
 	tok_type token.TOKEN_TYPE,
 	literal interface{},
 ) {
-	text := l.source[l.start:l.current]
 	tok := token.Token{
 		Type:    tok_type,
-		Lexeme:  text,
 		Literal: literal,
 		Line:    l.line,
 	}
