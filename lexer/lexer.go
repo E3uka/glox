@@ -24,7 +24,6 @@ func New(path *string, source *string) (*lexer, error) {
 		current: 0,
 		line:    1, // beginning line of file
 	}
-
 	if err := lexer.init(); err != nil {
 		return nil, err
 	}
@@ -55,20 +54,21 @@ func (l lexer) is_alphanumeric(char rune) bool {
 
 func (l *lexer) init() error {
 	var err error
-
 	for !l.is_at_end() {
 		l.start = l.current
 		if err = l.lex(); err != nil {
 			return err
 		}
 	}
-	eof := token.Token{
-		Type:    token.EOF,
-		Literal: struct{}{},
-		Line:    l.line, // append EOF at end of source file
-	}
-	l.tokens = append(l.tokens, eof)
-
+	// append EOF token at end of source file
+	l.tokens = append(
+		l.tokens,
+		token.Token{
+			Type:    token.EOF,
+			Literal: struct{}{},
+			Line:    l.line,
+		},
+	)
 	return nil
 }
 
@@ -193,11 +193,9 @@ func (l *lexer) lex() error {
 					}
 				}
 			}
-
 			if l.is_at_end() {
 				return gloxError.LexError(l.path, l.line, "unterminated block comment")
 			}
-
 			// currently at the '/' end of newline char, step again and update
 			// start position to move past it.
 			l.step()
@@ -276,15 +274,11 @@ func (l *lexer) lex_string() error {
 		}
 		l.step()
 	}
-
 	if l.is_at_end() {
 		return gloxError.LexError(l.path, l.line, "unterminated string")
-
 	}
-
 	// step past the end of the string to the newline char
 	l.step()
-
 	// trim the surrounding quotes
 	value := l.source[l.start+1 : l.current-1]
 	l.add_token_with_literal(token.STRING, value)
@@ -295,18 +289,17 @@ func (l *lexer) lex_float() error {
 	for l.is_digit(l.peek()) {
 		l.step()
 	}
-
 	// look for the fractional part of the number
 	if l.peek() == '.' && l.is_digit(l.peek_next()) {
 		l.step() // consume the '.'
 	}
-
 	for l.is_digit(l.peek()) {
 		l.step()
 	}
 
 	value := l.source[l.start:l.current]
 	floatVal, err := strconv.ParseFloat(value, 64)
+
 	if err != nil {
 		return gloxError.LexError(l.path, l.line, "could not parse string value")
 	}

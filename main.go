@@ -22,7 +22,7 @@ func run() {
 		return
 	}
 	parser := parser.NewPrattParser(&GlobalPath, lexer.Tokens())
-	interpreter := ast.NewInterpreter(parser.Expr())
+	interpreter := ast.NewInterpreter(&GlobalPath, parser.Expr())
 	//fmt.Printf("%#v\n", parser.Expr())
 	fmt.Println(ast.AstPrinter{}.Print(parser.Expr()))
 	fmt.Println(interpreter.Interpret())
@@ -37,7 +37,10 @@ func main() {
 		GlobalPath = os.Args[1]
 		run()
 		if gloxError.GLOBAL_ERROR {
-			os.Exit(64)
+			os.Exit(65)
+		}
+		if gloxError.RUNTIME_ERROR {
+			os.Exit(70)
 		}
 	} else {
 		fmt.Println("expected at least one input file")

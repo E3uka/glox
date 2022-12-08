@@ -157,18 +157,6 @@ func (tt TOKEN_TYPE) String() string {
 	return s
 }
 
-/*
-TODO add information of line and character for both lexer and parser i.e.
-lexer:
-
-	l0 int
-	c0 int
-
-parser:
-
-	l1 int
-	c1 int
-*/
 type Token struct {
 	Type    TOKEN_TYPE
 	Literal interface{}
@@ -193,7 +181,6 @@ func init() {
 }
 
 // Lookup maps an identifier to its keyword token or IDENT TOKEN_TYPE.
-// keywords)
 func Lookup(ident string) TOKEN_TYPE {
 	if tok, is_keyword := keywords[ident]; is_keyword {
 		return tok

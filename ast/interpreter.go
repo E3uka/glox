@@ -2,17 +2,23 @@ package ast
 
 import (
 	"fmt"
+	gloxError "glox/error"
 	"glox/token"
 	"reflect"
 )
 
 type interpreter struct {
+	path *string
 	ast  Expr
 	stmt map[string]interface{}
 }
 
-func NewInterpreter(ast Expr) *interpreter {
-	return &interpreter{ast: ast, stmt: make(map[string]interface{})}
+func NewInterpreter(path *string, ast Expr) *interpreter {
+	return &interpreter{
+		path: path,
+		ast:  ast,
+		stmt: make(map[string]interface{}),
+	}
 }
 
 func (i *interpreter) Interpret() interface{} {
@@ -25,6 +31,7 @@ func (i *interpreter) VisitBinaryExpr(expr BinaryExpr) interface{} {
 	rhs := expr.Rhs.Evaluate(i)
 	switch expr.Operator {
 	case token.SUB:
+		i.check_float_operands(expr.Operator, lhs, rhs)
 		return lhs.(float64) - rhs.(float64)
 	case token.ADD:
 		if instance_of_float(lhs) && instance_of_float(rhs) {
@@ -33,9 +40,17 @@ func (i *interpreter) VisitBinaryExpr(expr BinaryExpr) interface{} {
 		if instance_of_string(lhs) && instance_of_string(rhs) {
 			return lhs.(string) + rhs.(string)
 		}
+		gloxError.RuntimeError(
+			i.path,
+			"operands must both be either float64 or string",
+			lhs,
+			rhs,
+		)
 	case token.MUL:
+		i.check_float_operands(expr.Operator, lhs, rhs)
 		return lhs.(float64) * rhs.(float64)
 	case token.QUO:
+		i.check_float_operands(expr.Operator, lhs, rhs)
 		return lhs.(float64) / rhs.(float64)
 
 	case token.INCRBY:
@@ -44,12 +59,16 @@ func (i *interpreter) VisitBinaryExpr(expr BinaryExpr) interface{} {
 		return lhs.(float64) - rhs.(float64)
 
 	case token.GTR:
+		i.check_float_operands(expr.Operator, lhs, rhs)
 		return lhs.(float64) > rhs.(float64)
 	case token.GEQ:
+		i.check_float_operands(expr.Operator, lhs, rhs)
 		return lhs.(float64) >= rhs.(float64)
 	case token.LSS:
+		i.check_float_operands(expr.Operator, lhs, rhs)
 		return lhs.(float64) < rhs.(float64)
 	case token.LEQ:
+		i.check_float_operands(expr.Operator, lhs, rhs)
 		return lhs.(float64) <= rhs.(float64)
 	case token.EQL:
 		return is_equal(lhs, rhs)
@@ -71,6 +90,7 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 	rhs := expr.Rhs.Evaluate(i)
 	switch expr.Operator {
 	case token.SUB:
+		i.check_float_operand(expr.Operator, rhs)
 		return -rhs.(float64)
 	case token.NOT:
 		return !is_truth(rhs)
@@ -119,4 +139,28 @@ func is_equal(left, right interface{}) bool {
 		return false
 	}
 	return reflect.DeepEqual(left, right)
+}
+
+func (i *interpreter) check_float_operand(
+	operator token.TOKEN_TYPE,
+	operand interface{},
+) {
+	if _, ok := operand.(float64); ok {
+		return
+	}
+	gloxError.RuntimeError(i.path, "operand must be float64", operand)
+}
+
+func (i *interpreter) check_float_operands(
+	operator token.TOKEN_TYPE,
+	left interface{},
+	right interface{},
+) {
+	_, is_left_float := left.(float64)
+	_, is_right_float := right.(float64)
+
+	if is_left_float && is_right_float {
+		return
+	}
+	gloxError.RuntimeError(i.path, "operands must both be float64", left, right)
 }
