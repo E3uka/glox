@@ -1,8 +1,8 @@
 package parser
 
 import (
+	"errors"
 	"glox/ast"
-	gloxError "glox/error"
 	"glox/token"
 )
 
@@ -157,14 +157,7 @@ func (p *parser) primary() (ast.Expr, error) {
 		return ast.GroupingExpr{Expression: expr}, err
 	}
 
-	return nil, gloxError.ParseError(
-		p.path,
-		token.Token{
-			Type: token.ILLEGAL,
-			Line: p.current,
-		},
-		"unrecognised token",
-	)
+	return nil, errors.New("unrecognised token")
 }
 
 func (p *parser) match(tok_types ...token.TOKEN_TYPE) bool {
@@ -182,7 +175,7 @@ func (p *parser) consume(token token.Token, msg string) error {
 		p.advance()
 		return nil
 	}
-	return gloxError.ParseError(p.path, token, msg)
+	return errors.New("unrecognised token")
 }
 
 func (p *parser) synchronize() {
