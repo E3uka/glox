@@ -63,7 +63,6 @@ const (
 	keyword_beg // Keywords
 	CLASS
 	STRUCT
-	ELSE
 	FALSE
 	FN
 	FOR
@@ -129,7 +128,6 @@ var tokens = [...]string{
 
 	CLASS:  "class",
 	STRUCT: "struct",
-	ELSE:   "else",
 	FALSE:  "false",
 	FN:     "fn",
 	FOR:    "for",
