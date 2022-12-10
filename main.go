@@ -27,6 +27,7 @@ func run() {
 	//fmt.Printf("%#v\n", expr)
 	//fmt.Println(ast.AstPrinter{}.Print(expr))
 	interpreter.Interpret()
+	//fmt.Printf("%#v\n", interpreter)
 }
 
 // TODO: implement a REPL later.
@@ -37,7 +38,7 @@ func main() {
 	} else if len(os.Args) == 2 {
 		GlobalPath = os.Args[1]
 		run()
-		if gloxError.GLOBAL_ERROR {
+		if gloxError.GLOBAL_ERROR || gloxError.PARSE_ERROR {
 			os.Exit(65)
 		}
 		if gloxError.RUNTIME_ERROR {

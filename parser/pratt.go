@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"glox/ast"
 	gloxError "glox/error"
 	"glox/token"
@@ -32,11 +33,18 @@ func (p *pratt) parse_statement_expression(
 	cur_prec precedence,
 ) []ast.StatementExpr {
 	var statement []ast.StatementExpr
-
 	for !p.isAtEnd() {
-		statement = append(statement, nd_parse_many_statement(p, p.peek()))
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					gloxError.ParsePanicRecover(fmt.Sprint(r))
+					handle_panic(p)
+				}
+			}()
+			stmt := nd_parse_many_statement(p, p.peek())
+			statement = append(statement, stmt)
+		}()
 	}
-
 	return statement
 }
 
@@ -118,6 +126,12 @@ func init() {
 	null_deno[token.NIL] = nd_parse_literal
 	null_deno[token.TRUE] = nd_parse_literal
 	null_deno[token.FALSE] = nd_parse_literal
+
+	// TODO handle edge case where an error has appeared with a grouping error
+	// TODO potentially a counter used for open groups
+
+	// TODO add logic for statements next so nil dereference is not thrown
+	// null_deno[token.IDENT] = nd_parse_statement
 
 	null_deno[token.SUB] = nd_parse_unary
 	null_deno[token.NOT] = nd_parse_unary
@@ -215,4 +229,20 @@ func ld_parse_binary(
 	parser.advance()
 	expr := parser.parse_expression(op_prec)
 	return ast.BinaryExpr{Lhs: lhs, Operator: op, Rhs: expr}
+}
+
+// skips past next tokens until the next statement boundary
+func handle_panic(parser *pratt) {
+	parser.advance()
+	for !parser.isAtEnd() {
+		if parser.peek().Type == token.SEMICOLON {
+			// found boundary of next statement
+			return
+		}
+		switch parser.peek().Type {
+		case token.CLASS, token.STRUCT, token.FOR, token.IF, token.LET,
+			token.RETURN, token.WHILE:
+			return
+		}
+	}
 }
