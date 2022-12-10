@@ -38,7 +38,7 @@ func (p *pratt) parse_statement_expression(
 			defer func() {
 				if r := recover(); r != nil {
 					gloxError.ParsePanicRecover(fmt.Sprint(r))
-					handle_panic(p)
+					sync_next_stmt(p)
 				}
 			}()
 			stmt := nd_parse_many_statement(p, p.peek())
@@ -127,11 +127,8 @@ func init() {
 	null_deno[token.TRUE] = nd_parse_literal
 	null_deno[token.FALSE] = nd_parse_literal
 
-	// TODO handle edge case where an error has appeared with a grouping error
-	// TODO potentially a counter used for open groups
-
 	// TODO add logic for statements next so nil dereference is not thrown
-	// null_deno[token.IDENT] = nd_parse_statement
+	// null_deno[token.IDENT] = nd_parse_ident
 
 	null_deno[token.SUB] = nd_parse_unary
 	null_deno[token.NOT] = nd_parse_unary
@@ -177,7 +174,7 @@ func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
-	// initial advance to step to step past let keyword to the identifer
+	// step past let keyword to the identifer
 	parser.advance()
 	identifier := parser.peek().Literal
 	// step past the identifer and verify assignment operator present
@@ -231,12 +228,11 @@ func ld_parse_binary(
 	return ast.BinaryExpr{Lhs: lhs, Operator: op, Rhs: expr}
 }
 
-// skips past next tokens until the next statement boundary
-func handle_panic(parser *pratt) {
+func sync_next_stmt(parser *pratt) {
 	parser.advance()
 	for !parser.isAtEnd() {
 		if parser.peek().Type == token.SEMICOLON {
-			// found boundary of next statement
+			// already at next statement boundary
 			return
 		}
 		switch parser.peek().Type {
@@ -244,5 +240,7 @@ func handle_panic(parser *pratt) {
 			token.RETURN, token.WHILE:
 			return
 		}
+		// go past current token until boundary is found
+		parser.advance()
 	}
 }
