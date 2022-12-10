@@ -81,9 +81,7 @@ func (l *lexer) lex() error {
 		break
 
 	// ignore the following
-	case ' ':
-	case '\r':
-	case '\t':
+	case ' ', '\r', '\t':
 
 	// single character lexemes
 	case '(':
