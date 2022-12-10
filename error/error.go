@@ -6,12 +6,12 @@ import (
 	"glox/token"
 )
 
-var GLOBAL_ERROR bool = false
+var LEX_ERROR bool = false
 var PARSE_ERROR bool = false
 var RUNTIME_ERROR bool = false
 
 func LexError(path *string, line int, reason string) error {
-	GLOBAL_ERROR = true
+	LEX_ERROR = true
 	msg := fmt.Sprintf("%s:%d: %s\n", *path, line, reason)
 	fmt.Printf(msg)
 	return errors.New(msg)
@@ -27,8 +27,12 @@ func ParsePanicRecover(reason string) {
 	fmt.Println(reason)
 }
 
-func RuntimeError(path *string, reason string, expr ...interface{}) {
-	RUNTIME_ERROR = true
-	msg := fmt.Sprintf("%s: %v: %s\n", *path, expr, reason)
+func RuntimePanic(path *string, reason string, expr ...interface{}) {
+	msg := fmt.Sprintf("%s: %v: %s", *path, expr, reason)
 	panic(msg)
+}
+
+func RuntimePanicRecover(reason string) {
+	RUNTIME_ERROR = true
+	fmt.Println(reason)
 }
