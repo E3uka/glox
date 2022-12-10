@@ -13,10 +13,6 @@ type pratt struct {
 	expr    ast.Expr
 }
 
-func (p *pratt) Expr() ast.Expr {
-	return p.expr
-}
-
 func NewPrattParser(path *string, tokens *[]token.Token) *pratt {
 	pratt := &pratt{
 		path:    path,
@@ -25,12 +21,11 @@ func NewPrattParser(path *string, tokens *[]token.Token) *pratt {
 		expr:    nil,
 	}
 
-	pratt.init()
 	return pratt
 }
 
-func (p *pratt) init() {
-	p.expr = p.parse_expression(LOWEST)
+func (p *pratt) Parse() ast.Expr {
+	return p.parse_expression(LOWEST)
 }
 
 func (p *pratt) parse_expression(cur_prec precedence) ast.Expr {
@@ -165,7 +160,7 @@ func nd_parse_statement(parser *pratt, tok token.Token) ast.Expr {
 	// step past assignment operator
 	parser.advance()
 	expr := parser.parse_expression(prec_map[parser.peek().Type])
-	return ast.StmtExpr{Ident: identifier, Rhs: expr}
+	return ast.StatementExpr{Ident: identifier, Rhs: expr}
 }
 
 func ld_parse_unary(

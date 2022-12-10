@@ -31,6 +31,6 @@ func ParsePanic(path *string, tok token.Token, reason string) {
 
 func RuntimeError(path *string, reason string, expr ...interface{}) {
 	RUNTIME_ERROR = true
-	msg := fmt.Sprintf("%s: %v: %s\n", *path, expr, reason)
+	msg := fmt.Sprintf("%s: %v: %s", *path, expr, reason)
 	panic(msg)
 }

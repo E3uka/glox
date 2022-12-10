@@ -22,9 +22,10 @@ func run() {
 		return
 	}
 	parser := parser.NewPrattParser(&GlobalPath, lexer.Tokens())
-	interpreter := ast.NewInterpreter(&GlobalPath, parser.Expr())
-	//fmt.Printf("%#v\n", parser.Expr())
-	fmt.Println(ast.AstPrinter{}.Print(parser.Expr()))
+	expr := parser.Parse()
+	interpreter := ast.NewInterpreter(&GlobalPath, expr)
+	//fmt.Printf("%#v\n", expr)
+	fmt.Println(ast.AstPrinter{}.Print(expr))
 	fmt.Println(interpreter.Interpret())
 }
 

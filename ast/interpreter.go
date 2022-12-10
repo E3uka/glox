@@ -104,7 +104,7 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 	}
 }
 
-func (i *interpreter) VisitStmtExpr(expr StmtExpr) interface{} {
+func (i *interpreter) VisitStatementExpr(expr StatementExpr) interface{} {
 	name := expr.Ident.(string)
 	rhs := expr.Rhs.Evaluate(i)
 	i.stmt[name] = rhs // add to identifier lookup table
@@ -138,6 +138,7 @@ func is_equal(left, right interface{}) bool {
 	if left == nil {
 		return false
 	}
+	// lean on go implementation of equality
 	return reflect.DeepEqual(left, right)
 }
 
@@ -162,5 +163,10 @@ func (i *interpreter) check_float_operands(
 	if is_left_float && is_right_float {
 		return
 	}
-	gloxError.RuntimeError(i.path, "operands must both be float64", left, right)
+	gloxError.RuntimeError(
+		i.path,
+		"operands must both be float64",
+		left,
+		right,
+	)
 }

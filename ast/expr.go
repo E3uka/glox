@@ -45,13 +45,13 @@ func (u UnaryExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitUnaryExpr(u)
 }
 
-type StmtExpr struct {
+type StatementExpr struct {
 	Ident interface{}
 	Rhs   Expr
 }
 
-func (f StmtExpr) Evaluate(visitor ExprVisitor) interface{} {
-	return visitor.VisitStmtExpr(f)
+func (f StatementExpr) Evaluate(visitor ExprVisitor) interface{} {
+	return visitor.VisitStatementExpr(f)
 }
 
 type ExprVisitor interface {
@@ -59,7 +59,7 @@ type ExprVisitor interface {
 	VisitGroupingExpr(expr GroupingExpr) interface{}
 	VisitLiteralExpr(expr LiteralExpr) interface{}
 	VisitUnaryExpr(expr UnaryExpr) interface{}
-	VisitStmtExpr(expr StmtExpr) interface{}
+	VisitStatementExpr(expr StatementExpr) interface{}
 }
 
 // ==============================================================================
@@ -92,7 +92,7 @@ func (a AstPrinter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 	return a.parenthesize(expr.Operator.String(), expr.Rhs)
 }
 
-func (a AstPrinter) VisitStmtExpr(expr StmtExpr) interface{} {
+func (a AstPrinter) VisitStatementExpr(expr StatementExpr) interface{} {
 	return a.parenthesize(expr.Ident.(string)+" =", expr.Rhs)
 }
 
