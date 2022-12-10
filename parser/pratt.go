@@ -24,8 +24,20 @@ func NewPrattParser(path *string, tokens *[]token.Token) *pratt {
 	return pratt
 }
 
-func (p *pratt) Parse() ast.Expr {
-	return p.parse_expression(LOWEST)
+func (p *pratt) Parse() []ast.StatementExpr {
+	return p.parse_statement_expression(LOWEST)
+}
+
+func (p *pratt) parse_statement_expression(
+	cur_prec precedence,
+) []ast.StatementExpr {
+	var statement []ast.StatementExpr
+
+	for !p.isAtEnd() {
+		statement = append(statement, nd_parse_many_statement(p, p.peek()))
+	}
+
+	return statement
 }
 
 func (p *pratt) parse_expression(cur_prec precedence) ast.Expr {
@@ -148,6 +160,26 @@ func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
 func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 	expr := parser.parse_expression(UNARY)
 	return ast.UnaryExpr{Operator: tok.Type, Rhs: expr}
+}
+
+func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
+	// initial advance to step to step past let keyword to the identifer
+	parser.advance()
+	identifier := parser.peek().Literal
+	// step past the identifer and verify assignment operator present
+	parser.advance()
+	if parser.peek().Type != token.ASSIGN {
+		gloxError.ParsePanic(parser.path, tok, "expected assignment after IDENT")
+	}
+	// step past assignment operator
+	parser.advance()
+	expr := parser.parse_expression(prec_map[parser.peek().Type])
+	// step past the ';'
+	if parser.peek().Type != token.SEMICOLON {
+		gloxError.ParsePanic(parser.path, tok, "expected ';'")
+	}
+	parser.advance()
+	return ast.StatementExpr{Ident: identifier, Rhs: expr}
 }
 
 func nd_parse_statement(parser *pratt, tok token.Token) ast.Expr {

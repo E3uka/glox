@@ -8,22 +8,25 @@ import (
 )
 
 type interpreter struct {
-	path *string
-	ast  Expr
-	stmt map[string]interface{}
+	path       *string
+	stmt_exprs []StatementExpr
+	stmts      map[interface{}]interface{}
 }
 
-func NewInterpreter(path *string, ast Expr) *interpreter {
+func NewInterpreter(path *string, stmt_exprs []StatementExpr) *interpreter {
 	return &interpreter{
-		path: path,
-		ast:  ast,
-		stmt: make(map[string]interface{}),
+		path:       path,
+		stmt_exprs: stmt_exprs,
+		stmts:      make(map[interface{}]interface{}),
 	}
 }
 
-func (i *interpreter) Interpret() interface{} {
-	value := i.ast.Evaluate(i)
-	return value
+func (i *interpreter) Interpret() {
+	for _, stmt := range i.stmt_exprs {
+		value := stmt.Rhs.Evaluate(i)
+		i.stmts[stmt.Ident] = value
+		fmt.Printf("%v = %v\n", stmt.Ident, value)
+	}
 }
 
 func (i *interpreter) VisitBinaryExpr(expr BinaryExpr) interface{} {
@@ -105,10 +108,8 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 }
 
 func (i *interpreter) VisitStatementExpr(expr StatementExpr) interface{} {
-	name := expr.Ident.(string)
-	rhs := expr.Rhs.Evaluate(i)
-	i.stmt[name] = rhs // add to identifier lookup table
-	return fmt.Sprintf("%v = %v", name, rhs)
+	fmt.Println("visit statment expr")
+	return nil
 }
 
 func is_truth(expr interface{}) bool {

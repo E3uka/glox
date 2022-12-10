@@ -54,6 +54,11 @@ func (f StatementExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitStatementExpr(f)
 }
 
+type VariableExpr struct {
+	Ident       interface{}
+	Initializer Expr
+}
+
 type ExprVisitor interface {
 	VisitBinaryExpr(expr BinaryExpr) interface{}
 	VisitGroupingExpr(expr GroupingExpr) interface{}

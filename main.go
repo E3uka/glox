@@ -25,8 +25,8 @@ func run() {
 	expr := parser.Parse()
 	interpreter := ast.NewInterpreter(&GlobalPath, expr)
 	//fmt.Printf("%#v\n", expr)
-	fmt.Println(ast.AstPrinter{}.Print(expr))
-	fmt.Println(interpreter.Interpret())
+	//fmt.Println(ast.AstPrinter{}.Print(expr))
+	interpreter.Interpret()
 }
 
 // TODO: implement a REPL later.
