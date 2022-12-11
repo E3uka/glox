@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"fmt"
 	"glox/token"
 )
 
@@ -36,15 +35,6 @@ func (l LiteralExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitLiteralExpr(l)
 }
 
-type UnaryExpr struct {
-	Operator token.TOKEN_TYPE
-	Rhs      Expr
-}
-
-func (u UnaryExpr) Evaluate(visitor ExprVisitor) interface{} {
-	return visitor.VisitUnaryExpr(u)
-}
-
 type StatementExpr struct {
 	Ident interface{}
 	Rhs   Expr
@@ -54,19 +44,33 @@ func (f StatementExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitStatementExpr(f)
 }
 
+type UnaryExpr struct {
+	Operator token.TOKEN_TYPE
+	Rhs      Expr
+}
+
+func (u UnaryExpr) Evaluate(visitor ExprVisitor) interface{} {
+	return visitor.VisitUnaryExpr(u)
+}
+
 type VariableExpr struct {
-	Ident       interface{}
-	Initializer Expr
+	Ident Expr
+}
+
+func (v VariableExpr) Evaluate(visitor ExprVisitor) interface{} {
+	return visitor.VisitVariableExpr(v)
 }
 
 type ExprVisitor interface {
 	VisitBinaryExpr(expr BinaryExpr) interface{}
 	VisitGroupingExpr(expr GroupingExpr) interface{}
 	VisitLiteralExpr(expr LiteralExpr) interface{}
-	VisitUnaryExpr(expr UnaryExpr) interface{}
 	VisitStatementExpr(expr StatementExpr) interface{}
+	VisitUnaryExpr(expr UnaryExpr) interface{}
+	VisitVariableExpr(expr VariableExpr) interface{}
 }
 
+/*
 // ==============================================================================
 //
 //	PRINTING PURPOSES ONLY
@@ -113,3 +117,4 @@ func (a AstPrinter) parenthesize(name string, exprs ...Expr) string {
 	str += ")"
 	return str
 }
+*/

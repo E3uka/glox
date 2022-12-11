@@ -130,9 +130,7 @@ func init() {
 
 	null_deno[token.LPAREN] = nd_parse_grouping
 
-	// TODO add logic for statements next so nil dereference is not thrown
-	// should be a runtime error if the identity does not resolve
-	// null_deno[token.IDENT] = nd_parse_ident
+	null_deno[token.IDENT] = nd_parse_ident
 
 	null_deno[token.FALSE] = nd_parse_literal
 	null_deno[token.FLOAT] = nd_parse_literal
@@ -162,6 +160,11 @@ func init() {
 	left_deno[token.SUB] = ld_parse_binary
 }
 
+func nd_parse_ident(parser *pratt, tok token.Token) ast.Expr {
+	// identities resolve to a literal expression
+	return ast.VariableExpr{Ident: ast.LiteralExpr{Value: tok.Literal}}
+}
+
 func nd_parse_literal(parser *pratt, tok token.Token) ast.Expr {
 	return ast.LiteralExpr{Value: tok.Literal}
 }
@@ -182,7 +185,7 @@ func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
-	// step past let keyword to the identifer
+	// step past 'let' keyword to the identifer
 	parser.advance()
 	identifier := parser.peek().Literal
 	// step past the identifer and verify assignment operator present
@@ -190,13 +193,26 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 	if parser.peek().Type != token.ASSIGN {
 		gloxError.ParsePanic(parser.path, tok, "expected assignment after IDENT")
 	}
-	// step past assignment operator
+	// step past assignment operator and parse the subexpression
 	parser.advance()
 	expr := parser.parse_expression(prec_map[parser.peek().Type])
-	// step past the ';'
-	if parser.peek().Type != token.SEMICOLON {
-		gloxError.ParsePanic(parser.path, tok, "expected ';'")
+	// continue parsing until we reach end statement boundary ';'
+	for parser.peek().Type != token.SEMICOLON {
+		if parser.isAtEnd() {
+			gloxError.ParsePanic(parser.path, tok, "expected ';'")
+		}
+		// state left denotation binary TODO: figure out why
+		switch parser.peek().Type {
+		case token.ADD, token.DECRYBY, token.EQL, token.GEQ, token.GTR,
+			token.INCRBY, token.LEQ, token.LSS, token.MUL, token.NEQ, token.QUO,
+			token.SUB:
+			expr = ld_parse_binary(parser, parser.peek().Type, expr)
+		default:
+			expr = parser.parse_expression(prec_map[parser.peek().Type])
+
+		}
 	}
+	// step past the ';'
 	parser.advance()
 	return ast.StatementExpr{Ident: identifier, Rhs: expr}
 }

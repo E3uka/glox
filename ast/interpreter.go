@@ -93,8 +93,13 @@ func (i *interpreter) VisitGroupingExpr(expr GroupingExpr) interface{} {
 
 func (i *interpreter) VisitLiteralExpr(expr LiteralExpr) interface{} {
 	return expr.Value
-
 }
+
+func (i *interpreter) VisitStatementExpr(expr StatementExpr) interface{} {
+	expr.Rhs.Evaluate(i)
+	return nil
+}
+
 func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 	rhs := expr.Rhs.Evaluate(i)
 	switch expr.Operator {
@@ -113,9 +118,9 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 	}
 }
 
-func (i *interpreter) VisitStatementExpr(expr StatementExpr) interface{} {
-	fmt.Println("visit statment expr")
-	return nil
+func (i *interpreter) VisitVariableExpr(expr VariableExpr) interface{} {
+	// do a lookup to see if the value exists
+	return i.stmts[expr.Ident.Evaluate(i)]
 }
 
 func is_truth(expr interface{}) bool {
