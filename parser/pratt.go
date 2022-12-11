@@ -228,8 +228,16 @@ func parse_statement_identifier(
 	identifier := parser.peek().Literal
 	// step past the identifier
 	parser.advance()
-	// handle empty assign; must be able to mutate empty assign
+	// handle empty assign;
 	if parser.peek().Type == token.SEMICOLON {
+		if !mutable {
+			gloxError.ParsePanic(
+				parser.path,
+				tok,
+				"cannot create immutable and uninitialized variable",
+			)
+		}
+		// step past 'mut' keyword
 		parser.advance()
 		return ast.StatementExpr{
 			Ident:   identifier,
