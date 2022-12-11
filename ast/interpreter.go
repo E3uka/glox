@@ -10,14 +10,16 @@ import (
 type interpreter struct {
 	path       *string
 	stmt_exprs []StatementExpr
-	stmts      map[interface{}]interface{}
+	prog_stmt  map[interface{}]interface{}
+	mutable    map[interface{}]bool
 }
 
 func NewInterpreter(path *string, stmt_exprs []StatementExpr) *interpreter {
 	return &interpreter{
 		path:       path,
 		stmt_exprs: stmt_exprs,
-		stmts:      make(map[interface{}]interface{}),
+		prog_stmt:  make(map[interface{}]interface{}),
+		mutable:    make(map[interface{}]bool),
 	}
 }
 
@@ -29,9 +31,26 @@ func (i *interpreter) Interpret() {
 				gloxError.ParsePanicRecover(fmt.Sprint(r))
 			}
 		}()
-		value := stmt.Rhs.Evaluate(i)
-		i.stmts[stmt.Ident] = value
-		fmt.Printf("%v = %v\n", stmt.Ident, value)
+
+		// handle identifier occurences and mutability constraints
+		if _, exists := i.prog_stmt[stmt.Ident]; !exists {
+			i.mutable[stmt.Ident] = stmt.Mutable
+			value := stmt.Rhs.Evaluate(i)
+			i.prog_stmt[stmt.Ident] = value
+			fmt.Printf("%v = %v\n", stmt.Ident, value)
+
+		} else {
+			if !i.mutable[stmt.Ident] {
+				gloxError.RuntimePanic(
+					i.path,
+					"cannot assign twice to non-mutable variable",
+					stmt.Ident,
+				)
+			}
+			value := stmt.Rhs.Evaluate(i)
+			i.prog_stmt[stmt.Ident] = value
+			fmt.Printf("%v = %v\n", stmt.Ident, value)
+		}
 	}
 }
 
@@ -120,7 +139,7 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 
 func (i *interpreter) VisitVariableExpr(expr VariableExpr) interface{} {
 	// do a lookup to see if the value exists
-	return i.stmts[expr.Ident.Evaluate(i)]
+	return i.prog_stmt[expr.Ident.Evaluate(i)]
 }
 
 func is_truth(expr interface{}) bool {

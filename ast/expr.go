@@ -36,8 +36,9 @@ func (l LiteralExpr) Evaluate(visitor ExprVisitor) interface{} {
 }
 
 type StatementExpr struct {
-	Ident interface{}
-	Rhs   Expr
+	Ident   interface{}
+	Rhs     Expr
+	Mutable bool
 }
 
 func (f StatementExpr) Evaluate(visitor ExprVisitor) interface{} {

@@ -185,13 +185,23 @@ func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
-	// step past 'let' keyword to the identifer
+	mutable := false
+	// step past 'let' keyword to the next token
 	parser.advance()
+	// handle 'mut' keyword
+	if parser.peek().Type == token.MUT {
+		mutable = true
+		parser.advance()
+	}
+	// verify next token is a legal identifier
+	if parser.peek().Type != token.IDENT {
+		gloxError.ParsePanic(parser.path, parser.peek(), "expected identifer")
+	}
 	identifier := parser.peek().Literal
 	// step past the identifer and verify assignment operator present
 	parser.advance()
 	if parser.peek().Type != token.ASSIGN {
-		gloxError.ParsePanic(parser.path, tok, "expected assignment after IDENT")
+		gloxError.ParsePanic(parser.path, tok, "expected assignment after identifier")
 	}
 	// step past assignment operator and parse the subexpression with the
 	// the lowest precedence
@@ -206,7 +216,7 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 	}
 	// step past the ';'
 	parser.advance()
-	return ast.StatementExpr{Ident: identifier, Rhs: expr}
+	return ast.StatementExpr{Ident: identifier, Rhs: expr, Mutable: mutable}
 }
 
 func nd_parse_statement(parser *pratt, tok token.Token) ast.Expr {
@@ -214,7 +224,7 @@ func nd_parse_statement(parser *pratt, tok token.Token) ast.Expr {
 	// step past the identifer to the assignment operator
 	parser.advance()
 	if parser.peek().Type != token.ASSIGN {
-		gloxError.ParsePanic(parser.path, tok, "expected assignment after IDENT")
+		gloxError.ParsePanic(parser.path, tok, "expected assignment after identifier")
 	}
 	// step past assignment operator
 	parser.advance()
