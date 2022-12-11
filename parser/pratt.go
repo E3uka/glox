@@ -193,24 +193,16 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 	if parser.peek().Type != token.ASSIGN {
 		gloxError.ParsePanic(parser.path, tok, "expected assignment after IDENT")
 	}
-	// step past assignment operator and parse the subexpression
+	// step past assignment operator and parse the subexpression with the
+	// the lowest precedence
 	parser.advance()
-	expr := parser.parse_expression(prec_map[parser.peek().Type])
-	// continue parsing until we reach end statement boundary ';'
+	expr := parser.parse_expression(LOWEST)
+	// continue parsing until end statement boundary ';'
 	for parser.peek().Type != token.SEMICOLON {
 		if parser.isAtEnd() {
 			gloxError.ParsePanic(parser.path, tok, "expected ';'")
 		}
-		// state left denotation binary TODO: figure out why
-		switch parser.peek().Type {
-		case token.ADD, token.DECRYBY, token.EQL, token.GEQ, token.GTR,
-			token.INCRBY, token.LEQ, token.LSS, token.MUL, token.NEQ, token.QUO,
-			token.SUB:
-			expr = ld_parse_binary(parser, parser.peek().Type, expr)
-		default:
-			expr = parser.parse_expression(prec_map[parser.peek().Type])
-
-		}
+		expr = parser.parse_expression(prec_map[parser.peek().Type])
 	}
 	// step past the ';'
 	parser.advance()
