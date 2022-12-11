@@ -69,6 +69,7 @@ const (
 
 	IF
 	LET
+	MUT
 	NIL
 	PRINT
 
@@ -133,6 +134,7 @@ var tokens = [...]string{
 	FOR:    "for",
 
 	IF:    "if",
+	MUT:   "mut",
 	LET:   "let",
 	NIL:   "nil",
 	PRINT: "print",
