@@ -138,8 +138,6 @@ func init() {
 	null_deno[token.STRING] = nd_parse_literal
 	null_deno[token.TRUE] = nd_parse_literal
 
-	null_deno[token.LET] = nd_parse_statement
-
 	null_deno[token.NOT] = nd_parse_unary
 	null_deno[token.SUB] = nd_parse_unary
 
@@ -186,6 +184,10 @@ func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 
 func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 	mutable := false
+	// handle reassignment without let operator
+	if parser.peek().Type != token.LET {
+		return parse_statement_identifier(parser, tok, true)
+	}
 	// step past 'let' keyword to the next token
 	parser.advance()
 	// handle 'mut' keyword
@@ -197,51 +199,10 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 	if parser.peek().Type != token.IDENT {
 		gloxError.ParsePanic(parser.path, parser.peek(), "expected identifer")
 	}
-	identifier := parser.peek().Literal
-	// step past the identifier
-	parser.advance()
-	// handle empty assign; must be able to mutate empty assign
-	if parser.peek().Type == token.SEMICOLON {
-		parser.advance()
-		return ast.StatementExpr{
-			Ident:   identifier,
-			Rhs:     ast.LiteralExpr{Value: nil},
-			Mutable: true,
-		}
-	}
-	if parser.peek().Type != token.ASSIGN {
-		gloxError.ParsePanic(parser.path, tok, "expected assignment after identifier")
-	}
-	// step past assignment operator and parse the subexpression with the
-	// the lowest precedence, parsing continues until end statement boundary
-	// has been reached.
-	parser.advance()
-	expr := parser.parse_expression(LOWEST)
-	if parser.isAtEnd() {
-		gloxError.ParsePanic(parser.path, tok, "expected ';'")
-	}
-	parser.advance()
-	return ast.StatementExpr{Ident: identifier, Rhs: expr, Mutable: mutable}
+	return parse_statement_identifier(parser, tok, mutable)
 }
 
-func nd_parse_statement(parser *pratt, tok token.Token) ast.Expr {
-	identifier := parser.peek().Literal
-	// step past the identifer to the assignment operator
-	parser.advance()
-	if parser.peek().Type != token.ASSIGN {
-		gloxError.ParsePanic(parser.path, tok, "expected assignment after identifier")
-	}
-	// step past assignment operator
-	parser.advance()
-	expr := parser.parse_expression(prec_map[parser.peek().Type])
-	return ast.StatementExpr{Ident: identifier, Rhs: expr}
-}
-
-func ld_parse_unary(
-	parser *pratt,
-	op token.TOKEN_TYPE,
-	lhs ast.Expr,
-) ast.Expr {
+func ld_parse_unary(parser *pratt, op token.TOKEN_TYPE, lhs ast.Expr) ast.Expr {
 	// step past the postfix operator
 	parser.advance()
 	return ast.UnaryExpr{Operator: op, Rhs: lhs}
@@ -257,6 +218,42 @@ func ld_parse_binary(
 	parser.advance()
 	expr := parser.parse_expression(op_prec)
 	return ast.BinaryExpr{Lhs: lhs, Operator: op, Rhs: expr}
+}
+
+func parse_statement_identifier(
+	parser *pratt,
+	tok token.Token,
+	mutable bool,
+) ast.StatementExpr {
+	identifier := parser.peek().Literal
+	// step past the identifier
+	parser.advance()
+	// handle empty assign; must be able to mutate empty assign
+	if parser.peek().Type == token.SEMICOLON {
+		parser.advance()
+		return ast.StatementExpr{
+			Ident:   identifier,
+			Rhs:     ast.LiteralExpr{Value: nil},
+			Mutable: true,
+		}
+	}
+	if parser.peek().Type != token.ASSIGN {
+		gloxError.ParsePanic(
+			parser.path,
+			tok,
+			"expected assignment after identifier",
+		)
+	}
+	// step past assignment operator and parse the subexpression with the
+	// the lowest precedence, parsing continues until end statement boundary
+	// has been reached.
+	parser.advance()
+	expr := parser.parse_expression(LOWEST)
+	if parser.isAtEnd() {
+		gloxError.ParsePanic(parser.path, tok, "expected ';'")
+	}
+	parser.advance()
+	return ast.StatementExpr{Ident: identifier, Rhs: expr, Mutable: mutable}
 }
 
 func sync_next_stmt(parser *pratt) {
