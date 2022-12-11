@@ -198,23 +198,28 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 		gloxError.ParsePanic(parser.path, parser.peek(), "expected identifer")
 	}
 	identifier := parser.peek().Literal
-	// step past the identifer and verify assignment operator present
+	// step past the identifier
 	parser.advance()
+	// handle empty assign; must be able to mutate empty assign
+	if parser.peek().Type == token.SEMICOLON {
+		parser.advance()
+		return ast.StatementExpr{
+			Ident:   identifier,
+			Rhs:     ast.LiteralExpr{Value: nil},
+			Mutable: true,
+		}
+	}
 	if parser.peek().Type != token.ASSIGN {
 		gloxError.ParsePanic(parser.path, tok, "expected assignment after identifier")
 	}
 	// step past assignment operator and parse the subexpression with the
-	// the lowest precedence
+	// the lowest precedence, parsing continues until end statement boundary
+	// has been reached.
 	parser.advance()
 	expr := parser.parse_expression(LOWEST)
-	// continue parsing until end statement boundary ';'
-	for parser.peek().Type != token.SEMICOLON {
-		if parser.isAtEnd() {
-			gloxError.ParsePanic(parser.path, tok, "expected ';'")
-		}
-		expr = parser.parse_expression(prec_map[parser.peek().Type])
+	if parser.isAtEnd() {
+		gloxError.ParsePanic(parser.path, tok, "expected ';'")
 	}
-	// step past the ';'
 	parser.advance()
 	return ast.StatementExpr{Ident: identifier, Rhs: expr, Mutable: mutable}
 }
