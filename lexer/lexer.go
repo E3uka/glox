@@ -61,14 +61,7 @@ func (l *lexer) init() error {
 		}
 	}
 	// append EOF token at end of source file
-	l.tokens = append(
-		l.tokens,
-		token.Token{
-			Type:    token.EOF,
-			Literal: struct{}{},
-			Line:    l.line,
-		},
-	)
+	l.add_token(token.EOF)
 	return nil
 }
 
@@ -96,6 +89,10 @@ func (l *lexer) lex() error {
 		l.add_token(token.LBRACE)
 	case '}':
 		l.add_token(token.RBRACE)
+		if l.peek_next() != ';' {
+			l.add_token(token.SEMICOLON)
+			l.step()
+		}
 	case ',':
 		l.add_token(token.COMMA)
 	case '.':

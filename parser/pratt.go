@@ -128,6 +128,7 @@ func init() {
 	prec_map[token.INCR] = UNARY
 	prec_map[token.IDENT] = PRIMARY
 
+	null_deno[token.LBRACE] = nd_parse_block
 	null_deno[token.LPAREN] = nd_parse_grouping
 
 	null_deno[token.IDENT] = nd_parse_ident
@@ -165,6 +166,16 @@ func nd_parse_ident(parser *pratt, tok token.Token) ast.Expr {
 
 func nd_parse_literal(parser *pratt, tok token.Token) ast.Expr {
 	return ast.LiteralExpr{Value: tok.Literal}
+}
+
+func nd_parse_block(parser *pratt, tok token.Token) ast.Expr {
+	expr := parser.parse_expression(LOWEST)
+	if parser.peek().Type == token.EOF {
+		gloxError.ParsePanic(parser.path, tok, "expected '}'")
+	}
+	// step past the closing '}'
+	parser.advance()
+	return ast.GroupingExpr{Expression: expr}
 }
 
 func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
@@ -260,6 +271,7 @@ func parse_statement_identifier(
 	if parser.isAtEnd() {
 		gloxError.ParsePanic(parser.path, tok, "expected ';'")
 	}
+	// step past ';'
 	parser.advance()
 	return ast.StatementExpr{Ident: identifier, Rhs: expr, Mutable: mutable}
 }
