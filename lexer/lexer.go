@@ -310,7 +310,7 @@ func (l *lexer) lex_identifier() {
 	value := l.source[l.start:l.current]
 	tok := token.Lookup(value)
 
-	if tok == token.NIL {
+	if tok == token.NULL {
 		l.add_token_with_literal(tok, nil)
 	} else if tok == token.TRUE {
 		l.add_token_with_literal(tok, true)

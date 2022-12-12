@@ -132,7 +132,7 @@ func (p *parser) primary() (ast.Expr, error) {
 	if p.match(token.TRUE) {
 		return ast.LiteralExpr{Value: true}, nil
 	}
-	if p.match(token.NIL) {
+	if p.match(token.NULL) {
 		return ast.LiteralExpr{Value: nil}, nil
 	}
 	if p.match(token.FLOAT, token.STRING) {

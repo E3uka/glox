@@ -135,7 +135,7 @@ func init() {
 
 	null_deno[token.FALSE] = nd_parse_literal
 	null_deno[token.FLOAT] = nd_parse_literal
-	null_deno[token.NIL] = nd_parse_literal
+	null_deno[token.NULL] = nd_parse_literal
 	null_deno[token.STRING] = nd_parse_literal
 	null_deno[token.TRUE] = nd_parse_literal
 

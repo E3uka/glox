@@ -70,7 +70,7 @@ const (
 	IF
 	LET
 	MUT
-	NIL
+	NULL
 	PRINT
 
 	RETURN
@@ -136,7 +136,7 @@ var tokens = [...]string{
 	IF:    "if",
 	MUT:   "mut",
 	LET:   "let",
-	NIL:   "nil",
+	NULL:  "null",
 	PRINT: "print",
 
 	RETURN: "return",
