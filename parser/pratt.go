@@ -169,6 +169,13 @@ func nd_parse_literal(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_block(parser *pratt, tok token.Token) ast.Expr {
+	// handle empty block
+	if parser.peek().Type == token.RBRACE {
+		parser.advance()
+		return ast.GroupingExpr{
+			Expression: ast.LiteralExpr{Value: nil},
+		}
+	}
 	expr := parser.parse_expression(LOWEST)
 	if parser.peek().Type == token.EOF {
 		gloxError.ParsePanic(parser.path, tok, "expected '}'")
