@@ -138,8 +138,11 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 }
 
 func (i *interpreter) VisitVariableExpr(expr VariableExpr) interface{} {
-	// do a lookup to see if the value exists
-	return i.prog_stmt[expr.Ident.Evaluate(i)]
+	value, found := i.prog_stmt[expr.Ident.Evaluate(i)]
+	if !found {
+		gloxError.RuntimePanic(i.path, "cannot find value in scope", expr.Ident.Evaluate(i))
+	}
+	return value
 }
 
 func is_truth(expr interface{}) bool {
