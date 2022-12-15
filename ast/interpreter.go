@@ -34,16 +34,24 @@ func (i *interpreter) Interpret() {
 
 		// handle identifier occurences and mutability constraints
 		if _, exists := i.prog_stmt[stmt.Ident]; !exists {
+			if stmt.Reassignment == true {
+				if _, exists := i.mutable[stmt.Ident]; !exists {
+					gloxError.Runtime_Panic(
+						i.path,
+						"undefined",
+						stmt.Ident,
+					)
+				}
+			}
 			i.mutable[stmt.Ident] = stmt.Mutable
 			value := stmt.Rhs.Evaluate(i)
 			i.prog_stmt[stmt.Ident] = value
 			fmt.Printf("%v = %v\n", stmt.Ident, value)
-
 		} else {
 			if !i.mutable[stmt.Ident] {
 				gloxError.Runtime_Panic(
 					i.path,
-					"cannot assign twice to non-mutable variable",
+					"cannot reassign immutable variable",
 					stmt.Ident,
 				)
 			}
@@ -140,7 +148,11 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 func (i *interpreter) VisitVariableExpr(expr VariableExpr) interface{} {
 	value, found := i.prog_stmt[expr.Ident.Evaluate(i)]
 	if !found {
-		gloxError.Runtime_Panic(i.path, "cannot find value in scope", expr.Ident.Evaluate(i))
+		gloxError.Runtime_Panic(
+			i.path,
+			"cannot find value in this scope",
+			expr.Ident.Evaluate(i),
+		)
 	}
 	return value
 }

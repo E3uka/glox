@@ -206,9 +206,13 @@ func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
-	// handle both ':=' and reassignment
+	// handle both ':=' and reassignment; mutability to be determined
 	if parser.peek().Type != token.LET {
-		return parse_statement_identifier(parser, tok, true)
+		if parser.peek().Type == token.WALRUS {
+			parser.advance()
+			return parse_statement_identifier(parser, tok, true, false)
+		}
+		return parse_statement_identifier(parser, tok, false, true)
 	}
 	// step past 'let' keyword to the next token
 	parser.advance()
@@ -224,13 +228,14 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 		parser.backtrack()
 		gloxError.Parse_Panic(parser.path, parser.peek(), "expected identifer")
 	}
-	return parse_statement_identifier(parser, tok, mutable)
+	return parse_statement_identifier(parser, tok, mutable, false)
 }
 
 func parse_statement_identifier(
 	parser *pratt,
 	tok token.Token,
 	mutable bool,
+	reassignment bool,
 ) ast.StatementExpr {
 	identifier := parser.peek().Literal
 	// step past the identifier
@@ -247,28 +252,17 @@ func parse_statement_identifier(
 		// step past 'mut' keyword
 		parser.advance()
 		return ast.StatementExpr{
-			Ident:   identifier,
-			Rhs:     ast.LiteralExpr{Value: nil},
-			Mutable: true,
+			Ident:        identifier,
+			Rhs:          ast.LiteralExpr{Value: nil},
+			Mutable:      mutable,
+			Reassignment: false,
 		}
 	}
 	// handle ':='
 	if parser.peek().Type == token.WALRUS {
+		reassignment = false
 		goto MUTABLE_IDENTIFIER
 	}
-
-	// TODO: could make this either a compile time or runtime problem,
-	// handle the first occurence of a identifier
-
-	// this should fail:
-	//     x = 55;
-
-	// this not fail:
-	//     let mut x;
-	//     x := expr;
-	//     x = 55; // then this should work
-
-	// can add flag to denote whether it is an assignment
 
 	if parser.peek().Type != token.ASSIGN {
 		parser.backtrack()
@@ -283,6 +277,9 @@ MUTABLE_IDENTIFIER:
 	// step past assignment operator and parse the subexpression with the
 	// the lowest precedence, parsing continues until end statement boundary
 	// has been reached.
+	if parser.peek().Type == token.ASSIGN && mutable {
+		reassignment = false
+	}
 	parser.advance()
 	expr := parser.parse_expression(prec_map[tok.Type])
 	if parser.is_at_end() {
@@ -291,7 +288,12 @@ MUTABLE_IDENTIFIER:
 	}
 	// step past ';'
 	parser.advance()
-	return ast.StatementExpr{Ident: identifier, Rhs: expr, Mutable: mutable}
+	return ast.StatementExpr{
+		Ident:        identifier,
+		Rhs:          expr,
+		Mutable:      mutable,
+		Reassignment: reassignment,
+	}
 }
 func ld_parse_unary(parser *pratt, op token.TOKEN_TYPE, lhs ast.Expr) ast.Expr {
 	// step past the postfix operator
