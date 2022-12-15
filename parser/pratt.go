@@ -69,9 +69,12 @@ func (p *pratt) parse_expression(current_precedence precedence) ast.Expr {
 }
 
 func (p *pratt) advance() token.Token {
-	// easily identifiable index out of bounds
 	p.current++
 	return p.peek()
+}
+
+func (p *pratt) backtrack() {
+	p.current--
 }
 
 func (p *pratt) peek() token.Token {
@@ -177,6 +180,7 @@ func nd_parse_block(parser *pratt, tok token.Token) ast.Expr {
 	}
 	expr := parser.parse_expression(prec_map[tok.Type])
 	if parser.peek().Type != token.RBRACE {
+		parser.backtrack()
 		gloxError.Parse_Panic(parser.path, tok, "expected '}'")
 	}
 	// step past the closing '}'
@@ -188,6 +192,7 @@ func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
 	// TODO: handle function scope 'func_name :: (arg1, arg2) { ... }'
 	expr := parser.parse_expression(prec_map[tok.Type])
 	if parser.peek().Type != token.RPAREN {
+		parser.backtrack()
 		gloxError.Parse_Panic(parser.path, tok, "expected ')'")
 	}
 	// step past the closing ')'
@@ -216,6 +221,7 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 	}
 	// verify next token is a legal identifier
 	if parser.peek().Type != token.IDENT {
+		parser.backtrack()
 		gloxError.Parse_Panic(parser.path, parser.peek(), "expected identifer")
 	}
 	return parse_statement_identifier(parser, tok, mutable)
@@ -231,6 +237,7 @@ func parse_statement_identifier(
 	parser.advance()
 	if parser.peek().Type == token.SEMICOLON {
 		if !mutable {
+			parser.backtrack()
 			gloxError.Parse_Panic(
 				parser.path,
 				tok,
@@ -249,7 +256,22 @@ func parse_statement_identifier(
 	if parser.peek().Type == token.WALRUS {
 		goto MUTABLE_IDENTIFIER
 	}
+
+	// TODO: could make this either a compile time or runtime problem,
+	// handle the first occurence of a identifier
+
+	// this should fail:
+	//     x = 55;
+
+	// this not fail:
+	//     let mut x;
+	//     x := expr;
+	//     x = 55; // then this should work
+
+	// can add flag to denote whether it is an assignment
+
 	if parser.peek().Type != token.ASSIGN {
+		parser.backtrack()
 		gloxError.Parse_Panic(
 			parser.path,
 			tok,
