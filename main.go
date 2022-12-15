@@ -9,34 +9,35 @@ import (
 	"os"
 )
 
-var GlobalPath string
+var PROGRAM_PATH string
+var SOURCE_CODE string
 
 func run() {
-	file, err := os.ReadFile(GlobalPath)
+	file, err := os.ReadFile(PROGRAM_PATH)
 	if err != nil {
 		os.Exit(1)
 	}
-	source := string(file)
-	lexer, err := lexer.New(&GlobalPath, &source)
+	SOURCE_CODE = string(file)
+	lexer, err := lexer.New(&PROGRAM_PATH, &SOURCE_CODE)
 	if err != nil {
 		return
 	}
-	parser := parser.NewPrattParser(&GlobalPath, lexer.Tokens())
-	expr := parser.Parse()
-	interpreter := ast.NewInterpreter(&GlobalPath, expr)
-	//fmt.Printf("%#v\n", expr)
-	//fmt.Println(ast.AstPrinter{}.Print(expr))
+	expr := parser.New(&PROGRAM_PATH, lexer.Tokens()).Parse()
+	interpreter := ast.New(&PROGRAM_PATH, expr)
+	/*
+		fmt.Printf("%#v\n", expr)
+		fmt.Println(ast.AstPrinter{}.Print(expr))
+		fmt.Printf("%#v\n", interpreter)
+	*/
 	interpreter.Interpret()
-	//fmt.Printf("%#v\n", interpreter)
 }
 
-// TODO: implement a REPL later.
 func main() {
 	if len(os.Args) > 2 {
 		fmt.Println("usage: glox [script]")
 		os.Exit(64)
 	} else if len(os.Args) == 2 {
-		GlobalPath = os.Args[1]
+		PROGRAM_PATH = os.Args[1]
 		run()
 		if gloxError.LEX_ERROR || gloxError.PARSE_ERROR {
 			os.Exit(65)

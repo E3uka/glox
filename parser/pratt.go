@@ -14,7 +14,7 @@ type pratt struct {
 	expr    ast.Expr
 }
 
-func NewPrattParser(path *string, tokens *[]token.Token) *pratt {
+func New(path *string, tokens *[]token.Token) *pratt {
 	pratt := &pratt{
 		path:    path,
 		tokens:  *tokens,
@@ -40,8 +40,8 @@ func (p *pratt) parse_statement_expression(
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					gloxError.ParsePanicRecover(fmt.Sprint(r))
 					sync_next_stmt(p)
+					gloxError.Parse_Panic_Recover(fmt.Sprint(r))
 				}
 			}()
 
@@ -178,7 +178,7 @@ func nd_parse_block(parser *pratt, tok token.Token) ast.Expr {
 	}
 	expr := parser.parse_expression(LOWEST)
 	if parser.peek().Type == token.EOF {
-		gloxError.ParsePanic(parser.path, tok, "expected '}'")
+		gloxError.Parse_Panic(parser.path, tok, "expected '}'")
 	}
 	// step past the closing '}'
 	parser.advance()
@@ -188,7 +188,7 @@ func nd_parse_block(parser *pratt, tok token.Token) ast.Expr {
 func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
 	expr := parser.parse_expression(LOWEST)
 	if parser.peek().Type == token.EOF {
-		gloxError.ParsePanic(parser.path, tok, "expected ')'")
+		gloxError.Parse_Panic(parser.path, tok, "expected ')'")
 	}
 	// step past the closing ')'
 	parser.advance()
@@ -216,7 +216,7 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 	}
 	// verify next token is a legal identifier
 	if parser.peek().Type != token.IDENT {
-		gloxError.ParsePanic(parser.path, parser.peek(), "expected identifer")
+		gloxError.Parse_Panic(parser.path, parser.peek(), "expected identifer")
 	}
 	return parse_statement_identifier(parser, tok, mutable)
 }
@@ -250,7 +250,7 @@ func parse_statement_identifier(
 	// handle empty assign;
 	if parser.peek().Type == token.SEMICOLON {
 		if !mutable {
-			gloxError.ParsePanic(
+			gloxError.Parse_Panic(
 				parser.path,
 				tok,
 				"cannot create immutable and uninitialized variable",
@@ -269,7 +269,7 @@ func parse_statement_identifier(
 		goto MUTABLE_IDENTIFIER
 	}
 	if parser.peek().Type != token.ASSIGN {
-		gloxError.ParsePanic(
+		gloxError.Parse_Panic(
 			parser.path,
 			tok,
 			"expected assignment after identifier",
@@ -283,7 +283,7 @@ MUTABLE_IDENTIFIER:
 	parser.advance()
 	expr := parser.parse_expression(LOWEST)
 	if parser.isAtEnd() {
-		gloxError.ParsePanic(parser.path, tok, "expected ';'")
+		gloxError.Parse_Panic(parser.path, tok, "expected ';'")
 	}
 	// step past ';'
 	parser.advance()

@@ -14,7 +14,7 @@ type interpreter struct {
 	mutable    map[interface{}]bool
 }
 
-func NewInterpreter(path *string, stmt_exprs []StatementExpr) *interpreter {
+func New(path *string, stmt_exprs []StatementExpr) *interpreter {
 	return &interpreter{
 		path:       path,
 		stmt_exprs: stmt_exprs,
@@ -28,7 +28,7 @@ func (i *interpreter) Interpret() {
 		// short-circuiting panic recovery, raises error and exits
 		defer func() {
 			if r := recover(); r != nil {
-				gloxError.ParsePanicRecover(fmt.Sprint(r))
+				gloxError.Runtime_Panic_Recover(fmt.Sprint(r))
 			}
 		}()
 
@@ -41,7 +41,7 @@ func (i *interpreter) Interpret() {
 
 		} else {
 			if !i.mutable[stmt.Ident] {
-				gloxError.RuntimePanic(
+				gloxError.Runtime_Panic(
 					i.path,
 					"cannot assign twice to non-mutable variable",
 					stmt.Ident,
@@ -68,7 +68,7 @@ func (i *interpreter) VisitBinaryExpr(expr BinaryExpr) interface{} {
 		if instance_of_string(lhs) && instance_of_string(rhs) {
 			return lhs.(string) + rhs.(string)
 		}
-		gloxError.RuntimePanic(
+		gloxError.Runtime_Panic(
 			i.path,
 			"operands must both be either float64 or string",
 			lhs,
@@ -140,7 +140,7 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 func (i *interpreter) VisitVariableExpr(expr VariableExpr) interface{} {
 	value, found := i.prog_stmt[expr.Ident.Evaluate(i)]
 	if !found {
-		gloxError.RuntimePanic(i.path, "cannot find value in scope", expr.Ident.Evaluate(i))
+		gloxError.Runtime_Panic(i.path, "cannot find value in scope", expr.Ident.Evaluate(i))
 	}
 	return value
 }
@@ -183,7 +183,7 @@ func (i *interpreter) check_float_operand(
 	if _, ok := operand.(float64); ok {
 		return
 	}
-	gloxError.RuntimePanic(i.path, "operand must be float64", operand)
+	gloxError.Runtime_Panic(i.path, "operand must be float64", operand)
 }
 
 func (i *interpreter) check_float_operands(
@@ -197,7 +197,7 @@ func (i *interpreter) check_float_operands(
 	if is_left_float && is_right_float {
 		return
 	}
-	gloxError.RuntimePanic(
+	gloxError.Runtime_Panic(
 		i.path,
 		"operands must both be float64",
 		left,

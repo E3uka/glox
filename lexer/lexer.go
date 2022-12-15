@@ -191,7 +191,7 @@ func (l *lexer) lex() error {
 				}
 			}
 			if l.is_at_end() {
-				return gloxError.LexError(l.path, l.line, "unterminated block comment")
+				return gloxError.Lex_Error(l.path, l.line, "unterminated block comment")
 			}
 			// currently at the '/' end of newline char, step again and update
 			// start position to move past it.
@@ -211,7 +211,7 @@ func (l *lexer) lex() error {
 		} else if l.is_alpha(char) {
 			l.lex_identifier()
 		} else {
-			return gloxError.LexError(l.path, l.line, "unexpected character")
+			return gloxError.Lex_Error(l.path, l.line, "unexpected character")
 		}
 	}
 	return nil
@@ -272,7 +272,7 @@ func (l *lexer) lex_string() error {
 		l.step()
 	}
 	if l.is_at_end() {
-		return gloxError.LexError(l.path, l.line, "unterminated string")
+		return gloxError.Lex_Error(l.path, l.line, "unterminated string")
 	}
 	// step past the end of the string to the newline char
 	l.step()
@@ -298,7 +298,7 @@ func (l *lexer) lex_float() error {
 	floatVal, err := strconv.ParseFloat(value, 64)
 
 	if err != nil {
-		return gloxError.LexError(l.path, l.line, "could not parse string value")
+		return gloxError.Lex_Error(l.path, l.line, "could not parse string value")
 	}
 	l.add_token_with_literal(token.FLOAT, floatVal)
 	return nil
