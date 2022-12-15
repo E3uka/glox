@@ -201,14 +201,15 @@ func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
-	mutable := false
-	// handle reassignment without let operator
+	// handle both ':=' and reassignment
 	if parser.peek().Type != token.LET {
 		return parse_statement_identifier(parser, tok, true)
 	}
 	// step past 'let' keyword to the next token
 	parser.advance()
-	// handle 'mut' keyword
+
+	// handle 'mut' if present
+	mutable := false
 	if parser.peek().Type == token.MUT {
 		mutable = true
 		parser.advance()
@@ -263,6 +264,10 @@ func parse_statement_identifier(
 			Mutable: true,
 		}
 	}
+	// handle ':='
+	if parser.peek().Type == token.WALRUS {
+		goto MUTABLE_IDENTIFIER
+	}
 	if parser.peek().Type != token.ASSIGN {
 		gloxError.ParsePanic(
 			parser.path,
@@ -270,6 +275,8 @@ func parse_statement_identifier(
 			"expected assignment after identifier",
 		)
 	}
+
+MUTABLE_IDENTIFIER:
 	// step past assignment operator and parse the subexpression with the
 	// the lowest precedence, parsing continues until end statement boundary
 	// has been reached.

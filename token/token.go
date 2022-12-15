@@ -10,17 +10,14 @@ type TOKEN_TYPE uint
 const (
 	// Special Tokens
 	ILLEGAL TOKEN_TYPE = iota
-	EOF                // automatically appened to end of source file.
+	EOF                // added to end of source file for bookeeping
 
 	// Literals
-	literal_beg // (trick learned from go source): go/src/go/token/token.go
-	IDENT       // main
-	FLOAT       // 123.45
-	STRING      // "lets go"
-	literal_end
+	IDENT  // main
+	FLOAT  // 123.45
+	STRING // "lets go"
 
 	// Operators and delimiters
-	operator_beg
 	LPAREN // (
 	LBRACK // [
 	LBRACE // {
@@ -48,17 +45,18 @@ const (
 	GEQ // >=
 
 	ASSIGN    // =
+	WALRUS    // :=
 	FUNASSIGN // ::
-	EQL       // ==
-	LSS       // <
-	GTR       // >
-	FUNRET    // ->
+
+	EQL    // ==
+	LSS    // <
+	GTR    // >
+	FUNRET // ->
 
 	BITAND // &
 	AND    // &&
 	BITOR  // |
 	OR     // ||
-	operator_end
 
 	keyword_beg // Keywords
 	CLASS
@@ -116,6 +114,7 @@ var tokens = [...]string{
 	GEQ: ">=",
 
 	ASSIGN:    "=",
+	WALRUS:    ":=",
 	FUNASSIGN: "::",
 	EQL:       "==",
 	LSS:       "<",
@@ -167,21 +166,18 @@ func (tok Token) String() string {
 	return fmt.Sprintf("%s %s", tok.Type, tok.Literal)
 }
 
-var keywords map[string]TOKEN_TYPE
+// map with the exact size of number of keywords
+var keywords = make(map[string]TOKEN_TYPE, keyword_end-(keyword_beg+1))
 
-// Run on initialisation ~ also gleaned from go source.
+// Run on initialisation ~ gleaned from go source
 func init() {
-	// make a map with the exact size of the length of keywords.
-	keywords = make(map[string]TOKEN_TYPE, keyword_end-(keyword_beg+1))
-
 	// loop through tokens and add to map
 	for i := keyword_beg + 1; i < keyword_end; i++ {
 		keywords[tokens[i]] = i
 	}
 }
 
-// Lookup maps an identifier to its keyword token or IDENT TOKEN_TYPE.
-func Lookup(ident string) TOKEN_TYPE {
+func Lookup_Keyword(ident string) TOKEN_TYPE {
 	if tok, is_keyword := keywords[ident]; is_keyword {
 		return tok
 	}

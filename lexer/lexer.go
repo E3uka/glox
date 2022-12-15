@@ -148,6 +148,8 @@ func (l *lexer) lex() error {
 	case ':':
 		if l.match_advance(':') {
 			l.add_token(token.FUNASSIGN)
+		} else if l.match_advance('=') {
+			l.add_token(token.WALRUS)
 		} else {
 			l.add_token(token.COLON)
 		}
@@ -308,7 +310,7 @@ func (l *lexer) lex_identifier() {
 	}
 
 	value := l.source[l.start:l.current]
-	tok := token.Lookup(value)
+	tok := token.Lookup_Keyword(value)
 
 	if tok == token.NULL {
 		l.add_token_with_literal(tok, nil)
