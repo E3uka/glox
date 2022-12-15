@@ -32,7 +32,7 @@ func (p *pratt) parse_statement_expression(
 	cur_prec precedence,
 ) []ast.StatementExpr {
 	var statement []ast.StatementExpr
-	for !p.isAtEnd() {
+	for !p.is_at_end() {
 		// wrapped in anonymous function so block is called as unit ~ enables
 		// panic recovery to occur mutiple times instead of short-circuiting on
 		// first capture; recovery advances to start of next viable statement
@@ -40,11 +40,10 @@ func (p *pratt) parse_statement_expression(
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					sync_next_stmt(p)
 					gloxError.Parse_Panic_Recover(fmt.Sprint(r))
+					recover_and_sync(p)
 				}
 			}()
-
 			// may panic
 			stmt := nd_parse_many_statement(p, p.peek())
 			statement = append(statement, stmt)
@@ -55,13 +54,14 @@ func (p *pratt) parse_statement_expression(
 
 // Top Down Operator Precedence - Vaughan R. Pratt, 1973
 // https://dl.acm.org/doi/10.1145/512927.512931
-func (p *pratt) parse_expression(cur_prec precedence) ast.Expr {
+func (p *pratt) parse_expression(current_precedence precedence) ast.Expr {
 	var left ast.Expr
 	cur_tok := p.peek()
 	// step past the first token then parse its subexpression
 	p.advance()
 	left = null_deno[cur_tok.Type](p, cur_tok)
-	for !p.isAtEnd() && cur_prec < prec_map[p.peek().Type] {
+	// recursively parse and re-assign the top lever expresssion
+	for !p.is_at_end() && current_precedence < prec_map[p.peek().Type] {
 		cur_tok = p.peek()
 		left = left_deno[cur_tok.Type](p, cur_tok.Type, left)
 	}
@@ -69,9 +69,8 @@ func (p *pratt) parse_expression(cur_prec precedence) ast.Expr {
 }
 
 func (p *pratt) advance() token.Token {
-	if !p.isAtEnd() {
-		p.current++
-	}
+	// easily identifiable index out of bounds
+	p.current++
 	return p.peek()
 }
 
@@ -79,13 +78,14 @@ func (p *pratt) peek() token.Token {
 	return p.tokens[p.current]
 }
 
-func (p *pratt) isAtEnd() bool {
+func (p *pratt) is_at_end() bool {
 	return p.peek().Type == token.EOF
 }
 
 type precedence uint
 
 const (
+	// why go doesn't have enums escapes me
 	LOWEST precedence = iota
 	EQUALITY
 	LESSGREATER
@@ -98,18 +98,17 @@ const (
 )
 
 var (
-	prec_map  map[token.TOKEN_TYPE]precedence
-	null_deno map[token.TOKEN_TYPE]func(*pratt, token.Token) ast.Expr
-	left_deno map[token.TOKEN_TYPE]func(*pratt, token.TOKEN_TYPE, ast.Expr) ast.Expr
+	// token type -> operator precedence (binding power)
+	prec_map = map[token.TOKEN_TYPE]precedence{}
+
+	// token type -> null denotation; no expression found left of current token
+	null_deno = map[token.TOKEN_TYPE]func(parser *pratt, cur_tok token.Token) ast.Expr{}
+
+	// token type -> left denotation; expression found left of current token
+	left_deno = map[token.TOKEN_TYPE]func(parser *pratt, cur_tok token.TOKEN_TYPE, lhs ast.Expr) ast.Expr{}
 )
 
-// initialize maps and populate with associated parser dispatch function with
-// respect to token type, precedence (binding power) and parse location (denotation)
 func init() {
-	prec_map = make(map[token.TOKEN_TYPE]precedence)
-	null_deno = make(map[token.TOKEN_TYPE]func(*pratt, token.Token) ast.Expr)
-	left_deno = make(map[token.TOKEN_TYPE]func(*pratt, token.TOKEN_TYPE, ast.Expr) ast.Expr)
-
 	prec_map[token.ASSIGN] = LOWEST
 	prec_map[token.LET] = LOWEST
 	prec_map[token.EQL] = EQUALITY
@@ -169,15 +168,15 @@ func nd_parse_literal(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_block(parser *pratt, tok token.Token) ast.Expr {
-	// handle empty block
+	// empty block scope '{}'
 	if parser.peek().Type == token.RBRACE {
 		parser.advance()
 		return ast.GroupingExpr{
 			Expression: ast.LiteralExpr{Value: nil},
 		}
 	}
-	expr := parser.parse_expression(LOWEST)
-	if parser.peek().Type == token.EOF {
+	expr := parser.parse_expression(prec_map[tok.Type])
+	if parser.peek().Type != token.RBRACE {
 		gloxError.Parse_Panic(parser.path, tok, "expected '}'")
 	}
 	// step past the closing '}'
@@ -186,8 +185,9 @@ func nd_parse_block(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
-	expr := parser.parse_expression(LOWEST)
-	if parser.peek().Type == token.EOF {
+	// TODO: handle function scope 'func_name :: (arg1, arg2) { ... }'
+	expr := parser.parse_expression(prec_map[tok.Type])
+	if parser.peek().Type != token.RPAREN {
 		gloxError.Parse_Panic(parser.path, tok, "expected ')'")
 	}
 	// step past the closing ')'
@@ -196,7 +196,7 @@ func nd_parse_grouping(parser *pratt, tok token.Token) ast.Expr {
 }
 
 func nd_parse_unary(parser *pratt, tok token.Token) ast.Expr {
-	expr := parser.parse_expression(UNARY)
+	expr := parser.parse_expression(prec_map[tok.Type])
 	return ast.UnaryExpr{Operator: tok.Type, Rhs: expr}
 }
 
@@ -221,24 +221,6 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 	return parse_statement_identifier(parser, tok, mutable)
 }
 
-func ld_parse_unary(parser *pratt, op token.TOKEN_TYPE, lhs ast.Expr) ast.Expr {
-	// step past the postfix operator
-	parser.advance()
-	return ast.UnaryExpr{Operator: op, Rhs: lhs}
-}
-
-func ld_parse_binary(
-	parser *pratt,
-	op token.TOKEN_TYPE,
-	lhs ast.Expr,
-) ast.Expr {
-	op_prec := prec_map[parser.peek().Type]
-	// step past the infix operator
-	parser.advance()
-	expr := parser.parse_expression(op_prec)
-	return ast.BinaryExpr{Lhs: lhs, Operator: op, Rhs: expr}
-}
-
 func parse_statement_identifier(
 	parser *pratt,
 	tok token.Token,
@@ -247,7 +229,6 @@ func parse_statement_identifier(
 	identifier := parser.peek().Literal
 	// step past the identifier
 	parser.advance()
-	// handle empty assign;
 	if parser.peek().Type == token.SEMICOLON {
 		if !mutable {
 			gloxError.Parse_Panic(
@@ -281,25 +262,43 @@ MUTABLE_IDENTIFIER:
 	// the lowest precedence, parsing continues until end statement boundary
 	// has been reached.
 	parser.advance()
-	expr := parser.parse_expression(LOWEST)
-	if parser.isAtEnd() {
+	expr := parser.parse_expression(prec_map[tok.Type])
+	if parser.is_at_end() {
+		parser.backtrack()
 		gloxError.Parse_Panic(parser.path, tok, "expected ';'")
 	}
 	// step past ';'
 	parser.advance()
 	return ast.StatementExpr{Ident: identifier, Rhs: expr, Mutable: mutable}
 }
-
-func sync_next_stmt(parser *pratt) {
+func ld_parse_unary(parser *pratt, op token.TOKEN_TYPE, lhs ast.Expr) ast.Expr {
+	// step past the postfix operator
 	parser.advance()
-	for !parser.isAtEnd() {
-		// found end statement boundary
+	return ast.UnaryExpr{Operator: op, Rhs: lhs}
+}
+
+func ld_parse_binary(
+	parser *pratt,
+	operator token.TOKEN_TYPE,
+	lhs ast.Expr,
+) ast.Expr {
+	// step past the infix operator
+	parser.advance()
+	expr := parser.parse_expression(prec_map[operator])
+	return ast.BinaryExpr{Lhs: lhs, Operator: operator, Rhs: expr}
+}
+
+func recover_and_sync(parser *pratt) {
+	parser.advance()
+	for !parser.is_at_end() {
+		// found possible end statement boundary
+		// futher errors could still occur downstream
 		if parser.peek().Type == token.SEMICOLON {
 			return
 		}
 		switch parser.peek().Type {
 		case token.CLASS, token.STRUCT, token.FOR, token.IF, token.LET,
-			token.RETURN, token.WHILE:
+			token.RETURN, token.WHILE, token.FUNASSIGN:
 			return
 		}
 		// advance until boundary is found
