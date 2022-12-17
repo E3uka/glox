@@ -38,7 +38,7 @@ func (i *interpreter) Interpret() {
 				if _, exists := i.mutable[stmt.Ident]; !exists {
 					gloxError.Runtime_Panic(
 						i.path,
-						"undefined",
+						"cannot find value in this scope",
 						stmt.Ident,
 					)
 				}
@@ -51,7 +51,7 @@ func (i *interpreter) Interpret() {
 			if !i.mutable[stmt.Ident] {
 				gloxError.Runtime_Panic(
 					i.path,
-					"cannot reassign immutable variable",
+					"cannot assign twice to an immutable variable",
 					stmt.Ident,
 				)
 			}

@@ -22,7 +22,6 @@ type GroupingExpr struct {
 	Expression Expr
 }
 
-// a group uses parentheses to control execution order
 func (g GroupingExpr) Evaluate(visitor ExprVisitor) interface{} {
 	return visitor.VisitGroupingExpr(g)
 }

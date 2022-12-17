@@ -186,7 +186,7 @@ func (p *parser) synchronize() {
 		}
 		switch p.peek().Type {
 		case token.CLASS, token.FOR, token.FN, token.IF, token.PRINT,
-			token.RETURN, token.LET, token.WHILE:
+			token.RETURN, token.CONST, token.WHILE:
 			return
 		}
 		p.advance()

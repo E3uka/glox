@@ -66,7 +66,7 @@ const (
 	FOR
 
 	IF
-	LET
+	CONST
 	NULL
 	PRINT
 
@@ -132,7 +132,7 @@ var tokens = [...]string{
 	FOR:    "for",
 
 	IF:    "if",
-	LET:   "let",
+	CONST: "const",
 	NULL:  "null",
 	PRINT: "print",
 
