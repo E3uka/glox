@@ -217,18 +217,12 @@ func nd_parse_many_statement(parser *pratt, tok token.Token) ast.StatementExpr {
 	// step past 'let' keyword to the next token
 	parser.advance()
 
-	// handle 'mut' if present
-	mutable := false
-	if parser.peek().Type == token.MUT {
-		mutable = true
-		parser.advance()
-	}
 	// verify next token is a legal identifier
 	if parser.peek().Type != token.IDENT {
 		parser.backtrack()
 		gloxError.Parse_Panic(parser.path, parser.peek(), "expected identifer")
 	}
-	return parse_statement_identifier(parser, tok, mutable, false)
+	return parse_statement_identifier(parser, tok, false, false)
 }
 
 func parse_statement_identifier(
@@ -240,26 +234,20 @@ func parse_statement_identifier(
 	identifier := parser.peek().Literal
 	// step past the identifier
 	parser.advance()
+	// empty declaration; must be mutable
 	if parser.peek().Type == token.SEMICOLON {
-		if !mutable {
-			parser.backtrack()
-			gloxError.Parse_Panic(
-				parser.path,
-				tok,
-				"cannot create immutable and uninitialized variable",
-			)
-		}
-		// step past 'mut' keyword
+		// step past ';'
 		parser.advance()
 		return ast.StatementExpr{
 			Ident:        identifier,
 			Rhs:          ast.LiteralExpr{Value: nil},
-			Mutable:      mutable,
+			Mutable:      true,
 			Reassignment: false,
 		}
 	}
 	// handle ':='
 	if parser.peek().Type == token.WALRUS {
+		mutable = true
 		reassignment = false
 		goto MUTABLE_IDENTIFIER
 	}
