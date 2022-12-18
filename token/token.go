@@ -156,7 +156,9 @@ func (tt TOKEN_TYPE) String() string {
 
 type Token struct {
 	Type    TOKEN_TYPE
-	Literal interface{}
+	Literal string
+	Start   int
+	End     int
 	Line    int
 }
 

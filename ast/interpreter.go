@@ -1,28 +1,22 @@
 package ast
 
-import (
-	"fmt"
-	gloxError "glox/error"
-	"glox/token"
-	"reflect"
-)
-
 type interpreter struct {
-	path       *string
-	stmt_exprs []StatementExpr
-	prog_stmt  map[interface{}]interface{}
-	mutable    map[interface{}]bool
+	path      *string
+	prog_stmt map[interface{}]interface{}
+	mutable   map[interface{}]bool
 }
 
-func New(path *string, stmt_exprs []StatementExpr) *interpreter {
+func New(path *string) *interpreter {
 	return &interpreter{
-		path:       path,
-		stmt_exprs: stmt_exprs,
-		prog_stmt:  make(map[interface{}]interface{}),
-		mutable:    make(map[interface{}]bool),
+		path:      path,
+		prog_stmt: make(map[interface{}]interface{}),
+		mutable:   make(map[interface{}]bool),
 	}
 }
 
+func (i *interpreter) Interpret() {}
+
+/*
 func (i *interpreter) Interpret() {
 	for _, stmt := range i.stmt_exprs {
 		// short-circuiting panic recovery, raises error and exits
@@ -216,3 +210,4 @@ func (i *interpreter) check_float_operands(
 		right,
 	)
 }
+*/
