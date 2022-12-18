@@ -5,7 +5,7 @@ import (
 )
 
 type Expr interface {
-	Evaluate(visitor ExprVisitor) interface{}
+	Visit(visitor ExprVisitor) interface{}
 }
 
 type BinaryExpr struct {
@@ -14,7 +14,7 @@ type BinaryExpr struct {
 	Rhs      Expr
 }
 
-func (b BinaryExpr) Evaluate(visitor ExprVisitor) interface{} {
+func (b BinaryExpr) Visit(visitor ExprVisitor) interface{} {
 	return visitor.VisitBinaryExpr(b)
 }
 
@@ -22,7 +22,7 @@ type GroupingExpr struct {
 	Expression Expr
 }
 
-func (g GroupingExpr) Evaluate(visitor ExprVisitor) interface{} {
+func (g GroupingExpr) Visit(visitor ExprVisitor) interface{} {
 	return visitor.VisitGroupingExpr(g)
 }
 
@@ -30,7 +30,7 @@ type LiteralExpr struct {
 	Value interface{}
 }
 
-func (l LiteralExpr) Evaluate(visitor ExprVisitor) interface{} {
+func (l LiteralExpr) Visit(visitor ExprVisitor) interface{} {
 	return visitor.VisitLiteralExpr(l)
 }
 
@@ -41,7 +41,7 @@ type StatementExpr struct {
 	Reassignment bool
 }
 
-func (f StatementExpr) Evaluate(visitor ExprVisitor) interface{} {
+func (f StatementExpr) Visit(visitor ExprVisitor) interface{} {
 	return visitor.VisitStatementExpr(f)
 }
 
@@ -50,7 +50,7 @@ type UnaryExpr struct {
 	Rhs      Expr
 }
 
-func (u UnaryExpr) Evaluate(visitor ExprVisitor) interface{} {
+func (u UnaryExpr) Visit(visitor ExprVisitor) interface{} {
 	return visitor.VisitUnaryExpr(u)
 }
 
@@ -58,7 +58,7 @@ type VariableExpr struct {
 	Ident Expr
 }
 
-func (v VariableExpr) Evaluate(visitor ExprVisitor) interface{} {
+func (v VariableExpr) Visit(visitor ExprVisitor) interface{} {
 	return visitor.VisitVariableExpr(v)
 }
 
@@ -80,7 +80,7 @@ type ExprVisitor interface {
 type AstPrinter struct{}
 
 func (a AstPrinter) Print(expr Expr) string {
-	return expr.Evaluate(a).(string)
+	return expr.Visit(a).(string)
 }
 
 func (a AstPrinter) VisitBinaryExpr(expr BinaryExpr) interface{} {

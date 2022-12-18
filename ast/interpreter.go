@@ -44,7 +44,7 @@ func (i *interpreter) Interpret() {
 				}
 			}
 			i.mutable[stmt.Ident] = stmt.Mutable
-			value := stmt.Rhs.Evaluate(i)
+			value := stmt.Rhs.Visit(i)
 			i.prog_stmt[stmt.Ident] = value
 			fmt.Printf("%v = %v\n", stmt.Ident, value)
 		} else {
@@ -55,7 +55,7 @@ func (i *interpreter) Interpret() {
 					stmt.Ident,
 				)
 			}
-			value := stmt.Rhs.Evaluate(i)
+			value := stmt.Rhs.Visit(i)
 			i.prog_stmt[stmt.Ident] = value
 			fmt.Printf("%v = %v\n", stmt.Ident, value)
 		}
@@ -63,8 +63,8 @@ func (i *interpreter) Interpret() {
 }
 
 func (i *interpreter) VisitBinaryExpr(expr BinaryExpr) interface{} {
-	lhs := expr.Lhs.Evaluate(i)
-	rhs := expr.Rhs.Evaluate(i)
+	lhs := expr.Lhs.Visit(i)
+	rhs := expr.Rhs.Visit(i)
 	switch expr.Operator {
 	case token.SUB:
 		i.check_float_operands(expr.Operator, lhs, rhs)
@@ -115,7 +115,7 @@ func (i *interpreter) VisitBinaryExpr(expr BinaryExpr) interface{} {
 }
 
 func (i *interpreter) VisitGroupingExpr(expr GroupingExpr) interface{} {
-	return expr.Expression.Evaluate(i)
+	return expr.Expression.Visit(i)
 }
 
 func (i *interpreter) VisitLiteralExpr(expr LiteralExpr) interface{} {
@@ -123,12 +123,12 @@ func (i *interpreter) VisitLiteralExpr(expr LiteralExpr) interface{} {
 }
 
 func (i *interpreter) VisitStatementExpr(expr StatementExpr) interface{} {
-	expr.Rhs.Evaluate(i)
+	expr.Rhs.Visit(i)
 	return nil
 }
 
 func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
-	rhs := expr.Rhs.Evaluate(i)
+	rhs := expr.Rhs.Visit(i)
 	switch expr.Operator {
 	case token.SUB:
 		i.check_float_operand(expr.Operator, rhs)
@@ -146,12 +146,12 @@ func (i *interpreter) VisitUnaryExpr(expr UnaryExpr) interface{} {
 }
 
 func (i *interpreter) VisitVariableExpr(expr VariableExpr) interface{} {
-	value, found := i.prog_stmt[expr.Ident.Evaluate(i)]
+	value, found := i.prog_stmt[expr.Ident.Visit(i)]
 	if !found {
 		gloxError.Runtime_Panic(
 			i.path,
 			"cannot find value in this scope",
-			expr.Ident.Evaluate(i),
+			expr.Ident.Visit(i),
 		)
 	}
 	return value
