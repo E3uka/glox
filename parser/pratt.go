@@ -38,8 +38,10 @@ func (p *pratt) Parse() []ast.Node {
 					recover_and_sync(p)
 				}
 			}()
-			// may panic
-			node := p.parse_expression(LOWEST)
+			// may panic - using LOWEST-1 precedence to ensure any found nodes
+			// have a higher precedence
+			// operation, all Nodes found will be of higher precedence
+			node := p.parse_expression(LOWEST - 1)
 			nodes = append(nodes, node)
 		}()
 	}
@@ -153,13 +155,18 @@ func recover_and_sync(parser *pratt) {
 func (p *pratt) parse_expression(current_precedence precedence) ast.Node {
 	var left ast.Node
 	cur_tok := p.peek()
-	fmt.Printf("pratt - cur_prec: %v, cur_tok: %v\n", current_precedence, cur_tok)
 	// step past the first token then parse its subexpression
 	p.advance()
 	left = null_deno[cur_tok.Type](p, cur_tok)
-	// recursively parse and re-assign the top level expresssion
+	// recursively parse and re-assign the top level expresssion if it has a
+	// higher binding power
 	for !p.is_at_end() && current_precedence < prec_map[p.peek().Type] {
 		cur_tok = p.peek()
+		// step past semicolon as that shouldn't be used for any operation
+		if cur_tok.Type == token.SEMICOLON {
+			p.advance()
+			break
+		}
 		left = left_deno[cur_tok.Type](p, cur_tok.Type, left)
 	}
 	return left
@@ -170,7 +177,7 @@ func (p *pratt) backtrack()           { p.current-- }
 func (p *pratt) peek() token.Token    { return p.tokens[p.current] }
 func (p *pratt) is_at_end() bool      { return p.peek().Type == token.EOF }
 
-type precedence uint
+type precedence int
 
 const (
 	// why go doesn't have proper enums escapes me
@@ -204,6 +211,7 @@ var (
 
 func init() {
 	prec_map[token.ASSIGN] = LOWEST
+	prec_map[token.WALRUS] = LOWEST
 	prec_map[token.CONST] = LOWEST
 	prec_map[token.EQL] = EQUALITY
 	prec_map[token.NEQ] = EQUALITY
@@ -220,7 +228,6 @@ func init() {
 	prec_map[token.DECR] = UNARY
 	prec_map[token.INCR] = UNARY
 	prec_map[token.IDENT] = PRIMARY
-	prec_map[token.WALRUS] = PRIMARY
 
 	null_deno[token.FALSE] = nd_parse_literal
 	null_deno[token.FLOAT] = nd_parse_literal
@@ -247,6 +254,7 @@ func init() {
 	left_deno[token.MUL] = ld_parse_binary_expr
 	left_deno[token.NEQ] = ld_parse_binary_expr
 	left_deno[token.QUO] = ld_parse_binary_expr
+	left_deno[token.SUB] = ld_parse_binary_expr
 
 	// left denotation statements
 	left_deno[token.ASSIGN] = ld_parse_assign_stmt // 'x = abc'
@@ -338,16 +346,11 @@ func ld_parse_decl_stmt(
 	operator token.TOKEN_TYPE,
 	lhs ast.Node,
 ) ast.Node {
-	fmt.Printf("ld_decl_stmt: operator: %v\n", lhs)
-
+	fmt.Printf("ld_decl_stmt: operator: %v\n", operator)
 	// step past walrus operator
 	parser.advance()
-
 	left_as_ident := lhs.(ast.IdentExpr)
-	// fmt.Printf("curr_tok: %v, next_tok: %v\n", operator, parser.peek())
 	rhs := parser.parse_expression(prec_map[parser.peek().Type])
-
-	fmt.Println("made it past newrhs")
 
 	return ast.DeclStmt{
 		Decl: ast.GenericDecl{
