@@ -54,11 +54,11 @@ type (
 )
 
 // ensures only expr_node types can be assigned to Expr
-func (BinaryExpr) expr_node()  {}
-func (IdentExpr) expr_node()   {}
-func (LiteralExpr) expr_node() {}
-func (ParenExpr) expr_node()   {}
-func (UnaryExpr) expr_node()   {}
+func (*BinaryExpr) expr_node()  {}
+func (*IdentExpr) expr_node()   {}
+func (*LiteralExpr) expr_node() {}
+func (*ParenExpr) expr_node()   {}
+func (*UnaryExpr) expr_node()   {}
 
 type (
 	AssignStmt struct {
@@ -85,11 +85,11 @@ type (
 )
 
 // ensures only stmt_node types can be assigned to Stmt
-func (AssignStmt) stmt_node() {}
-func (BlockStmt) stmt_node()  {}
-func (DeclStmt) stmt_node()   {}
-func (ExprStmt) stmt_node()   {}
-func (ReturnStmt) stmt_node() {}
+func (*AssignStmt) stmt_node() {}
+func (*BlockStmt) stmt_node()  {}
+func (*DeclStmt) stmt_node()   {}
+func (*ExprStmt) stmt_node()   {}
+func (*ReturnStmt) stmt_node() {}
 
 type (
 	GenericDecl struct {
@@ -103,8 +103,8 @@ type (
 	}
 )
 
-func (GenericDecl) decl_node() {}
-func (FunDecl) decl_node()     {}
+func (*GenericDecl) decl_node() {}
+func (*FunDecl) decl_node()     {}
 
 type Object struct {
 	Kind ObjKind

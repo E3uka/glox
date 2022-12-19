@@ -275,7 +275,7 @@ func nd_parse_paren(parser *pratt, tok token.Token) ast.Node {
 	}
 	// step past ')'
 	parser.advance()
-	return ast.ParenExpr{Expr: expr.(ast.Expr)}
+	return &ast.ParenExpr{Expr: expr.(ast.Expr)}
 }
 
 func nd_parse_ident(parser *pratt, tok token.Token) ast.Node {
@@ -288,14 +288,15 @@ func nd_parse_ident(parser *pratt, tok token.Token) ast.Node {
 
 func nd_parse_literal(parser *pratt, tok token.Token) ast.Node {
 	fmt.Printf("nd_literal: kind: %v, value: %v\n", tok.Type, tok.Literal)
-	return ast.LiteralExpr{Kind: tok.Type, Value: tok.Literal}
+	return &ast.LiteralExpr{Kind: tok.Type, Value: tok.Literal}
 }
 
 func nd_parse_unary(parser *pratt, tok token.Token) ast.Node {
-	fmt.Println("nd_unary")
+	fmt.Printf("nd_unary: operator %v\n", tok)
 	parser.advance()
 	expr := parser.parse_expression(prec_map[parser.peek().Type])
-	return ast.UnaryExpr{Operator: tok.Type, Rhs: expr.(ast.Expr)}
+	fmt.Println("you can make it")
+	return &ast.UnaryExpr{Operator: tok.Type, Rhs: expr.(ast.Expr)}
 }
 
 func ld_parse_binary_expr(
@@ -307,7 +308,7 @@ func ld_parse_binary_expr(
 	// step past infix operator
 	parser.advance()
 	expr := parser.parse_expression(prec_map[parser.peek().Type])
-	return ast.BinaryExpr{
+	return &ast.BinaryExpr{
 		Lhs:      lhs.(ast.Expr),
 		Operator: operator,
 		Rhs:      expr.(ast.Expr),
@@ -322,7 +323,7 @@ func ld_parse_unary_expr(
 	fmt.Println("ld_unary")
 	// step past postfix operator
 	parser.advance()
-	return ast.UnaryExpr{Operator: operator, Rhs: lhs.(ast.Expr)}
+	return &ast.UnaryExpr{Operator: operator, Rhs: lhs.(ast.Expr)}
 }
 
 func ld_parse_assign_stmt(
@@ -334,7 +335,7 @@ func ld_parse_assign_stmt(
 	// step past assign operator
 	parser.advance()
 	rhs := parser.parse_expression(prec_map[parser.peek().Type])
-	return ast.AssignStmt{
+	return &ast.AssignStmt{
 		Lhs:   []ast.Expr{lhs.(ast.Expr)},
 		Token: operator,
 		Rhs:   []ast.Expr{rhs.(ast.Expr)},
@@ -352,8 +353,8 @@ func ld_parse_decl_stmt(
 	left_as_ident := lhs.(ast.IdentExpr)
 	rhs := parser.parse_expression(prec_map[parser.peek().Type])
 
-	return ast.DeclStmt{
-		Decl: ast.GenericDecl{
+	return &ast.DeclStmt{
+		Decl: &ast.GenericDecl{
 			Name: ast.IdentExpr{
 				Name: left_as_ident.Name,
 				Obj:  left_as_ident.Obj,
