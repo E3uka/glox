@@ -21,7 +21,7 @@ func New(path *string, tokens *[]token.Token) *pratt {
 		tokens:  *tokens,
 		current: 0,
 		expr:    nil,
-		trace:   false,
+		trace:   true,
 	}
 	return pratt
 }
@@ -50,89 +50,6 @@ func (p *pratt) Parse() []ast.Node {
 	return nodes
 }
 
-/*
-func (p *pratt) Parse() []ast.StatementExpr {
-	var statements []ast.StatementExpr
-	for !p.is_at_end() {
-		// wrapped in anonymous function so block is called as unit ~ enables
-		// panic recovery to occur mutiple times instead of short-circuiting on
-		// first capture; recovery advances to start of next viable statement
-		// token which continues the parse operation from that point
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					gloxError.Parse_Panic_Recover(fmt.Sprint(r))
-					recover_and_sync(p)
-				}
-			}()
-			// may panic
-			stmt := parse_statements(p, p.peek())
-			statements = append(statements, stmt)
-		}()
-	}
-	return statements
-}
-
-func parse_statements(parser *pratt, tok token.Token) ast.StatementExpr {
-	var identifier interface{}
-	mutable := true
-	reassignment := false
-	// handle both ':=' and reassignment
-	if parser.peek().Type != token.CONST {
-		identifier = parser.peek().Literal
-		parser.advance()
-		if parser.peek().Type == token.ASSIGN {
-			mutable = false
-			reassignment = true
-		}
-	} else {
-		mutable = false
-		reassignment = false
-		// step past 'const' keyword to identifier
-		parser.advance()
-		identifier = parser.peek().Literal
-		// step past the identifier
-		parser.advance()
-	}
-
-	if parser.peek().Type == token.SEMICOLON {
-		if !mutable {
-			parser.backtrack()
-			gloxError.Parse_Panic(
-				parser.path,
-				parser.peek(),
-				"cannot initialize an immutable null constant",
-			)
-		}
-		// step past ';'
-		parser.advance()
-		return ast.StatementExpr{
-			Ident:        identifier,
-			Rhs:          ast.LiteralExpr{Value: nil},
-			Mutable:      true,
-			Reassignment: false,
-		}
-	}
-
-	// step past walrus or assignment operator and begin recursive parse
-	// operation with the lowest precedence
-	parser.advance()
-	expr := parser.parse_expression(LOWEST)
-	if parser.is_at_end() {
-		parser.backtrack()
-		gloxError.Parse_Panic(parser.path, tok, "expected ';'")
-	}
-	// step past ';'
-	parser.advance()
-	return ast.StatementExpr{
-		Ident:        identifier,
-		Rhs:          expr,
-		Mutable:      mutable,
-		Reassignment: reassignment,
-	}
-}
-*/
-
 func recover_and_sync(parser *pratt) {
 	parser.advance()
 	for !parser.is_at_end() {
@@ -155,24 +72,37 @@ func recover_and_sync(parser *pratt) {
 // Top Down Operator Precedence - Vaughan R. Pratt, 1973
 // https://dl.acm.org/doi/10.1145/512927.512931
 func (p *pratt) parse_expression(current_precedence precedence) ast.Node {
-	if p.trace {
-		fmt.Printf("parse head: cur_tok: %v\n", p.peek())
-	}
 	var left ast.Node
 	cur_tok := p.peek()
 	// step past the first token then parse its subexpression
 	p.advance()
+	if p.trace {
+		fmt.Printf(
+			"parse_head: cur_pred %v, cur_tok: %v, next_tok: %v, calc_pred: %v\n",
+			current_precedence,
+			cur_tok,
+			p.peek(),
+			prec_map[cur_tok.Type],
+		)
+	}
 	left = null_deno[cur_tok.Type](p, cur_tok)
 	// recursively parse and re-assign the top level expresssion if it has a
 	// higher binding power
 	for !p.is_at_end() && current_precedence < prec_map[p.peek().Type] {
 		cur_tok = p.peek()
-		// step past semicolon as that shouldn't be used for any operation
+		// step past end statement boundary (semicolon); break out as no
+		// further recursive operations need to be done
 		if cur_tok.Type == token.SEMICOLON {
 			p.advance()
 			break
 		}
 		left = left_deno[cur_tok.Type](p, cur_tok.Type, left)
+		if p.trace {
+			fmt.Printf("parse_head: transient_inner_left: %v\n", left)
+		}
+	}
+	if p.trace {
+		fmt.Printf("parse_head: returning: %v\n", left)
 	}
 	return left
 }
@@ -216,8 +146,8 @@ var (
 
 func init() {
 	prec_map[token.ASSIGN] = LOWEST
-	prec_map[token.WALRUS] = LOWEST
 	prec_map[token.CONST] = LOWEST
+	prec_map[token.WALRUS] = LOWEST
 	prec_map[token.EQL] = EQUALITY
 	prec_map[token.NEQ] = EQUALITY
 	prec_map[token.GEQ] = LESSGREATER
@@ -240,27 +170,29 @@ func init() {
 	null_deno[token.IDENT] = nd_parse_ident
 	null_deno[token.LBRACE] = nd_parse_block
 	null_deno[token.LPAREN] = nd_parse_paren
-	null_deno[token.NOT] = nd_parse_unary
 	null_deno[token.NULL] = nd_parse_literal
 	null_deno[token.STRING] = nd_parse_literal
+	null_deno[token.DECR] = nd_parse_unary
+	null_deno[token.INCR] = nd_parse_unary
+	null_deno[token.NOT] = nd_parse_unary
 	null_deno[token.SUB] = nd_parse_unary
 	null_deno[token.TRUE] = nd_parse_literal
 
 	// left denotation expressions
 	left_deno[token.ADD] = ld_parse_binary_expr
 	left_deno[token.DECRYBY] = ld_parse_binary_expr
-	left_deno[token.DECR] = ld_parse_unary_expr
 	left_deno[token.EQL] = ld_parse_binary_expr
 	left_deno[token.GEQ] = ld_parse_binary_expr
 	left_deno[token.GTR] = ld_parse_binary_expr
 	left_deno[token.INCRBY] = ld_parse_binary_expr
-	left_deno[token.INCR] = ld_parse_unary_expr
 	left_deno[token.LEQ] = ld_parse_binary_expr
 	left_deno[token.LSS] = ld_parse_binary_expr
 	left_deno[token.MUL] = ld_parse_binary_expr
 	left_deno[token.NEQ] = ld_parse_binary_expr
 	left_deno[token.QUO] = ld_parse_binary_expr
 	left_deno[token.SUB] = ld_parse_binary_expr
+	left_deno[token.DECR] = ld_parse_unary_expr
+	left_deno[token.INCR] = ld_parse_unary_expr
 
 	// left denotation statements
 	left_deno[token.ASSIGN] = ld_parse_assign_stmt // 'x = abc'
@@ -288,7 +220,7 @@ func nd_parse_paren(parser *pratt, tok token.Token) ast.Node {
 
 func nd_parse_ident(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Printf("nd_indent: name: %v\n", tok.Literal)
+		fmt.Printf("nd_indent: cur_tok: %v, next_tok: %v\n", tok.Literal, parser.peek())
 	}
 	if tok.Type == token.CONST {
 		ident_node := parser.parse_expression(prec_map[parser.peek().Type])
@@ -298,6 +230,7 @@ func nd_parse_ident(parser *pratt, tok token.Token) ast.Node {
 			glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifer")
 		}
 		ident_expr.Mutable = false
+		// TODO may need to advance here
 		return ident_expr
 	}
 	return &ast.IdentExpr{
@@ -315,42 +248,10 @@ func nd_parse_literal(parser *pratt, tok token.Token) ast.Node {
 
 func nd_parse_unary(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Printf("nd_unary: operator %v\n", tok)
+		fmt.Printf("nd_unary: operator %v, next: %v\n", tok, parser.peek())
 	}
-	parser.advance()
-	expr := parser.parse_expression(prec_map[parser.peek().Type])
+	expr := parser.parse_expression(prec_map[tok.Type])
 	return &ast.UnaryExpr{Operator: tok.Type, Rhs: expr.(ast.Expr)}
-}
-
-func ld_parse_binary_expr(
-	parser *pratt,
-	operator token.TOKEN_TYPE,
-	lhs ast.Node,
-) ast.Node {
-	if parser.trace {
-		fmt.Println("ld_binary")
-	}
-	// step past infix operator
-	parser.advance()
-	expr := parser.parse_expression(prec_map[parser.peek().Type])
-	return &ast.BinaryExpr{
-		Lhs:      lhs.(ast.Expr),
-		Operator: operator,
-		Rhs:      expr.(ast.Expr),
-	}
-}
-
-func ld_parse_unary_expr(
-	parser *pratt,
-	operator token.TOKEN_TYPE,
-	lhs ast.Node,
-) ast.Node {
-	if parser.trace {
-		fmt.Println("ld_unary")
-	}
-	// step past postfix operator
-	parser.advance()
-	return &ast.UnaryExpr{Operator: operator, Rhs: lhs.(ast.Expr)}
 }
 
 func ld_parse_assign_stmt(
@@ -359,7 +260,7 @@ func ld_parse_assign_stmt(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Println("ld_assign_stmt")
+		fmt.Println("ld_assign")
 	}
 	// step past assign operator
 	parser.advance()
@@ -371,19 +272,37 @@ func ld_parse_assign_stmt(
 	}
 }
 
+func ld_parse_binary_expr(
+	parser *pratt,
+	operator token.TOKEN_TYPE,
+	lhs ast.Node,
+) ast.Node {
+	if parser.trace {
+		fmt.Printf("ld_binary: operator: %v\n", parser.peek())
+	}
+	// step past infix operator
+	parser.advance()
+	right_as_expr := parser.parse_expression(prec_map[operator]).(ast.Expr)
+	return &ast.BinaryExpr{
+		Lhs:      lhs.(ast.Expr),
+		Operator: operator,
+		Rhs:      right_as_expr,
+	}
+}
+
 func ld_parse_decl_stmt(
 	parser *pratt,
 	operator token.TOKEN_TYPE,
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Printf("ld_decl_stmt: operator: %v\n", operator)
+		fmt.Printf("ld_decl: lhs: %v, operator: %v\n", lhs, operator)
+		fmt.Println("--------------- STATEMENT ---------------")
 	}
+	left_as_ident := lhs.(*ast.IdentExpr)
 	// step past walrus operator
 	parser.advance()
-	left_as_ident := lhs.(*ast.IdentExpr)
 	rhs := parser.parse_expression(prec_map[parser.peek().Type])
-
 	return &ast.DeclStmt{
 		Decl: &ast.GenericDecl{
 			Name:  left_as_ident,
@@ -391,4 +310,17 @@ func ld_parse_decl_stmt(
 			Value: rhs.(ast.Expr),
 		},
 	}
+}
+
+func ld_parse_unary_expr(
+	parser *pratt,
+	operator token.TOKEN_TYPE,
+	lhs ast.Node,
+) ast.Node {
+	if parser.trace {
+		fmt.Printf("ld_unary: operator: %v\n", parser.peek())
+	}
+	// lhs subexpression already resolved; step past postfix operator
+	parser.advance()
+	return &ast.UnaryExpr{Operator: operator, Rhs: lhs.(ast.Expr)}
 }

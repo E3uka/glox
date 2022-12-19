@@ -197,7 +197,7 @@ func (l *scanner) lex() error {
 			l.step()
 			l.start = l.current
 		} else {
-			l.add_token(token.QUO, "\\")
+			l.add_token(token.QUO, "/")
 		}
 
 		// string literals
