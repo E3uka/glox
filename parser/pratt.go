@@ -12,6 +12,7 @@ type pratt struct {
 	tokens  []token.Token
 	current int
 	expr    ast.Expr
+	trace   bool
 }
 
 func New(path *string, tokens *[]token.Token) *pratt {
@@ -20,6 +21,7 @@ func New(path *string, tokens *[]token.Token) *pratt {
 		tokens:  *tokens,
 		current: 0,
 		expr:    nil,
+		trace:   false,
 	}
 	return pratt
 }
@@ -153,6 +155,9 @@ func recover_and_sync(parser *pratt) {
 // Top Down Operator Precedence - Vaughan R. Pratt, 1973
 // https://dl.acm.org/doi/10.1145/512927.512931
 func (p *pratt) parse_expression(current_precedence precedence) ast.Node {
+	if p.trace {
+		fmt.Printf("parse head: cur_tok: %v\n", p.peek())
+	}
 	var left ast.Node
 	cur_tok := p.peek()
 	// step past the first token then parse its subexpression
@@ -231,6 +236,7 @@ func init() {
 
 	null_deno[token.FALSE] = nd_parse_literal
 	null_deno[token.FLOAT] = nd_parse_literal
+	null_deno[token.CONST] = nd_parse_ident
 	null_deno[token.IDENT] = nd_parse_ident
 	null_deno[token.LBRACE] = nd_parse_block
 	null_deno[token.LPAREN] = nd_parse_paren
@@ -266,7 +272,9 @@ func nd_parse_block(parser *pratt, tok token.Token) ast.Node {
 }
 
 func nd_parse_paren(parser *pratt, tok token.Token) ast.Node {
-	fmt.Println("nd_paren")
+	if parser.trace {
+		fmt.Println("nd_paren")
+	}
 	// handle function scope
 	expr := parser.parse_expression(prec_map[tok.Type])
 	if parser.peek().Type != token.RPAREN {
@@ -279,23 +287,38 @@ func nd_parse_paren(parser *pratt, tok token.Token) ast.Node {
 }
 
 func nd_parse_ident(parser *pratt, tok token.Token) ast.Node {
-	fmt.Printf("nd_indent: name: %v\n", tok.Literal)
-	return ast.IdentExpr{
-		Name: tok.Literal,
-		Obj:  &ast.Object{Kind: ast.Var, Name: tok.Literal},
+	if parser.trace {
+		fmt.Printf("nd_indent: name: %v\n", tok.Literal)
+	}
+	if tok.Type == token.CONST {
+		ident_node := parser.parse_expression(prec_map[parser.peek().Type])
+		ident_expr, ok := ident_node.(*ast.IdentExpr)
+		if !ok {
+			parser.backtrack()
+			glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifer")
+		}
+		ident_expr.Mutable = false
+		return ident_expr
+	}
+	return &ast.IdentExpr{
+		Name:    tok.Literal,
+		Mutable: true,
 	}
 }
 
 func nd_parse_literal(parser *pratt, tok token.Token) ast.Node {
-	fmt.Printf("nd_literal: kind: %v, value: %v\n", tok.Type, tok.Literal)
+	if parser.trace {
+		fmt.Printf("nd_literal: kind: %v, value: %v\n", tok.Type, tok.Literal)
+	}
 	return &ast.LiteralExpr{Kind: tok.Type, Value: tok.Literal}
 }
 
 func nd_parse_unary(parser *pratt, tok token.Token) ast.Node {
-	fmt.Printf("nd_unary: operator %v\n", tok)
+	if parser.trace {
+		fmt.Printf("nd_unary: operator %v\n", tok)
+	}
 	parser.advance()
 	expr := parser.parse_expression(prec_map[parser.peek().Type])
-	fmt.Println("you can make it")
 	return &ast.UnaryExpr{Operator: tok.Type, Rhs: expr.(ast.Expr)}
 }
 
@@ -304,7 +327,9 @@ func ld_parse_binary_expr(
 	operator token.TOKEN_TYPE,
 	lhs ast.Node,
 ) ast.Node {
-	fmt.Println("ld_binary")
+	if parser.trace {
+		fmt.Println("ld_binary")
+	}
 	// step past infix operator
 	parser.advance()
 	expr := parser.parse_expression(prec_map[parser.peek().Type])
@@ -320,7 +345,9 @@ func ld_parse_unary_expr(
 	operator token.TOKEN_TYPE,
 	lhs ast.Node,
 ) ast.Node {
-	fmt.Println("ld_unary")
+	if parser.trace {
+		fmt.Println("ld_unary")
+	}
 	// step past postfix operator
 	parser.advance()
 	return &ast.UnaryExpr{Operator: operator, Rhs: lhs.(ast.Expr)}
@@ -331,7 +358,9 @@ func ld_parse_assign_stmt(
 	operator token.TOKEN_TYPE,
 	lhs ast.Node,
 ) ast.Node {
-	fmt.Println("ld_assign_stmt")
+	if parser.trace {
+		fmt.Println("ld_assign_stmt")
+	}
 	// step past assign operator
 	parser.advance()
 	rhs := parser.parse_expression(prec_map[parser.peek().Type])
@@ -347,18 +376,17 @@ func ld_parse_decl_stmt(
 	operator token.TOKEN_TYPE,
 	lhs ast.Node,
 ) ast.Node {
-	fmt.Printf("ld_decl_stmt: operator: %v\n", operator)
+	if parser.trace {
+		fmt.Printf("ld_decl_stmt: operator: %v\n", operator)
+	}
 	// step past walrus operator
 	parser.advance()
-	left_as_ident := lhs.(ast.IdentExpr)
+	left_as_ident := lhs.(*ast.IdentExpr)
 	rhs := parser.parse_expression(prec_map[parser.peek().Type])
 
 	return &ast.DeclStmt{
 		Decl: &ast.GenericDecl{
-			Name: ast.IdentExpr{
-				Name: left_as_ident.Name,
-				Obj:  left_as_ident.Obj,
-			},
+			Name:  left_as_ident,
 			Tok:   operator,
 			Value: rhs.(ast.Expr),
 		},

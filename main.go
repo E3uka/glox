@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	gloxError "glox/error"
 	"glox/parser"
@@ -21,8 +22,11 @@ func run() {
 	if err != nil {
 		return
 	}
-	parser := parser.New(&PROGRAM_PATH, scn.Tokens()).Parse()
-	fmt.Printf("%#v\n", parser)
+	parser := parser.New(&PROGRAM_PATH, scn.Tokens())
+	trees := parser.Parse()
+	json, _ := json.Marshal(trees)
+	fmt.Printf("%s\n", json)
+
 	// interpreter := ast.New(&PROGRAM_PATH)
 	/*
 		fmt.Printf("%#v\n", expr)

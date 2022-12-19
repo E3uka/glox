@@ -34,8 +34,9 @@ type (
 	}
 
 	IdentExpr struct {
-		Name interface{}
-		Obj  *Object
+		Name    interface{}
+		Obj     *Object
+		Mutable bool
 	}
 
 	LiteralExpr struct {
@@ -93,7 +94,7 @@ func (*ReturnStmt) stmt_node() {}
 
 type (
 	GenericDecl struct {
-		Name  IdentExpr
+		Name  *IdentExpr
 		Tok   token.TOKEN_TYPE
 		Value Expr
 	}
