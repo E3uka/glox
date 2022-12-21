@@ -49,6 +49,7 @@ const (
 	ASSIGN    // =
 	WALRUS    // :=
 	FUNASSIGN // ::
+	FUNRETURN // ->
 
 	NOT // !
 	BITAND // &
@@ -114,6 +115,7 @@ var tokens = [...]string{
 	ASSIGN:    "=",
 	WALRUS:    ":=",
 	FUNASSIGN: "::",
+	FUNRETURN: "->",
 
 	NOT: "!",
 	BITAND: "&",
