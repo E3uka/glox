@@ -39,20 +39,18 @@ const (
 	MUL     // *
 	QUO     // /
 
-	NOT // !
 	NEQ // !=
+	LSS // <
 	LEQ // <=
+	GTR // >
 	GEQ // >=
+	EQL // ==
 
 	ASSIGN    // =
 	WALRUS    // :=
 	FUNASSIGN // ::
 
-	EQL    // ==
-	LSS    // <
-	GTR    // >
-	FUNRET // ->
-
+	NOT // !
 	BITAND // &
 	AND    // &&
 	BITOR  // |
@@ -62,7 +60,6 @@ const (
 	CLASS
 	STRUCT
 	FALSE
-	FN
 	FOR
 
 	IF
@@ -107,19 +104,18 @@ var tokens = [...]string{
 	MUL:     "*",
 	QUO:     "/",
 
-	NOT: "!",
 	NEQ: "!=",
+	LSS: "<",
 	LEQ: "<=",
+	GTR: ">",
 	GEQ: ">=",
+	EQL: "==",
 
 	ASSIGN:    "=",
 	WALRUS:    ":=",
 	FUNASSIGN: "::",
-	EQL:       "==",
-	LSS:       "<",
-	GTR:       ">",
-	FUNRET:    "->",
 
+	NOT: "!",
 	BITAND: "&",
 	AND:    "&&",
 	BITOR:  "|",
@@ -128,7 +124,6 @@ var tokens = [...]string{
 	CLASS:  "class",
 	STRUCT: "struct",
 	FALSE:  "false",
-	FN:     "fn",
 	FOR:    "for",
 
 	IF:    "if",

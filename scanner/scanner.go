@@ -111,9 +111,7 @@ func (l *scanner) lex() error {
 			l.add_token(token.ADD, "+")
 		}
 	case '-':
-		if l.match_advance('>') {
-			l.add_token(token.FUNRET, "->")
-		} else if l.match_advance('-') {
+		if l.match_advance('-') {
 			l.add_token(token.DECR, "--")
 		} else if l.match_advance('=') {
 			l.add_token(token.DECRYBY, "-=")

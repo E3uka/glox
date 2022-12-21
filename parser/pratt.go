@@ -40,7 +40,7 @@ func (p *pratt) Parse() []ast.Node {
 					recover_and_sync(p)
 				}
 			}()
-			// may panic - using INIT precedence to ensure all latter found
+			// may panic - using LOWEST precedence to ensure all latter found
 			// Nodes will be of higher precedence and thus parsed correctly
 			node := p.parse_node(LOWEST - 1)
 			nodes = append(nodes, node)
@@ -193,12 +193,41 @@ func init() {
 }
 
 func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
-	return nil
+	if parser.trace {
+		fmt.Printf(
+			"nd_block: cur_tok: %v, next_tok: %v\n",
+			tok.Literal,
+			parser.peek(),
+		)
+	}
+	stmts := []ast.Stmt{}
+	for {
+		stmt, ok := parser.parse_node(LOWEST - 1).(ast.Stmt)
+		if !ok {
+			parser.backtrack()
+			glox_err.Parse_Panic(
+				parser.path,
+				parser.peek(),
+				"expected statement",
+			)
+		}
+		stmts = append(stmts, stmt)
+		if parser.peek().Type == token.RBRACE {
+			break
+		}
+	}
+	// step past '}'
+	parser.advance()
+	return &ast.BlockStmt{List: stmts}
 }
 
 func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Println("nd_paren")
+		fmt.Printf(
+			"nd_paren: cur_tok: %v, next_tok: %v\n",
+			tok.Literal,
+			parser.peek(),
+		)
 	}
 	expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
 	if !ok {
