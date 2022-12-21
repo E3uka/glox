@@ -21,7 +21,7 @@ func New(path *string, tokens *[]token.Token) *pratt {
 		tokens:  *tokens,
 		current: 0,
 		expr:    nil,
-		trace:   false,
+		trace:   true,
 	}
 	return pratt
 }
@@ -299,7 +299,7 @@ func ld_parse_assign_stmt(
 	}
 	// step past assign operator
 	parser.advance()
-	lhs_expr, ok := lhs.(ast.Expr)
+	lhs_ident, ok := lhs.(*ast.IdentExpr)
 	if !ok {
 		parser.backtrack()
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
@@ -310,7 +310,7 @@ func ld_parse_assign_stmt(
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
 	}
 	return &ast.AssignStmt{
-		Lhs:   lhs_expr,
+		Lhs:   lhs_ident,
 		Token: operator,
 		Rhs:   rhs_expr,
 	}
