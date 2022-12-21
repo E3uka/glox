@@ -63,7 +63,7 @@ func (*UnaryExpr) expr_node()   {}
 
 type (
 	AssignStmt struct {
-		Lhs   *IdentExpr // TODO: Lhs may need to be an Ident
+		Lhs   *IdentExpr
 		Token token.TOKEN_TYPE
 		Rhs   Expr
 	}

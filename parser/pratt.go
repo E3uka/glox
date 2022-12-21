@@ -173,6 +173,7 @@ func init() {
 	null_deno[token.STRING] = nd_parse_literal_expr
 	null_deno[token.SUB]    = nd_parse_unary_expr
 	null_deno[token.TRUE]   = nd_parse_literal_expr
+	null_deno[token.RETURN] = nd_parse_return_stmt
 
 	left_deno[token.ADD]     = ld_parse_binary_expr
 	left_deno[token.ASSIGN]  = ld_parse_assign_stmt
@@ -192,59 +193,31 @@ func init() {
 	left_deno[token.WALRUS]  = ld_parse_decl_stmt
 }
 
-func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
+func ld_parse_binary_expr(
+	parser *pratt,
+	operator token.TOKEN_TYPE,
+	lhs ast.Node,
+) ast.Node {
 	if parser.trace {
-		fmt.Printf(
-			"nd_block: cur_tok: %v, next_tok: %v\n",
-			tok.Literal,
-			parser.peek(),
-		)
+		fmt.Printf("ld_binary: operator: %v\n", parser.peek())
 	}
-	stmts := []ast.Stmt{}
-	for {
-		stmt, ok := parser.parse_node(LOWEST - 1).(ast.Stmt)
-		if !ok {
-			parser.backtrack()
-			glox_err.Parse_Panic(
-				parser.path,
-				parser.peek(),
-				"expected statement",
-			)
-		}
-		stmts = append(stmts, stmt)
-		if parser.peek().Type == token.RBRACE {
-			break
-		}
-	}
-	// step past '}'
+	// step past infix operator
 	parser.advance()
-	return &ast.BlockStmt{List: stmts}
-}
-
-func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf(
-			"nd_paren: cur_tok: %v, next_tok: %v\n",
-			tok.Literal,
-			parser.peek(),
-		)
-	}
-	expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
+	lhs_expr, ok := lhs.(ast.Expr)
 	if !ok {
 		parser.backtrack()
-		glox_err.Parse_Panic(
-			parser.path,
-			parser.peek(),
-			"expected expression",
-		)
+		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
 	}
-	if parser.peek().Type != token.RPAREN {
+	rhs_expr, ok := parser.parse_node(prec_map[operator]).(ast.Expr)
+	if !ok {
 		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, tok, "expected ')'")
+		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
 	}
-	// step past ')'
-	parser.advance()
-	return &ast.ParenExpr{Expr: expr}
+	return &ast.BinaryExpr{
+		Lhs:      lhs_expr,
+		Operator: operator,
+		Rhs:      rhs_expr,
+	}
 }
 
 func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
@@ -277,6 +250,32 @@ func nd_parse_literal_expr(parser *pratt, tok token.Token) ast.Node {
 	return &ast.LiteralExpr{Kind: tok.Type, Value: tok.Literal}
 }
 
+func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
+	if parser.trace {
+		fmt.Printf(
+			"nd_paren: cur_tok: %v, next_tok: %v\n",
+			tok.Literal,
+			parser.peek(),
+		)
+	}
+	expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
+	if !ok {
+		parser.backtrack()
+		glox_err.Parse_Panic(
+			parser.path,
+			parser.peek(),
+			"expected expression",
+		)
+	}
+	if parser.peek().Type != token.RPAREN {
+		parser.backtrack()
+		glox_err.Parse_Panic(parser.path, tok, "expected ')'")
+	}
+	// step past ')'
+	parser.advance()
+	return &ast.ParenExpr{Expr: expr}
+}
+
 func nd_parse_unary_expr(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
 		fmt.Printf("nd_unary: operator %v, next: %v\n", tok, parser.peek())
@@ -287,6 +286,23 @@ func nd_parse_unary_expr(parser *pratt, tok token.Token) ast.Node {
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
 	}
 	return &ast.UnaryExpr{Operator: tok.Type, Rhs: unary_expr}
+}
+
+func ld_parse_unary_expr(
+	parser *pratt,
+	operator token.TOKEN_TYPE,
+	lhs ast.Node,
+) ast.Node {
+	if parser.trace {
+		fmt.Printf("ld_unary: operator: %v\n", parser.peek())
+	}
+	parser.advance()
+	lhs_expr, ok := lhs.(ast.Expr)
+	if !ok {
+		parser.backtrack()
+		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
+	}
+	return &ast.UnaryExpr{Operator: operator, Rhs: lhs_expr}
 }
 
 func ld_parse_assign_stmt(
@@ -316,31 +332,33 @@ func ld_parse_assign_stmt(
 	}
 }
 
-func ld_parse_binary_expr(
-	parser *pratt,
-	operator token.TOKEN_TYPE,
-	lhs ast.Node,
-) ast.Node {
+func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Printf("ld_binary: operator: %v\n", parser.peek())
+		fmt.Printf(
+			"nd_block: cur_tok: %v, next_tok: %v\n",
+			tok.Literal,
+			parser.peek(),
+		)
 	}
-	// step past infix operator
+	stmts := []ast.Stmt{}
+	for {
+		stmt, ok := parser.parse_node(LOWEST - 1).(ast.Stmt)
+		if !ok {
+			parser.backtrack()
+			glox_err.Parse_Panic(
+				parser.path,
+				parser.peek(),
+				"expected statement",
+			)
+		}
+		stmts = append(stmts, stmt)
+		if parser.peek().Type == token.RBRACE {
+			break
+		}
+	}
+	// step past '}'
 	parser.advance()
-	lhs_expr, ok := lhs.(ast.Expr)
-	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
-	}
-	rhs_expr, ok := parser.parse_node(prec_map[operator]).(ast.Expr)
-	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
-	}
-	return &ast.BinaryExpr{
-		Lhs:      lhs_expr,
-		Operator: operator,
-		Rhs:      rhs_expr,
-	}
+	return &ast.BlockStmt{List: stmts}
 }
 
 func ld_parse_decl_stmt(
@@ -372,19 +390,18 @@ func ld_parse_decl_stmt(
 	}
 }
 
-func ld_parse_unary_expr(
-	parser *pratt,
-	operator token.TOKEN_TYPE,
-	lhs ast.Node,
-) ast.Node {
+func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Printf("ld_unary: operator: %v\n", parser.peek())
+		fmt.Printf(
+			"nd_return: cur_tok: %v, next_tok: %v\n",
+			tok.Literal,
+			parser.peek(),
+		)
 	}
-	parser.advance()
-	lhs_expr, ok := lhs.(ast.Expr)
+	result_expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
 	if !ok {
 		parser.backtrack()
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
 	}
-	return &ast.UnaryExpr{Operator: operator, Rhs: lhs_expr}
+	return &ast.ReturnStmt{Result: result_expr}
 }
