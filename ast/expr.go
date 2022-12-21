@@ -63,9 +63,9 @@ func (*UnaryExpr) expr_node()   {}
 
 type (
 	AssignStmt struct {
-		Lhs   []Expr
+		Lhs   Expr // TODO: Lhs may need to be an Ident
 		Token token.TOKEN_TYPE
-		Rhs   []Expr
+		Rhs   Expr
 	}
 
 	BlockStmt struct {
@@ -81,7 +81,7 @@ type (
 	}
 
 	ReturnStmt struct {
-		Results []Expr
+		Result Expr
 	}
 )
 

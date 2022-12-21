@@ -310,9 +310,9 @@ func ld_parse_assign_stmt(
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
 	}
 	return &ast.AssignStmt{
-		Lhs:   []ast.Expr{lhs_expr},
+		Lhs:   lhs_expr,
 		Token: operator,
-		Rhs:   []ast.Expr{rhs_expr},
+		Rhs:   rhs_expr,
 	}
 }
 
