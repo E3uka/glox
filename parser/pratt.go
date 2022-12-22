@@ -160,6 +160,7 @@ func init() {
 	prec_map[token.INCR]    = UNARY
 	prec_map[token.IDENT]   = PRIMARY
 
+	null_deno[token.BITAND] = nd_parse_pointer_expr
 	null_deno[token.CONST]  = nd_parse_ident_expr
 	null_deno[token.DECR]   = nd_parse_unary_expr
 	null_deno[token.FALSE]  = nd_parse_literal_expr
@@ -168,12 +169,13 @@ func init() {
 	null_deno[token.INCR]   = nd_parse_unary_expr
 	null_deno[token.LBRACE] = nd_parse_block_stmt
 	null_deno[token.LPAREN] = nd_parse_paren_expr
+	null_deno[token.MUL]    = nd_parse_pointer_expr
 	null_deno[token.NOT]    = nd_parse_unary_expr
 	null_deno[token.NULL]   = nd_parse_literal_expr
+	null_deno[token.RETURN] = nd_parse_return_stmt
 	null_deno[token.STRING] = nd_parse_literal_expr
 	null_deno[token.SUB]    = nd_parse_unary_expr
 	null_deno[token.TRUE]   = nd_parse_literal_expr
-	null_deno[token.RETURN] = nd_parse_return_stmt
 
 	left_deno[token.ADD]     = ld_parse_binary_expr
 	left_deno[token.ASSIGN]  = ld_parse_assign_stmt
@@ -274,6 +276,22 @@ func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
 	// step past ')'
 	parser.advance()
 	return &ast.ParenExpr{Expr: expr}
+}
+
+func nd_parse_pointer_expr(parser *pratt, tok token.Token) ast.Node {
+	if parser.trace {
+		fmt.Printf("nd_pointer: operator %v, next: %v\n", tok, parser.peek())
+	}
+	ident_expr, ok := parser.parse_node(prec_map[tok.Type]).(*ast.IdentExpr)
+	if !ok {
+		parser.backtrack()
+		glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifier")
+	}
+	deref := false
+	if tok.Type == token.MUL {
+		deref = true
+	}
+	return &ast.PtrExpr{Ident: ident_expr, Deref: deref}
 }
 
 func nd_parse_unary_expr(parser *pratt, tok token.Token) ast.Node {

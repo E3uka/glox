@@ -4,10 +4,13 @@ import (
 	"glox/token"
 )
 
-// learned from go source
-// there are three types of nodes: expressions & type nodes, statement nodes and
-// declaration nodes.
+// TODO: ArrayType, FuncType, StructType, CallExpr, FnExpr, IfaceExpr
+// TODO: ForStmt, IfStmt, IncrDecrStmt, WhileStmt
+// TODO: FunDecl
 
+// learned from go source
+// There exists types of nodes: expressions & type nodes, statement nodes and
+// declaration nodes
 type Node interface{}
 
 type Expr interface {
@@ -48,6 +51,11 @@ type (
 		Expr Expr
 	}
 
+	PtrExpr struct {
+		Ident *IdentExpr
+		Deref bool
+	}
+
 	UnaryExpr struct {
 		Operator token.TOKEN_TYPE
 		Rhs      Expr
@@ -59,6 +67,7 @@ func (*BinaryExpr) expr_node()  {}
 func (*IdentExpr) expr_node()   {}
 func (*LiteralExpr) expr_node() {}
 func (*ParenExpr) expr_node()   {}
+func (*PtrExpr) expr_node()     {}
 func (*UnaryExpr) expr_node()   {}
 
 type (
