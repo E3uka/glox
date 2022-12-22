@@ -161,6 +161,7 @@ func init() {
 	prec_map[token.IDENT]   = PRIMARY
 
 	null_deno[token.BITAND] = nd_parse_pointer_expr
+	null_deno[token.BREAK]  = nd_parse_branch_stmt
 	null_deno[token.CONST]  = nd_parse_ident_expr
 	null_deno[token.DECR]   = nd_parse_unary_expr
 	null_deno[token.FALSE]  = nd_parse_literal_expr
@@ -377,6 +378,17 @@ func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
 	// step past '}'
 	parser.advance()
 	return &ast.BlockStmt{List: stmts}
+}
+
+func nd_parse_branch_stmt(parser *pratt, tok token.Token) ast.Node {
+	if parser.trace {
+		fmt.Printf(
+			"nd_branch: cur_tok: %v, next_tok: %v\n",
+			tok.Literal,
+			parser.peek(),
+		)
+	}
+	return &ast.BranchStmt{Token: tok.Type}
 }
 
 func ld_parse_decl_stmt(

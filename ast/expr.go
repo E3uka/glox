@@ -4,7 +4,7 @@ import (
 	"glox/token"
 )
 
-// TODO: ArrayType, FuncType, StructType, CallExpr, FnExpr, IfaceExpr
+// TODO: ArrayType, FuncType, StructType, CallExpr, FnExpr, IfaceExpr, Fields
 // TODO: ForStmt, IfStmt, IncrDecrStmt, WhileStmt
 // TODO: FunDecl
 
@@ -81,6 +81,10 @@ type (
 		List []Stmt
 	}
 
+	BranchStmt struct {
+		Token token.TOKEN_TYPE
+	}
+
 	DeclStmt struct {
 		Decl Decl
 	}
@@ -97,6 +101,7 @@ type (
 // ensures only stmt_node types can be assigned to Stmt
 func (*AssignStmt) stmt_node() {}
 func (*BlockStmt) stmt_node()  {}
+func (*BranchStmt) stmt_node()  {}
 func (*DeclStmt) stmt_node()   {}
 func (*ExprStmt) stmt_node()   {}
 func (*ReturnStmt) stmt_node() {}

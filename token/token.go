@@ -62,6 +62,7 @@ const (
 	STRUCT
 	FALSE
 	FOR
+	BREAK
 
 	IF
 	CONST
@@ -127,6 +128,7 @@ var tokens = [...]string{
 	STRUCT: "struct",
 	FALSE:  "false",
 	FOR:    "for",
+	BREAK:  "break",
 
 	IF:    "if",
 	CONST: "const",
