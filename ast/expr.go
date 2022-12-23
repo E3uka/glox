@@ -88,10 +88,8 @@ type (
 	DeclStmt struct {
 		Decl Decl
 	}
-
-	ExprStmt struct {
-		expr Expr
-	}
+	
+	EmptyStmt struct {}
 
 	ReturnStmt struct {
 		Result Expr
@@ -103,14 +101,14 @@ func (*AssignStmt) stmt_node() {}
 func (*BlockStmt) stmt_node()  {}
 func (*BranchStmt) stmt_node()  {}
 func (*DeclStmt) stmt_node()   {}
-func (*ExprStmt) stmt_node()   {}
+func (*EmptyStmt) stmt_node()   {}
 func (*ReturnStmt) stmt_node() {}
 
 type (
 	GenericDecl struct {
 		Name  *IdentExpr
 		Tok   token.TOKEN_TYPE
-		Value Expr
+		Value Node
 	}
 
 	FunDecl struct {

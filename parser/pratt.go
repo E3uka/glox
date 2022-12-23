@@ -261,7 +261,12 @@ func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
 
 func nd_parse_literal_expr(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Printf("nd_literal: kind: %v, value: %v\n", tok.Type, tok.Literal)
+		fmt.Printf(
+			"nd_literal: kind: %v, value: %v, next: %v\n",
+			tok.Type,
+			tok.Literal,
+			parser.peek(),
+		)
 	}
 	return &ast.LiteralExpr{Kind: tok.Type, Value: tok.Literal}
 }
@@ -370,24 +375,40 @@ func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
 			parser.peek(),
 		)
 	}
-	stmts := []ast.Stmt{}
-	for {
-		stmt, ok := parser.parse_node(LOWEST - 1).(ast.Stmt)
-		if !ok {
-			parser.backtrack()
-			glox_err.Parse_Panic(
-				parser.path,
-				parser.peek(),
-				"expected statement",
-			)
-		}
-		stmts = append(stmts, stmt)
-		if parser.peek().Type == token.RBRACE {
-			break
-		}
+	list := parser.parse_stmt_list()
 	parser.expect(token.RBRACE)
+	return &ast.BlockStmt{List: list}
+}
+
+func (p *pratt) parse_stmt_list() (list []ast.Stmt) {
+	for p.peek().Type != token.RBRACE && p.peek().Type != token.EOF {
+		list = append(list, p.parse_stmt())
 	}
-	return &ast.BlockStmt{List: stmts}
+	return
+}
+
+func (p *pratt) parse_stmt() (stmt ast.Stmt) {
+	if p.trace {
+		fmt.Printf(
+			"stmt: cur_tok: %v\n",
+			p.peek(),
+		)
+	}
+	switch p.peek().Type {
+	case token.IDENT:
+		// TODO: handle other structures
+	case token.LBRACE:
+		// parse again but advance to next token
+		stmt = nd_parse_block_stmt(p, p.advance()).(ast.Stmt)
+		p.expect(token.SEMICOLON)
+	case token.SEMICOLON:
+		p.expect(token.SEMICOLON)
+	case token.RBRACE:
+		stmt = &ast.EmptyStmt{}
+	default:
+		fmt.Println("current: ", p.peek())
+	}
+	return
 }
 
 func nd_parse_branch_stmt(parser *pratt, tok token.Token) ast.Node {
@@ -414,17 +435,13 @@ func ld_parse_decl_stmt(
 		parser.backtrack()
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifer")
 	}
-	rhs_expr, ok := parser.parse_node(prec_map[operator]).(ast.Expr)
-	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
-	}
 	parser.expect(token.WALRUS)
+	rhs := parser.parse_node(prec_map[operator])
 	return &ast.DeclStmt{
 		Decl: &ast.GenericDecl{
 			Name:  lhs_ident,
 			Tok:   operator,
-			Value: rhs_expr,
+			Value: rhs,
 		},
 	}
 }
