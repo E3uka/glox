@@ -5,6 +5,7 @@ import (
 	"glox/ast"
 	glox_err "glox/error"
 	"glox/token"
+	"reflect"
 )
 
 type pratt struct {
@@ -45,7 +46,7 @@ func (p *pratt) Parse() []ast.Node {
 			node := p.parse_node(LOWEST - 1)
 			nodes = append(nodes, node)
 			if p.trace {
-				fmt.Println("------ NODE ADDED ------")
+				fmt.Printf("------ PARSED: [%v] ------\n", reflect.TypeOf(node))
 			}
 		}()
 	}
@@ -76,7 +77,7 @@ func recover_and_sync(parser *pratt) {
 func (p *pratt) parse_node(current_precedence precedence) ast.Node {
 	var left ast.Node
 	cur_tok := p.peek()
-	// step past the first token then parse its subexpression
+	// step past the first token and parse its subexpression
 	p.advance()
 	if p.trace {
 		fmt.Printf(
@@ -107,6 +108,18 @@ func (p *pratt) advance() token.Token { p.current++; return p.peek() }
 func (p *pratt) backtrack()           { p.current-- }
 func (p *pratt) peek() token.Token    { return p.tokens[p.current] }
 func (p *pratt) is_at_end() bool      { return p.peek().Type == token.EOF }
+func (p *pratt) expect(tok token.TOKEN_TYPE) { 
+	if p.peek().Type != tok {
+		p.backtrack()
+		glox_err.Parse_Panic(
+			p.path,
+			p.peek(),
+			fmt.Sprintf("expected '%v'", tok),
+		)
+	}
+	p.advance()
+	return
+}
 
 type precedence int
 
@@ -274,8 +287,7 @@ func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
 		parser.backtrack()
 		glox_err.Parse_Panic(parser.path, tok, "expected ')'")
 	}
-	// step past ')'
-	parser.advance()
+	parser.expect(token.RPAREN)
 	return &ast.ParenExpr{Expr: expr}
 }
 
@@ -332,8 +344,7 @@ func ld_parse_assign_stmt(
 	if parser.trace {
 		fmt.Println("ld_assign")
 	}
-	// step past assign operator
-	parser.advance()
+	parser.expect(token.ASSIGN)
 	lhs_ident, ok := lhs.(*ast.IdentExpr)
 	if !ok {
 		parser.backtrack()
@@ -374,9 +385,8 @@ func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
 		if parser.peek().Type == token.RBRACE {
 			break
 		}
+	parser.expect(token.RBRACE)
 	}
-	// step past '}'
-	parser.advance()
 	return &ast.BlockStmt{List: stmts}
 }
 
@@ -404,13 +414,12 @@ func ld_parse_decl_stmt(
 		parser.backtrack()
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifer")
 	}
-	// step past walrus operator
-	parser.advance()
 	rhs_expr, ok := parser.parse_node(prec_map[operator]).(ast.Expr)
 	if !ok {
 		parser.backtrack()
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
 	}
+	parser.expect(token.WALRUS)
 	return &ast.DeclStmt{
 		Decl: &ast.GenericDecl{
 			Name:  lhs_ident,
