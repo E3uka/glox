@@ -172,6 +172,7 @@ func (l *scanner) lex() error {
 			}
 			// currently at the newline char, step again and update start
 			// position to move past newline
+			l.line += 1
 			l.step()
 			l.start = l.current
 		} else if l.match_advance('*') {
