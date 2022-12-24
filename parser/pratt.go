@@ -41,8 +41,9 @@ func (p *pratt) Parse() []ast.Node {
 					recover_and_sync(p)
 				}
 			}()
-			// may panic - using LOWEST precedence to ensure all latter found
-			// Nodes will be of higher precedence and thus parsed correctly
+			// may panic - using an initial 'LOWEST - 1' precedence to ensure
+			// all latter found Nodes will be of higher precedence and thus 
+			// accepted as valid nodes due to having a higher binding power
 			node := p.parse_node(LOWEST - 1)
 			nodes = append(nodes, node)
 			if p.trace {
@@ -353,13 +354,14 @@ func ld_parse_assign_stmt(
 	lhs_ident, ok := lhs.(*ast.IdentExpr)
 	if !ok {
 		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
+		glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifier")
 	}
 	rhs_expr, ok := parser.parse_node(prec_map[operator]).(ast.Expr)
 	if !ok {
 		parser.backtrack()
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
 	}
+	parser.expect(token.SEMICOLON)
 	return &ast.AssignStmt{
 		Lhs:   lhs_ident,
 		Token: operator,
@@ -395,8 +397,15 @@ func (p *pratt) parse_stmt() (stmt ast.Stmt) {
 		)
 	}
 	switch p.peek().Type {
-	case token.IDENT:
-		// TODO: handle other structures
+	case 
+		token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD, 
+		token.SUB, token.MUL, token.AND, token.NOT, token.RETURN:
+		expr, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
+		if !ok {
+			p.backtrack()
+			glox_err.Parse_Panic(p.path, p.peek(), "expected statement")
+		}
+		stmt = expr
 	case token.LBRACE:
 		// parse again but advance to next token
 		stmt = nd_parse_block_stmt(p, p.advance()).(ast.Stmt)
@@ -406,7 +415,8 @@ func (p *pratt) parse_stmt() (stmt ast.Stmt) {
 	case token.RBRACE:
 		stmt = &ast.EmptyStmt{}
 	default:
-		fmt.Println("current: ", p.peek())
+		p.backtrack()
+		glox_err.Parse_Panic(p.path, p.peek(), "expected statement")
 	}
 	return
 }
@@ -437,6 +447,7 @@ func ld_parse_decl_stmt(
 	}
 	parser.expect(token.WALRUS)
 	rhs := parser.parse_node(prec_map[operator])
+	parser.expect(token.SEMICOLON)
 	return &ast.DeclStmt{
 		Decl: &ast.GenericDecl{
 			Name:  lhs_ident,
@@ -459,5 +470,6 @@ func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
 		parser.backtrack()
 		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
 	}
+	parser.expect(token.SEMICOLON)
 	return &ast.ReturnStmt{Result: result_expr}
 }

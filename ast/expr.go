@@ -4,13 +4,8 @@ import (
 	"glox/token"
 )
 
-// TODO: ArrayType, FuncType, StructType, CallExpr, FnExpr, IfaceExpr, Fields
-// TODO: ForStmt, IfStmt, IncrDecrStmt, WhileStmt
-// TODO: FunDecl
-
-// learned from go source
 // There exists types of nodes: expressions & type nodes, statement nodes and
-// declaration nodes
+// declaration nodes - gleaned from go source
 type Node interface{}
 
 type Expr interface {
@@ -28,7 +23,6 @@ type Decl interface {
 	decl_node()
 }
 
-// Expression types
 type (
 	BinaryExpr struct {
 		Lhs      Expr
@@ -116,6 +110,7 @@ type (
 	}
 )
 
+// ensures only decl_node types can be assigned to Decl
 func (*GenericDecl) decl_node() {}
 func (*FunDecl) decl_node()     {}
 
