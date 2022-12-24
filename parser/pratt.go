@@ -55,21 +55,21 @@ func (p *pratt) Parse() []ast.Node {
 }
 
 func recover_and_sync(parser *pratt) {
-	parser.advance()
+	next_tok := parser.advance()
 	for !parser.is_at_end() {
-		// found end node boundary; advance to next token and continue the
-		// parse operation
-		if parser.peek().Type == token.SEMICOLON {
-			parser.advance()
+		// step past end node boundary ';' to continue parse operation
+		if next_tok.Type == token.SEMICOLON {
+			parser.expect(token.SEMICOLON)
 			return
 		}
+		// potential beginning statement boundary (if formatted correctly)
 		switch parser.peek().Type {
 		case token.CLASS, token.STRUCT, token.FOR, token.IF, token.CONST,
 			token.RETURN, token.WHILE, token.FUNASSIGN:
 			return
 		}
 		// advance until boundary is found
-		parser.advance()
+		next_tok = parser.advance()
 	}
 }
 
@@ -107,22 +107,38 @@ func (p *pratt) parse_node(current_precedence precedence) ast.Node {
 }
 
 func (p *pratt) advance() token.Token { p.current++; return p.peek() }
-func (p *pratt) backtrack()           { p.current-- }
 func (p *pratt) peek() token.Token    { return p.tokens[p.current] }
 func (p *pratt) is_at_end() bool      { return p.peek().Type == token.EOF }
 // expect is like advance but raises are parser error if the next token does
 // not match what is expected.
+
 func (p *pratt) expect(tok token.TOKEN_TYPE) { 
 	if p.peek().Type != tok {
-		p.backtrack()
-		glox_err.Parse_Panic(
-			p.path,
-			p.peek(),
-			fmt.Sprintf("expected '%v'", tok),
-		)
+		p.report_expect_error(p.peek(), tok, "expected '%v'")
 	}
 	p.advance()
 	return
+}
+
+func (p *pratt) report_parse_error(token token.Token, format_string string) {
+	msg := fmt.Sprintf(format_string, token)
+	glox_err.Parse_Panic(p.path, token.Line, msg)
+}
+
+func (p *pratt) report_offset_parse_error(offset int, format_string string) {
+	index := p.current + offset
+	tok_at_idx := p.tokens[index]
+	msg := fmt.Sprintf(format_string, tok_at_idx)
+	glox_err.Parse_Panic(p.path, tok_at_idx.Line, msg)
+}
+
+func (p *pratt) report_expect_error(
+	token token.Token,
+	expected token.TOKEN_TYPE,
+	format_string string,
+) {
+	msg := fmt.Sprintf(format_string, expected)
+	glox_err.Parse_Panic(p.path, token.Line, msg)
 }
 
 type precedence int
@@ -222,16 +238,14 @@ func ld_parse_binary_expr(
 		fmt.Printf("ld_binary: operator: %v\n", parser.peek())
 	}
 	// step past infix operator
-	parser.advance()
+	rhs_tok := parser.advance()
 	lhs_expr, ok := lhs.(ast.Expr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
+		parser.report_offset_parse_error(-2, "%v: expected expression")
 	}
 	rhs_expr, ok := parser.parse_node(prec_map[operator]).(ast.Expr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
+		parser.report_parse_error(rhs_tok, "%v: expected expression")
 	}
 	return &ast.BinaryExpr{
 		Lhs:      lhs_expr,
@@ -251,8 +265,7 @@ func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
 	if tok.Type == token.CONST {
 		ident_expr, ok := parser.parse_node(prec_map[tok.Type]).(*ast.IdentExpr)
 		if !ok {
-			parser.backtrack()
-			glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifer")
+			parser.report_offset_parse_error(-1, "%v: expected identifier")
 		}
 		ident_expr.Mutable = false
 		return ident_expr
@@ -285,16 +298,7 @@ func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
 	}
 	expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(
-			parser.path,
-			parser.peek(),
-			"expected expression",
-		)
-	}
-	if parser.peek().Type != token.RPAREN {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, tok, "expected ')'")
+		parser.report_offset_parse_error(-1, "%v: expected expression")
 	}
 	parser.expect(token.RPAREN)
 	return &ast.ParenExpr{Expr: expr}
@@ -306,8 +310,7 @@ func nd_parse_pointer_expr(parser *pratt, tok token.Token) ast.Node {
 	}
 	ident_expr, ok := parser.parse_node(prec_map[tok.Type]).(*ast.IdentExpr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifier")
+		parser.report_offset_parse_error(-1, "%v: expected identifier")
 	}
 	deref := false
 	if tok.Type == token.MUL {
@@ -322,8 +325,7 @@ func nd_parse_unary_expr(parser *pratt, tok token.Token) ast.Node {
 	}
 	unary_expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
+		parser.report_offset_parse_error(-1, "%v: expected expression")
 	}
 	return &ast.UnaryExpr{Operator: tok.Type, Rhs: unary_expr}
 }
@@ -336,13 +338,12 @@ func ld_parse_unary_expr(
 	if parser.trace {
 		fmt.Printf("ld_unary: operator: %v\n", parser.peek())
 	}
-	parser.advance()
-	lhs_expr, ok := lhs.(ast.Expr)
+	rhs_tok := parser.advance()
+	rhs_expr, ok := lhs.(ast.Expr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
+		parser.report_parse_error(rhs_tok, "%v: expected expression")
 	}
-	return &ast.UnaryExpr{Operator: operator, Rhs: lhs_expr}
+	return &ast.UnaryExpr{Operator: operator, Rhs: rhs_expr}
 }
 
 func ld_parse_assign_stmt(
@@ -356,13 +357,11 @@ func ld_parse_assign_stmt(
 	parser.expect(token.ASSIGN)
 	lhs_ident, ok := lhs.(*ast.IdentExpr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifier")
+		parser.report_offset_parse_error(-2, "%v: expected identifier")
 	}
 	rhs_expr, ok := parser.parse_node(prec_map[operator]).(ast.Expr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
+		parser.report_offset_parse_error(-1, "%v: expected identifier")
 	}
 	return &ast.AssignStmt{
 		Lhs:   lhs_ident,
@@ -405,8 +404,7 @@ func (p *pratt) parse_stmt() (stmt ast.Stmt) {
 		token.SUB, token.MUL, token.AND, token.NOT, token.RETURN:
 		expr, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
 		if !ok {
-			p.backtrack()
-			glox_err.Parse_Panic(p.path, p.peek(), "expected statement")
+			p.report_offset_parse_error(-1, "%v: expected statement")
 		}
 		stmt = expr
 	case token.LBRACE:
@@ -418,8 +416,7 @@ func (p *pratt) parse_stmt() (stmt ast.Stmt) {
 	case token.RBRACE:
 		stmt = &ast.EmptyStmt{}
 	default:
-		p.backtrack()
-		glox_err.Parse_Panic(p.path, p.peek(), "expected statement")
+		p.report_parse_error(p.peek(), "%v: expected statement")
 	}
 	return
 }
@@ -445,8 +442,7 @@ func ld_parse_decl_stmt(
 	}
 	lhs_ident, ok := lhs.(*ast.IdentExpr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected identifer")
+		parser.report_offset_parse_error(-2, "%v: expected identifier")
 	}
 	parser.expect(token.WALRUS)
 	rhs := parser.parse_node(prec_map[operator])
@@ -469,8 +465,7 @@ func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
 	}
 	result_expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
 	if !ok {
-		parser.backtrack()
-		glox_err.Parse_Panic(parser.path, parser.peek(), "expected expression")
+		parser.report_offset_parse_error(-1, "%v: expected expression")
 	}
 	return &ast.ReturnStmt{Result: result_expr}
 }

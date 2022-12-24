@@ -3,7 +3,6 @@ package error
 import (
 	"errors"
 	"fmt"
-	"glox/token"
 )
 
 var LEX_ERROR bool = false
@@ -17,8 +16,8 @@ func Lex_Error(path *string, line int, reason string) error {
 	return errors.New(msg)
 }
 
-func Parse_Panic(path *string, tok token.Token, reason string) {
-	msg := fmt.Sprintf("%s:%d: %s: %s", *path, tok.Line, tok.Literal, reason)
+func Parse_Panic(path *string, line int, reason string) {
+	msg := fmt.Sprintf("%s:%d: %s", *path, line, reason)
 	panic(msg)
 }
 
