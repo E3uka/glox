@@ -401,7 +401,7 @@ func (p *pratt) parse_stmt() (stmt ast.Stmt) {
 	switch p.peek().Type {
 	case 
 		token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD, 
-		token.SUB, token.MUL, token.AND, token.NOT, token.RETURN:
+		token.SUB, token.MUL, token.AND, token.NOT, token.RETURN, token.BREAK:
 		expr, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
 		if !ok {
 			p.report_offset_parse_error(-1, "%v: expected statement")
