@@ -174,24 +174,25 @@ var (
 )
 
 func init() {
-	prec_map[token.ASSIGN]  = LOWEST
-	prec_map[token.CONST]   = LOWEST
-	prec_map[token.WALRUS]  = LOWEST
-	prec_map[token.EQL]     = EQUALITY
-	prec_map[token.NEQ]     = EQUALITY
-	prec_map[token.GEQ]     = LESSGREATER
-	prec_map[token.GTR]     = LESSGREATER
-	prec_map[token.LEQ]     = LESSGREATER
-	prec_map[token.LSS]     = LESSGREATER
-	prec_map[token.DECRYBY] = SUB
-	prec_map[token.SUB]     = SUB
-	prec_map[token.ADD]     = ADD
-	prec_map[token.INCRBY]  = ADD
-	prec_map[token.QUO]     = QUO
-	prec_map[token.DECR]    = UNARY
-	prec_map[token.INCR]    = UNARY
-	prec_map[token.IDENT]   = PRIMARY
+	prec_map[token.ASSIGN]    = LOWEST
+	prec_map[token.CONST]     = LOWEST
+	prec_map[token.FUNASSIGN] = LOWEST
+	prec_map[token.WALRUS]    = LOWEST
+	prec_map[token.EQL]       = EQUALITY
+	prec_map[token.NEQ]       = EQUALITY
+	prec_map[token.GEQ]       = LESSGREATER
+	prec_map[token.GTR]       = LESSGREATER
+	prec_map[token.LEQ]       = LESSGREATER
+	prec_map[token.LSS]       = LESSGREATER
+	prec_map[token.DECRYBY]   = SUB
+	prec_map[token.SUB]       = SUB
+	prec_map[token.ADD]       = ADD
+	prec_map[token.INCRBY]    = ADD
 	prec_map[token.STAR]      = MUL
+	prec_map[token.QUO]       = QUO
+	prec_map[token.DECR]      = UNARY
+	prec_map[token.INCR]      = UNARY
+	prec_map[token.IDENT]     = PRIMARY
 
 	null_deno[token.BITAND] = nd_parse_pointer_expr
 	null_deno[token.BREAK]  = nd_parse_branch_stmt
@@ -211,22 +212,23 @@ func init() {
 	null_deno[token.SUB]    = nd_parse_unary_expr
 	null_deno[token.TRUE]   = nd_parse_literal_expr
 
-	left_deno[token.ADD]     = ld_parse_binary_expr
-	left_deno[token.ASSIGN]  = ld_parse_assign_stmt
-	left_deno[token.DECRYBY] = ld_parse_binary_expr
-	left_deno[token.DECR]    = ld_parse_unary_expr
-	left_deno[token.EQL]     = ld_parse_binary_expr
-	left_deno[token.GEQ]     = ld_parse_binary_expr
-	left_deno[token.GTR]     = ld_parse_binary_expr
-	left_deno[token.INCRBY]  = ld_parse_binary_expr
-	left_deno[token.INCR]    = ld_parse_unary_expr
-	left_deno[token.LEQ]     = ld_parse_binary_expr
-	left_deno[token.LSS]     = ld_parse_binary_expr
-	left_deno[token.NEQ]     = ld_parse_binary_expr
-	left_deno[token.QUO]     = ld_parse_binary_expr
-	left_deno[token.SUB]     = ld_parse_binary_expr
-	left_deno[token.WALRUS]  = ld_parse_decl_stmt
+	left_deno[token.ADD]       = ld_parse_binary_expr
+	left_deno[token.ASSIGN]    = ld_parse_assign_stmt
+	left_deno[token.DECRYBY]   = ld_parse_binary_expr
+	left_deno[token.DECR]      = ld_parse_unary_expr
+	left_deno[token.EQL]       = ld_parse_binary_expr
+	left_deno[token.FUNASSIGN] = ld_parse_decl_stmt
+	left_deno[token.GEQ]       = ld_parse_binary_expr
+	left_deno[token.GTR]       = ld_parse_binary_expr
+	left_deno[token.INCRBY]    = ld_parse_binary_expr
+	left_deno[token.INCR]      = ld_parse_unary_expr
+	left_deno[token.LEQ]       = ld_parse_binary_expr
+	left_deno[token.LSS]       = ld_parse_binary_expr
 	left_deno[token.STAR]      = ld_parse_binary_expr
+	left_deno[token.NEQ]       = ld_parse_binary_expr
+	left_deno[token.QUO]       = ld_parse_binary_expr
+	left_deno[token.SUB]       = ld_parse_binary_expr
+	left_deno[token.WALRUS]    = ld_parse_decl_stmt
 }
 
 func ld_parse_binary_expr(
@@ -385,40 +387,37 @@ func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
 
 func (p *pratt) parse_stmt_list() []ast.Stmt {
 	list := []ast.Stmt{}
+	var stmt ast.Stmt
 	for p.peek().Type != token.RBRACE && p.peek().Type != token.EOF {
-		list = append(list, p.parse_stmt())
+		if p.trace {
+			fmt.Printf(
+				"stmt: cur_tok: %v\n",
+				p.peek(),
+			)
+		}
+		switch p.peek().Type {
+		case 
+			token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD, 
+			token.SUB, token.STAR, token.AND, token.NOT, token.RETURN, 
+			token.BREAK:
+			stmt, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
+			if !ok {
+				p.report_offset_parse_error(-1, "%v: expected statement")
+				continue
+			}
+			list = append(list, stmt)
+		case token.LBRACE:
+			next_tok := p.advance()
+			stmt = nd_parse_block_stmt(p, next_tok).(ast.Stmt)
+			p.expect(token.SEMICOLON)
+			list = append(list, stmt)
+		case token.SEMICOLON:
+			p.expect(token.SEMICOLON)
+		default:
+			p.report_parse_error(p.peek(), "%v: expected statement")
+		}
 	}
 	return list
-}
-
-func (p *pratt) parse_stmt() (stmt ast.Stmt) {
-	if p.trace {
-		fmt.Printf(
-			"stmt: cur_tok: %v\n",
-			p.peek(),
-		)
-	}
-	switch p.peek().Type {
-	case 
-		token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD, 
-		expr, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
-		if !ok {
-			p.report_offset_parse_error(-1, "%v: expected statement")
-			token.SUB, token.STAR, token.AND, token.NOT, token.RETURN, 
-		}
-		stmt = expr
-	case token.LBRACE:
-		next_tok := p.advance()
-		stmt = nd_parse_block_stmt(p, next_tok).(ast.Stmt)
-		p.expect(token.SEMICOLON)
-	case token.SEMICOLON:
-		p.expect(token.SEMICOLON)
-	case token.RBRACE:
-		stmt = &ast.EmptyStmt{}
-	default:
-		p.report_parse_error(p.peek(), "%v: expected statement")
-	}
-	return
 }
 
 func nd_parse_branch_stmt(parser *pratt, tok token.Token) ast.Node {
@@ -444,15 +443,46 @@ func ld_parse_decl_stmt(
 	if !ok {
 		parser.report_offset_parse_error(-2, "%v: expected identifier")
 	}
-	parser.expect(token.WALRUS)
-	rhs := parser.parse_node(prec_map[operator])
-	return &ast.DeclStmt{
-		Decl: &ast.GenericDecl{
-			Name:  lhs_ident,
-			Tok:   operator,
-			Value: rhs,
-		},
+	var decl ast.Decl
+	switch operator {
+	case token.WALRUS:
+		decl = parser.parse_generic_declaration(lhs_ident, operator)
+	case token.FUNASSIGN:
+		decl = parser.parse_function_declaration(lhs_ident, operator)
+	default:
+		parser.report_parse_error(parser.peek(), "%v: unexpected token")
 	}
+	return &ast.DeclStmt{Decl: decl}
+}
+
+func (p *pratt) parse_function_declaration(
+	lhs_ident *ast.IdentExpr,
+	operator token.TOKEN_TYPE,
+) *ast.FunDecl {
+	if p.trace {
+		fmt.Println("ld_function_decl")
+	}
+	p.expect(operator)
+	_, ok := p.parse_node(prec_map[operator]).(ast.Expr)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected something")
+	}
+	return &ast.FunDecl{Tok: operator}
+}
+
+func (p *pratt) parse_generic_declaration(
+	lhs_ident *ast.IdentExpr,
+	operator token.TOKEN_TYPE,
+) *ast.GenericDecl {
+	if p.trace {
+		fmt.Println("ld_generic_decl")
+	}
+	p.expect(operator)
+	rhs_expr, ok := p.parse_node(prec_map[operator]).(ast.Expr)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected expression")
+	}
+	return &ast.GenericDecl{Name: lhs_ident,Tok: operator, Value: rhs_expr}
 }
 
 func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {

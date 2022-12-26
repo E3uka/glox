@@ -102,7 +102,7 @@ type (
 	GenericDecl struct {
 		Name  *IdentExpr
 		Tok   token.TOKEN_TYPE
-		Value Node
+		Value Expr
 	}
 
 	FunDecl struct {
