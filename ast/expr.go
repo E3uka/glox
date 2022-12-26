@@ -4,7 +4,7 @@ import (
 	"glox/token"
 )
 
-// There exists types of nodes: expressions & type nodes, statement nodes and
+// there exists types of nodes: expressions & type nodes, statement nodes and
 // declaration nodes - gleaned from go source
 type Node interface{}
 
@@ -24,97 +24,97 @@ type Decl interface {
 }
 
 type (
-	BinaryExpr struct {
+	Binary_Expr struct {
 		Lhs      Expr
 		Operator token.TOKEN_TYPE
 		Rhs      Expr
 	}
 
-	IdentExpr struct {
+	Ident_Expr struct {
 		Obj     *Object
 		Mutable bool
 	}
 
-	LiteralExpr struct {
+	Literal_Expr struct {
 		Kind  token.TOKEN_TYPE
 		Value string
 	}
 
-	ParenExpr struct {
+	Paren_Expr struct {
 		Expr Expr
 	}
 
-	PtrExpr struct {
-		Ident *IdentExpr
+	Ptr_Expr struct {
+		Ident *Ident_Expr
 		Deref bool
 	}
 
-	UnaryExpr struct {
+	Unary_Expr struct {
 		Operator token.TOKEN_TYPE
 		Rhs      Expr
 	}
 )
 
 // ensures only expr_node types can be assigned to Expr
-func (*BinaryExpr) expr_node()  {}
-func (*IdentExpr) expr_node()   {}
-func (*LiteralExpr) expr_node() {}
-func (*ParenExpr) expr_node()   {}
-func (*PtrExpr) expr_node()     {}
-func (*UnaryExpr) expr_node()   {}
+func (*Binary_Expr)  expr_node() {}
+func (*Ident_Expr)   expr_node() {}
+func (*Literal_Expr) expr_node() {}
+func (*Paren_Expr)   expr_node() {}
+func (*Ptr_Expr)     expr_node() {}
+func (*Unary_Expr)   expr_node() {}
 
 type (
-	AssignStmt struct {
-		Ident *IdentExpr
+	Assign_Stmt struct {
+		Ident *Ident_Expr
 	}
 
-	BlockStmt struct {
+	Block_Stmt struct {
 		List []Stmt
 	}
 
-	BranchStmt struct {} // TODO
+	Branch_Stmt struct {} // TODO
 
-	DeclStmt struct {
+	Decl_Stmt struct {
 		Decl Decl
 	}
 	
-	EmptyStmt struct {} // TODO
+	Empty_Stmt struct {} // TODO
 
-	ReturnStmt struct {
+	Return_Stmt struct {
 		Result Expr
 	}
 )
 
 // ensures only stmt_node types can be assigned to Stmt
-func (*AssignStmt) stmt_node() {}
-func (*BlockStmt) stmt_node()  {}
-func (*BranchStmt) stmt_node()  {}
-func (*DeclStmt) stmt_node()   {}
-func (*EmptyStmt) stmt_node()   {}
-func (*ReturnStmt) stmt_node() {}
+func (*Assign_Stmt) stmt_node() {}
+func (*Block_Stmt)  stmt_node() {}
+func (*Branch_Stmt) stmt_node() {}
+func (*Decl_Stmt)   stmt_node() {}
+func (*Empty_Stmt)  stmt_node() {}
+func (*Return_Stmt) stmt_node() {}
 
 type (
-	GenericDecl struct {
-		Ident *IdentExpr
+	Generic_Decl struct {
+		Ident *Ident_Expr
 		Value Expr
 	}
 
-	FunDecl struct {
-		Ident *IdentExpr
-		Body  *BlockStmt
+	Fun_Decl struct {
+		Ident *Ident_Expr
+		Body  *Block_Stmt
 	}
 )
 
 // ensures only decl_node types can be assigned to Decl
-func (*GenericDecl) decl_node() {}
-func (*FunDecl) decl_node()     {}
+func (*Generic_Decl) decl_node() {}
+func (*Fun_Decl)     decl_node() {}
 
 type Object struct {
 	Kind ObjKind
 	Name string
-	Decl any    // Field, FuncDecl, AssignStmt, Scope; or nil
-	Data any    // Expr, object-specific data; or nil
-	// Type any // TODO: explore later; placeholder for type information; may be nil
+	Decl any // Field, FuncDecl, AssignStmt, Scope; or nil
+	Data any // Expr, object-specific data; or nil
+	/* TODO:  Type any // placeholder for type information; may be nil */
 }
 
 type ObjKind uint
@@ -125,4 +125,9 @@ const (
 	Function
 )
 
-type Scope map[string][]*IdentExpr
+type Scope struct {
+	Env *Environment
+	Parent *Scope
+}
+
+type Environment map[string][]*Object
