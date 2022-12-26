@@ -1,3 +1,6 @@
-*.glox
+# build directory and binary
 .build
 glox
+
+# test files directory
+/test_files

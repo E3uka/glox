@@ -1,0 +1,46 @@
+/* Examples of valid glox syntax (should parse) */
+
+/*
+multiline 
+comments
+*/
+
+const old := 28; // immutable declaration & inline comments
+changeme := "password"; // mutable declaration
+
+/* quick maths (correct precedence parsing) */
+grouping := 1 / (3 + 2);
+maths := 9 + 12 / 3 * 5;
+/* blocks and scope (soon) */
+outer := "hello";
+{
+	innner := "world";
+	{
+		const inner_squared := outer + inner;
+	}
+
+	/* return and break statements */
+	break;
+	return x / y + z;
+};
+
+/* function syntax */
+create_habit :: (cue, craving, response, reward) -> {
+	atomic := print("I can see clear-ly now");
+	const win := reward("have some chocolate");
+	return cue + "miss me with that!";
+}
+
+/* pointer reference and dereference */
+value := "some location";
+where := &value;
+there := *where;
+
+/*
+TODO: SelectorExpr, FnExpr, IfaceExpr
+TODO: ExprStmt, IfStmt, IncrDecrStmt, ForStmt, WhileStmt
+TODO: ArrayType, FuncType, StructType, Fields
+
+TODO: end semicolon error messages
+TODO: chore: character start locations for error messages
+*/

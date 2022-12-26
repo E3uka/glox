@@ -178,6 +178,7 @@ func init() {
 	prec_map[token.ASSIGN]    = LOWEST
 	prec_map[token.CONST]     = LOWEST
 	prec_map[token.FUNASSIGN] = LOWEST
+	prec_map[token.RETURN]    = LOWEST
 	prec_map[token.WALRUS]    = LOWEST
 	prec_map[token.EQL]       = EQUALITY
 	prec_map[token.NEQ]       = EQUALITY
@@ -305,7 +306,7 @@ func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
 			parser.peek(),
 		)
 	}
-	expr := parser.parse_basic_expr(tok.Type)
+	expr := parser.parse_basic_expr(parser.peek().Type)
 	parser.expect(token.RPAREN)
 	return &ast.Paren_Expr{Expr: expr}
 }
@@ -385,7 +386,7 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 		case 
 			token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD,
 			token.SUB, token.STAR, token.AND, token.NOT, token.RETURN, 
-			token.BREAK:
+			token.BREAK, token.CONST:
 			// parse with lowest precedence to capture all potential nodes
 			stmt, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
 			if !ok {
@@ -502,14 +503,16 @@ func(p *pratt) parse_function_args(identifier string) ast.Environment {
 	return scope
 }
 
-func(p *pratt) parse_basic_expr(tok_type token.TOKEN_TYPE) ast.Expr {
-	expr, ok := p.parse_node(prec_map[tok_type]).(ast.Expr)
+// parses the next token as an expression using the supplied tok precedence
+func(p *pratt) parse_basic_expr(tok token.TOKEN_TYPE) ast.Expr {
+	expr, ok := p.parse_node(prec_map[tok]).(ast.Expr)
 	if !ok {
 		p.report_offset_parse_error(-1, "%v: expected expression")
 	}
 	return expr
 }
 
+// parses the next token as an identifier using the supplied tok precedence
 func(p *pratt) parse_basic_ident(tok token.TOKEN_TYPE) *ast.Ident_Expr {
 	ident, ok := p.parse_node(prec_map[tok]).(*ast.Ident_Expr)
 	if !ok {
@@ -518,6 +521,7 @@ func(p *pratt) parse_basic_ident(tok token.TOKEN_TYPE) *ast.Ident_Expr {
 	return ident
 }
 
+// casts node to a block statement; raises an error if the cast fails
 func(p *pratt) as_block(node ast.Node) *ast.Block_Stmt {
 	block, ok := node.(*ast.Block_Stmt)
 	if !ok {
@@ -526,6 +530,7 @@ func(p *pratt) as_block(node ast.Node) *ast.Block_Stmt {
 	return block
 }
 
+// casts node to an expression; raises an error if the cast fails
 func(p *pratt) as_expr(node ast.Node) ast.Expr {
 	expr, ok := node.(ast.Expr)
 	if !ok {
@@ -534,6 +539,7 @@ func(p *pratt) as_expr(node ast.Node) ast.Expr {
 	return expr
 }
 
+// casts node to an identifier; raises an error if the cast fails
 func(p *pratt) as_ident(node ast.Node) *ast.Ident_Expr {
 	ident, ok := node.(*ast.Ident_Expr)
 	if !ok {
