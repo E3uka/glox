@@ -30,6 +30,11 @@ type (
 		Rhs      Expr
 	}
 
+	Call_Expr struct {
+		Ident *Ident_Expr
+		Args  []Expr
+	}
+
 	Ident_Expr struct {
 		Obj     *Object
 		Mutable bool
@@ -58,6 +63,7 @@ type (
 // ensures only expr_node types can be assigned to Expr
 func (*Binary_Expr)  expr_node() {}
 func (*Ident_Expr)   expr_node() {}
+func (*Call_Expr)    expr_node() {}
 func (*Literal_Expr) expr_node() {}
 func (*Paren_Expr)   expr_node() {}
 func (*Ptr_Expr)     expr_node() {}

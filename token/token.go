@@ -67,7 +67,6 @@ const (
 	IF
 	CONST
 	NULL
-	PRINT
 
 	RETURN
 	SUPER
@@ -133,7 +132,6 @@ var tokens = [...]string{
 	IF:    "if",
 	CONST: "const",
 	NULL:  "NULL",
-	PRINT: "print",
 
 	RETURN: "return",
 	SUPER:  "super",

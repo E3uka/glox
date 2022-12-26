@@ -142,7 +142,9 @@ func (p *pratt) report_expect_error(
 type precedence int
 
 const (
-	// why go doesn't have proper enums escapes me
+	// why go doesn't have proper enums escapes me - the higher the precedence
+	// the stronger the relative binding power i.e. the current token will be
+	// parsed before its rhs neighbour
 	LOWEST precedence = iota
 	EQUALITY
 	LESSGREATER
@@ -151,6 +153,7 @@ const (
 	MUL
 	QUO
 	UNARY
+	PAREN
 	PRIMARY
 )
 
@@ -190,6 +193,7 @@ func init() {
 	prec_map[token.QUO]       = QUO
 	prec_map[token.DECR]      = UNARY
 	prec_map[token.INCR]      = UNARY
+	prec_map[token.LPAREN]    = PAREN
 	prec_map[token.IDENT]     = PRIMARY
 
 	null_deno[token.BITAND] = nd_parse_pointer_expr
@@ -221,10 +225,11 @@ func init() {
 	left_deno[token.INCRBY]    = ld_parse_binary_expr
 	left_deno[token.INCR]      = ld_parse_unary_expr
 	left_deno[token.LEQ]       = ld_parse_binary_expr
+	left_deno[token.LPAREN]    = ld_parse_call_expr
 	left_deno[token.LSS]       = ld_parse_binary_expr
-	left_deno[token.STAR]      = ld_parse_binary_expr
 	left_deno[token.NEQ]       = ld_parse_binary_expr
 	left_deno[token.QUO]       = ld_parse_binary_expr
+	left_deno[token.STAR]      = ld_parse_binary_expr
 	left_deno[token.SUB]       = ld_parse_binary_expr
 	left_deno[token.WALRUS]    = ld_parse_decl_stmt
 }
@@ -247,10 +252,24 @@ func ld_parse_binary_expr(
 	}
 }
 
+func ld_parse_call_expr(
+	parser *pratt,
+	operator token.TOKEN_TYPE,
+	lhs ast.Node,
+) ast.Node {
+	if parser.trace {
+		fmt.Printf("ld_call: operator: %v\n", parser.peek())
+	}
+	lhs_ident := parser.as_ident(lhs)
+	args := parser.parse_call_args()
+	parser.expect(token.RPAREN)
+	return &ast.Call_Expr{Ident: lhs_ident, Args: args}
+}
+
 func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
 		fmt.Printf(
-			"nd_indent: cur_tok: %v, next_tok: %v\n",
+			"nd_ident: cur_tok: %v, next_tok: %v\n",
 			tok.Literal,
 			parser.peek(),
 		)
@@ -455,6 +474,19 @@ func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
 	}
 	result_expr := parser.parse_basic_expr(tok.Type)
 	return &ast.Return_Stmt{Result: result_expr}
+}
+
+func(p *pratt) parse_call_args() []ast.Expr {
+	p.expect(token.LPAREN)
+	args := []ast.Expr{}
+	for p.peek().Type != token.RPAREN {
+		arg := p.parse_basic_expr(p.peek().Type)
+		args = append(args, arg)
+		if p.peek().Type == token.COMMA {
+			p.expect(token.COMMA)
+		}
+	}
+	return args
 }
 
 func(p *pratt) parse_function_args(identifier string) ast.Environment {
