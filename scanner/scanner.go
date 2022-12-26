@@ -1,7 +1,7 @@
 package scanner
 
 import (
-	gloxError "glox/error"
+	glox_err "glox/error"
 	"glox/token"
 	"strconv"
 )
@@ -30,46 +30,46 @@ func New(path *string, source *string) (*scanner, error) {
 	return scanner, nil
 }
 
-func (l *scanner) Tokens() *[]token.Token {
-	return &l.tokens
+func (s *scanner) Tokens() *[]token.Token {
+	return &s.tokens
 }
 
-func (l *scanner) is_at_end() bool {
-	return l.current >= len(l.source)
+func (s *scanner) is_at_end() bool {
+	return s.current >= len(s.source)
 }
 
-func (l scanner) is_digit(char rune) bool {
+func is_digit(char rune) bool {
 	return char >= '0' && char <= '9'
 }
 
-func (l scanner) is_alpha(char rune) bool {
+func is_alpha(char rune) bool {
 	return (char >= 'a' && char <= 'z') ||
 		(char >= 'A' && char <= 'Z') ||
 		char == '_'
 }
 
-func (l scanner) is_alphanumeric(char rune) bool {
-	return l.is_alpha(char) || l.is_digit(char)
+func is_alphanumeric(char rune) bool {
+	return is_alpha(char) || is_digit(char)
 }
 
-func (l *scanner) init() error {
-	for !l.is_at_end() {
-		l.start = l.current
-		if err := l.lex(); err != nil {
+func (s *scanner) init() error {
+	for !s.is_at_end() {
+		s.start = s.current
+		if err := s.scan(); err != nil {
 			return err
 		}
 	}
 	// append EOF token at end of source file
-	l.add_token(token.EOF, "")
+	s.add_token(token.EOF, "")
 	return nil
 }
 
-func (l *scanner) lex() error {
-	char := l.step()
+func (s *scanner) scan() error {
+	char := s.step()
 
 	switch char {
 	case '\n':
-		l.line += 1
+		s.line += 1
 		break
 
 	// ignore the following
@@ -77,244 +77,252 @@ func (l *scanner) lex() error {
 
 	// single character lexemes
 	case '(':
-		l.add_token(token.LPAREN, "(")
+		s.add_token(token.LPAREN, "(")
 	case ')':
-		l.add_token(token.RPAREN, ")")
+		s.add_token(token.RPAREN, ")")
 	case '[':
-		l.add_token(token.LBRACK, "[")
+		s.add_token(token.LBRACK, "[")
 	case ']':
-		l.add_token(token.RBRACK, "]")
+		s.add_token(token.RBRACK, "]")
 	case '{':
-		l.add_token(token.LBRACE, "{")
+		s.add_token(token.LBRACE, "{")
 	case '}':
-		l.add_token(token.RBRACE, "}")
-		if l.peek_next() != ';' {
-			l.add_token(token.SEMICOLON, ";")
-			l.step()
+		s.add_token(token.RBRACE, "}")
+		if s.peek_next() != ';' {
+			s.add_token(token.SEMICOLON, ";")
+			s.step()
 		}
 	case ',':
-		l.add_token(token.COMMA, ",")
+		s.add_token(token.COMMA, ",")
 	case '.':
-		l.add_token(token.PERIOD, ".")
+		s.add_token(token.PERIOD, ".")
 	case ';':
-		l.add_token(token.SEMICOLON, ";")
+		s.add_token(token.SEMICOLON, ";")
 	case '*':
-		l.add_token(token.STAR, "*")
+		s.add_token(token.STAR, "*")
 
 	// double-character lexemes
 	case '+':
-		if l.match_advance('+') {
-			l.add_token(token.INCR, "++")
-		} else if l.match_advance('=') {
-			l.add_token(token.INCRBY, "+=")
+		if s.match_advance('+') {
+			s.add_token(token.INCR, "++")
+		} else if s.match_advance('=') {
+			s.add_token(token.INCRBY, "+=")
 		} else {
-			l.add_token(token.ADD, "+")
+			s.add_token(token.ADD, "+")
 		}
 	case '-':
-		if l.match_advance('>') {
-			l.add_token(token.FUNRETURN, "->")
-		} else if l.match_advance('-') {
-			l.add_token(token.DECR, "--")
-		} else if l.match_advance('=') {
-			l.add_token(token.DECRYBY, "-=")
+		if s.match_advance('>') {
+			s.add_token(token.FUNRETURN, "->")
+		} else if s.match_advance('-') {
+			s.add_token(token.DECR, "--")
+		} else if s.match_advance('=') {
+			s.add_token(token.DECRYBY, "-=")
 		} else {
-			l.add_token(token.SUB, "-")
+			s.add_token(token.SUB, "-")
 		}
 	case '!':
-		if l.match_advance('=') {
-			l.add_token(token.NEQ, "!=")
+		if s.match_advance('=') {
+			s.add_token(token.NEQ, "!=")
 		} else {
-			l.add_token(token.NOT, "!")
+			s.add_token(token.NOT, "!")
 		}
 	case '=':
-		if l.match_advance('=') {
-			l.add_token(token.EQL, "==")
+		if s.match_advance('=') {
+			s.add_token(token.EQL, "==")
 		} else {
-			l.add_token(token.ASSIGN, "=")
+			s.add_token(token.ASSIGN, "=")
 		}
 	case '<':
-		if l.match_advance('=') {
-			l.add_token(token.LEQ, "<=")
+		if s.match_advance('=') {
+			s.add_token(token.LEQ, "<=")
 		} else {
-			l.add_token(token.LSS, "<")
+			s.add_token(token.LSS, "<")
 		}
 	case '>':
-		if l.match_advance('=') {
-			l.add_token(token.GEQ, ">=")
+		if s.match_advance('=') {
+			s.add_token(token.GEQ, ">=")
 		} else {
-			l.add_token(token.GTR, ">")
+			s.add_token(token.GTR, ">")
 		}
 	case ':':
-		if l.match_advance(':') {
-			l.add_token(token.FUNASSIGN, "::")
-		} else if l.match_advance('=') {
-			l.add_token(token.WALRUS, ":=")
+		if s.match_advance(':') {
+			s.add_token(token.FUNASSIGN, "::")
+		} else if s.match_advance('=') {
+			s.add_token(token.WALRUS, ":=")
 		} else {
-			l.add_token(token.COLON, ":")
+			s.add_token(token.COLON, ":")
 		}
 	case '&':
-		if l.match_advance('&') {
-			l.add_token(token.AND, "&&")
+		if s.match_advance('&') {
+			s.add_token(token.AND, "&&")
 		} else {
-			l.add_token(token.BITAND, "&")
+			s.add_token(token.BITAND, "&")
 		}
 	case '|':
-		if l.match_advance('|') {
-			l.add_token(token.OR, "||")
+		if s.match_advance('|') {
+			s.add_token(token.OR, "||")
 		} else {
-			l.add_token(token.BITOR, "|")
+			s.add_token(token.BITOR, "|")
 		}
 	case '/':
-		if l.match_advance('/') {
+		if s.match_advance('/') {
 			// step past all remaining characters until newline
-			for l.peek() != '\n' && !l.is_at_end() {
-				l.step()
+			for s.peek() != '\n' && !s.is_at_end() {
+				s.step()
 			}
 			// currently at the newline char, step again and update start
 			// position to move past newline
-			l.line += 1
-			l.step()
-			l.start = l.current
-		} else if l.match_advance('*') {
+			s.line += 1
+			s.step()
+			s.start = s.current
+		} else if s.match_advance('*') {
 			// keep it stepping
-			for !l.is_at_end() {
-				if l.peek() == '\n' {
-					l.line += 1
+			for !s.is_at_end() {
+				if s.peek() == '\n' {
+					s.line += 1
 				}
-				l.step()
+				s.step()
 
-				if l.peek() == '*' {
-					if l.peek_next() == '/' {
-						l.step()
+				if s.peek() == '*' {
+					if s.peek_next() == '/' {
+						s.step()
 						break
 					}
 				}
 			}
-			if l.is_at_end() {
-				return gloxError.Lex_Error(l.path, l.line, "unterminated block comment")
+			if s.is_at_end() {
+				return glox_err.Lex_Error(
+					s.path,
+					s.line,
+					"unterminated block comment",
+				)
 			}
 			// currently at the '/' end of newline char, step again and update
 			// start position to move past it.
-			l.step()
-			l.start = l.current
+			s.step()
+			s.start = s.current
 		} else {
-			l.add_token(token.QUO, "/")
+			s.add_token(token.QUO, "/")
 		}
 
 		// string literals
 	case '"':
-		l.lex_string()
+		s.scan_string()
 
 	default:
-		if l.is_digit(char) {
-			l.lex_float()
-		} else if l.is_alpha(char) {
-			l.lex_identifier()
+		if is_digit(char) {
+			s.scan_float()
+		} else if is_alpha(char) {
+			s.scan_identifier()
 		} else {
-			return gloxError.Lex_Error(l.path, l.line, "unexpected character")
+			return glox_err.Lex_Error(s.path, s.line, "unexpected character")
 		}
 	}
 	return nil
 }
 
-func (l *scanner) step() rune {
-	l.current += 1
-	return rune(l.source[l.current-1])
+func (s *scanner) step() rune {
+	s.current += 1
+	return rune(s.source[s.current-1])
 }
 
-func (l *scanner) match_advance(char rune) bool {
-	if l.is_at_end() {
+func (s *scanner) match_advance(char rune) bool {
+	if s.is_at_end() {
 		return false
-	} else if rune(l.source[l.current]) != char {
+	} else if rune(s.source[s.current]) != char {
 		return false
 	} else {
 		// a match is found, it is safe to step
-		l.current += 1
+		s.current += 1
 		return true
 	}
 }
 
-func (l *scanner) peek() rune {
-	if l.is_at_end() {
+func (s *scanner) peek() rune {
+	if s.is_at_end() {
 		return '\x00' // null terminated string in go
 	}
-	return rune(l.source[l.current])
+	return rune(s.source[s.current])
 }
 
-func (l *scanner) peek_next() rune {
-	if l.current+1 >= len(l.source) {
+func (s *scanner) peek_next() rune {
+	if s.current+1 >= len(s.source) {
 		return '\x00'
 	}
-	return rune(l.source[l.current+1])
+	return rune(s.source[s.current+1])
 }
 
-func (l *scanner) add_token(
+func (s *scanner) add_token(
 	tok_type token.TOKEN_TYPE,
 	literal string,
 ) {
 	tok := token.Token{
 		Type:    tok_type,
 		Literal: literal,
-		Start:   l.start,
-		End:     l.start + len(literal),
-		Line:    l.line,
+		Start:   s.start,
+		End:     s.start + len(literal),
+		Line:    s.line,
 	}
-	l.tokens = append(l.tokens, tok)
+	s.tokens = append(s.tokens, tok)
 }
 
-func (l *scanner) lex_string() error {
-	for l.peek() != '"' && !l.is_at_end() {
-		if l.peek() == '\n' {
-			l.line += 1
+func (s *scanner) scan_string() error {
+	for s.peek() != '"' && !s.is_at_end() {
+		if s.peek() == '\n' {
+			s.line += 1
 		}
-		l.step()
+		s.step()
 	}
-	if l.is_at_end() {
-		return gloxError.Lex_Error(l.path, l.line, "unterminated string")
+	if s.is_at_end() {
+		return glox_err.Lex_Error(s.path, s.line, "unterminated string")
 	}
 	// step past the end of the string to the newline char
-	l.step()
+	s.step()
 	// trim the surrounding quotes
-	value := l.source[l.start+1 : l.current-1]
-	l.add_token(token.STRING, value)
+	value := s.source[s.start+1 : s.current-1]
+	s.add_token(token.STRING, value)
 	return nil
 }
 
-func (l *scanner) lex_float() error {
-	for l.is_digit(l.peek()) {
-		l.step()
+func (s *scanner) scan_float() error {
+	for is_digit(s.peek()) {
+		s.step()
 	}
 	// look for the fractional part of the number
-	if l.peek() == '.' && l.is_digit(l.peek_next()) {
-		l.step() // consume the '.'
+	if s.peek() == '.' && is_digit(s.peek_next()) {
+		s.step() // consume the '.'
 	}
-	for l.is_digit(l.peek()) {
-		l.step()
+	for is_digit(s.peek()) {
+		s.step()
 	}
 
-	value := l.source[l.start:l.current]
+	value := s.source[s.start:s.current]
 	if _, err := strconv.ParseFloat(value, 64); err != nil {
-		return gloxError.Lex_Error(l.path, l.line, "could not parse string value")
+		return glox_err.Lex_Error(
+			s.path,
+			s.line,
+			"could not parse string value",
+		)
 	}
-	l.add_token(token.FLOAT, value)
+	s.add_token(token.FLOAT, value)
 	return nil
 }
 
-func (l *scanner) lex_identifier() {
-	for l.is_alphanumeric(l.peek()) {
-		l.step()
+func (s *scanner) scan_identifier() {
+	for is_alphanumeric(s.peek()) {
+		s.step()
 	}
 
-	value := l.source[l.start:l.current]
+	value := s.source[s.start:s.current]
 	tok := token.Lookup_Keyword(value)
 
 	if tok == token.NULL {
-		l.add_token(tok, "null")
+		s.add_token(tok, "null")
 	} else if tok == token.TRUE {
-		l.add_token(tok, "true")
+		s.add_token(tok, "true")
 	} else if tok == token.FALSE {
-		l.add_token(tok, "false")
+		s.add_token(tok, "false")
 	} else {
-		l.add_token(tok, value)
+		s.add_token(tok, value)
 	}
 }
