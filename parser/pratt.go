@@ -109,8 +109,6 @@ func (p *pratt) parse_node(current_precedence precedence) ast.Node {
 func (p *pratt) advance() token.Token { p.current++; return p.peek() }
 func (p *pratt) peek() token.Token    { return p.tokens[p.current] }
 func (p *pratt) is_at_end() bool      { return p.peek().Type == token.EOF }
-// expect is like advance but raises are parser error if the next token does
-// not match what is expected.
 
 func (p *pratt) expect(tok token.TOKEN_TYPE) { 
 	if p.peek().Type != tok {
@@ -239,16 +237,9 @@ func ld_parse_binary_expr(
 	if parser.trace {
 		fmt.Printf("ld_binary: operator: %v\n", parser.peek())
 	}
-	// step past infix operator
-	rhs_tok := parser.advance()
-	lhs_expr, ok := lhs.(ast.Expr)
-	if !ok {
-		parser.report_offset_parse_error(-2, "%v: expected expression")
-	}
-	rhs_expr, ok := parser.parse_node(prec_map[operator]).(ast.Expr)
-	if !ok {
-		parser.report_parse_error(rhs_tok, "%v: expected expression")
-	}
+	lhs_expr := parser.as_expr(lhs)
+	parser.advance() // step past infix operator
+	rhs_expr := parser.parse_basic_expr(operator)
 	return &ast.BinaryExpr{
 		Lhs:      lhs_expr,
 		Operator: operator,
@@ -265,10 +256,7 @@ func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
 		)
 	}
 	if tok.Type == token.CONST {
-		ident_expr, ok := parser.parse_node(prec_map[tok.Type]).(*ast.IdentExpr)
-		if !ok {
-			parser.report_offset_parse_error(-1, "%v: expected identifier")
-		}
+		ident_expr := parser.parse_basic_ident(tok.Type)
 		ident_expr.Mutable = false
 		return ident_expr
 	}
@@ -298,10 +286,7 @@ func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
 			parser.peek(),
 		)
 	}
-	expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
-	if !ok {
-		parser.report_offset_parse_error(-1, "%v: expected expression")
-	}
+	expr := parser.parse_basic_expr(tok.Type)
 	parser.expect(token.RPAREN)
 	return &ast.ParenExpr{Expr: expr}
 }
@@ -310,10 +295,7 @@ func nd_parse_pointer_expr(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
 		fmt.Printf("nd_pointer: operator %v, next: %v\n", tok, parser.peek())
 	}
-	ident_expr, ok := parser.parse_node(prec_map[tok.Type]).(*ast.IdentExpr)
-	if !ok {
-		parser.report_offset_parse_error(-1, "%v: expected identifier")
-	}
+	ident_expr := parser.parse_basic_ident(tok.Type)
 	deref := false
 	if tok.Type == token.STAR {
 		deref = true
@@ -325,10 +307,7 @@ func nd_parse_unary_expr(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
 		fmt.Printf("nd_unary: operator %v, next: %v\n", tok, parser.peek())
 	}
-	unary_expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
-	if !ok {
-		parser.report_offset_parse_error(-1, "%v: expected expression")
-	}
+	unary_expr := parser.parse_basic_expr(tok.Type)
 	return &ast.UnaryExpr{Operator: tok.Type, Rhs: unary_expr}
 }
 
@@ -340,11 +319,8 @@ func ld_parse_unary_expr(
 	if parser.trace {
 		fmt.Printf("ld_unary: operator: %v\n", parser.peek())
 	}
-	rhs_tok := parser.advance()
-	rhs_expr, ok := lhs.(ast.Expr)
-	if !ok {
-		parser.report_parse_error(rhs_tok, "%v: expected expression")
-	}
+	rhs_expr := parser.as_expr(lhs)
+	parser.advance() // step past postfix operator
 	return &ast.UnaryExpr{Operator: operator, Rhs: rhs_expr}
 }
 
@@ -357,14 +333,8 @@ func ld_parse_assign_stmt(
 		fmt.Println("ld_assign")
 	}
 	parser.expect(token.ASSIGN)
-	lhs_ident, ok := lhs.(*ast.IdentExpr)
-	if !ok {
-		parser.report_offset_parse_error(-2, "%v: expected identifier")
-	}
-	rhs_expr, ok := parser.parse_node(prec_map[operator]).(ast.Expr)
-	if !ok {
-		parser.report_offset_parse_error(-1, "%v: expected identifier")
-	}
+	lhs_ident := parser.as_ident(lhs)
+	rhs_expr := parser.parse_basic_expr(operator)
 	return &ast.AssignStmt{
 		Lhs:   lhs_ident,
 		Token: operator,
@@ -400,6 +370,7 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 			token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD, 
 			token.SUB, token.STAR, token.AND, token.NOT, token.RETURN, 
 			token.BREAK:
+			// parse with lowest precedence to capture all potential nodes
 			stmt, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
 			if !ok {
 				p.report_offset_parse_error(-1, "%v: expected statement")
@@ -407,9 +378,8 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 			}
 			list = append(list, stmt)
 		case token.LBRACE:
-			next_tok := p.advance()
-			stmt = nd_parse_block_stmt(p, next_tok).(ast.Stmt)
-			p.expect(token.SEMICOLON)
+			p.expect(token.LBRACE)
+			stmt = nd_parse_block_stmt(p, p.peek()).(ast.Stmt)
 			list = append(list, stmt)
 		case token.SEMICOLON:
 			p.expect(token.SEMICOLON)
@@ -439,18 +409,13 @@ func ld_parse_decl_stmt(
 	if parser.trace {
 		fmt.Printf("ld_decl: lhs: %v, operator: %v\n", lhs, operator)
 	}
-	lhs_ident, ok := lhs.(*ast.IdentExpr)
-	if !ok {
-		parser.report_offset_parse_error(-2, "%v: expected identifier")
-	}
+	lhs_ident := parser.as_ident(lhs)
+	parser.advance() // step past declaration operator
 	var decl ast.Decl
-	switch operator {
-	case token.WALRUS:
-		decl = parser.parse_generic_declaration(lhs_ident, operator)
-	case token.FUNASSIGN:
+	if operator == token.FUNASSIGN {
 		decl = parser.parse_function_declaration(lhs_ident, operator)
-	default:
-		parser.report_parse_error(parser.peek(), "%v: unexpected token")
+	} else {
+		decl = parser.parse_generic_declaration(lhs_ident, operator)
 	}
 	return &ast.DeclStmt{Decl: decl}
 }
@@ -460,13 +425,9 @@ func (p *pratt) parse_function_declaration(
 	operator token.TOKEN_TYPE,
 ) *ast.FunDecl {
 	if p.trace {
-		fmt.Println("ld_function_decl")
+		fmt.Println("function_decl")
 	}
-	p.expect(operator)
-	_, ok := p.parse_node(prec_map[operator]).(ast.Expr)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected something")
-	}
+	_ = p.parse_basic_expr(operator)
 	return &ast.FunDecl{Tok: operator}
 }
 
@@ -475,13 +436,9 @@ func (p *pratt) parse_generic_declaration(
 	operator token.TOKEN_TYPE,
 ) *ast.GenericDecl {
 	if p.trace {
-		fmt.Println("ld_generic_decl")
+		fmt.Println("generic_decl")
 	}
-	p.expect(operator)
-	rhs_expr, ok := p.parse_node(prec_map[operator]).(ast.Expr)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected expression")
-	}
+	rhs_expr := p.parse_basic_expr(operator)
 	return &ast.GenericDecl{Name: lhs_ident,Tok: operator, Value: rhs_expr}
 }
 
@@ -493,9 +450,38 @@ func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
 			parser.peek(),
 		)
 	}
-	result_expr, ok := parser.parse_node(prec_map[tok.Type]).(ast.Expr)
-	if !ok {
-		parser.report_offset_parse_error(-1, "%v: expected expression")
-	}
+	result_expr := parser.parse_basic_expr(tok.Type)
 	return &ast.ReturnStmt{Result: result_expr}
+}
+
+func(p *pratt) parse_basic_expr(tok_type token.TOKEN_TYPE) ast.Expr {
+	expr, ok := p.parse_node(prec_map[tok_type]).(ast.Expr)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected expression")
+	}
+	return expr
+}
+
+func(p *pratt) parse_basic_ident(tok token.TOKEN_TYPE) *ast.IdentExpr {
+	ident, ok := p.parse_node(prec_map[tok]).(*ast.IdentExpr)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected identifier")
+	}
+	return ident
+}
+
+func(p *pratt) as_ident(node ast.Node) *ast.IdentExpr {
+	ident, ok := node.(*ast.IdentExpr)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected identifier")
+	}
+	return ident
+}
+
+func(p *pratt) as_expr(node ast.Node) ast.Expr {
+	expr, ok := node.(ast.Expr)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected expression")
+	}
+	return expr
 }
