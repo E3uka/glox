@@ -99,7 +99,7 @@ func (l *scanner) lex() error {
 	case ';':
 		l.add_token(token.SEMICOLON, ";")
 	case '*':
-		l.add_token(token.MUL, "*")
+		l.add_token(token.STAR, "*")
 
 	// double-character lexemes
 	case '+':

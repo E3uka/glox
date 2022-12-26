@@ -36,7 +36,7 @@ const (
 	SUB     // -
 	DECR    // --
 	DECRYBY // -=
-	MUL     // *
+	STAR    // *
 	QUO     // /
 
 	NEQ // !=
@@ -103,7 +103,7 @@ var tokens = [...]string{
 	SUB:     "-",
 	DECR:    "--",
 	DECRYBY: "-=",
-	MUL:     "*",
+	STAR:    "*",
 	QUO:     "/",
 
 	NEQ: "!=",
@@ -132,7 +132,7 @@ var tokens = [...]string{
 
 	IF:    "if",
 	CONST: "const",
-	NULL:  "null",
+	NULL:  "NULL",
 	PRINT: "print",
 
 	RETURN: "return",

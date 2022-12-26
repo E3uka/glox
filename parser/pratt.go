@@ -82,7 +82,7 @@ func (p *pratt) parse_node(current_precedence precedence) ast.Node {
 	p.advance()
 	if p.trace {
 		fmt.Printf(
-			"parse_head: cur_pred %v, cur_tok: %v, next_tok: %v, calc_pred: %v\n",
+			"parse head: prec %v, cur_tok: %v, next_tok: %v, next_prec: %v\n",
 			current_precedence,
 			cur_tok,
 			p.peek(),
@@ -187,11 +187,11 @@ func init() {
 	prec_map[token.SUB]     = SUB
 	prec_map[token.ADD]     = ADD
 	prec_map[token.INCRBY]  = ADD
-	prec_map[token.MUL]     = MUL
 	prec_map[token.QUO]     = QUO
 	prec_map[token.DECR]    = UNARY
 	prec_map[token.INCR]    = UNARY
 	prec_map[token.IDENT]   = PRIMARY
+	prec_map[token.STAR]      = MUL
 
 	null_deno[token.BITAND] = nd_parse_pointer_expr
 	null_deno[token.BREAK]  = nd_parse_branch_stmt
@@ -203,7 +203,7 @@ func init() {
 	null_deno[token.INCR]   = nd_parse_unary_expr
 	null_deno[token.LBRACE] = nd_parse_block_stmt
 	null_deno[token.LPAREN] = nd_parse_paren_expr
-	null_deno[token.MUL]    = nd_parse_pointer_expr
+	null_deno[token.STAR]   = nd_parse_pointer_expr
 	null_deno[token.NOT]    = nd_parse_unary_expr
 	null_deno[token.NULL]   = nd_parse_literal_expr
 	null_deno[token.RETURN] = nd_parse_return_stmt
@@ -222,11 +222,11 @@ func init() {
 	left_deno[token.INCR]    = ld_parse_unary_expr
 	left_deno[token.LEQ]     = ld_parse_binary_expr
 	left_deno[token.LSS]     = ld_parse_binary_expr
-	left_deno[token.MUL]     = ld_parse_binary_expr
 	left_deno[token.NEQ]     = ld_parse_binary_expr
 	left_deno[token.QUO]     = ld_parse_binary_expr
 	left_deno[token.SUB]     = ld_parse_binary_expr
 	left_deno[token.WALRUS]  = ld_parse_decl_stmt
+	left_deno[token.STAR]      = ld_parse_binary_expr
 }
 
 func ld_parse_binary_expr(
@@ -313,7 +313,7 @@ func nd_parse_pointer_expr(parser *pratt, tok token.Token) ast.Node {
 		parser.report_offset_parse_error(-1, "%v: expected identifier")
 	}
 	deref := false
-	if tok.Type == token.MUL {
+	if tok.Type == token.STAR {
 		deref = true
 	}
 	return &ast.PtrExpr{Ident: ident_expr, Deref: deref}
@@ -401,10 +401,10 @@ func (p *pratt) parse_stmt() (stmt ast.Stmt) {
 	switch p.peek().Type {
 	case 
 		token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD, 
-		token.SUB, token.MUL, token.AND, token.NOT, token.RETURN, token.BREAK:
 		expr, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
 		if !ok {
 			p.report_offset_parse_error(-1, "%v: expected statement")
+			token.SUB, token.STAR, token.AND, token.NOT, token.RETURN, 
 		}
 		stmt = expr
 	case token.LBRACE:
