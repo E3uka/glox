@@ -31,14 +31,13 @@ type (
 	}
 
 	IdentExpr struct {
-		Name    interface{}
 		Obj     *Object
 		Mutable bool
 	}
 
 	LiteralExpr struct {
 		Kind  token.TOKEN_TYPE
-		Value any
+		Value string
 	}
 
 	ParenExpr struct {
@@ -66,24 +65,20 @@ func (*UnaryExpr) expr_node()   {}
 
 type (
 	AssignStmt struct {
-		Lhs   *IdentExpr
-		Token token.TOKEN_TYPE
-		Rhs   Expr
+		Ident *IdentExpr
 	}
 
 	BlockStmt struct {
 		List []Stmt
 	}
 
-	BranchStmt struct {
-		Token token.TOKEN_TYPE
-	}
+	BranchStmt struct {} // TODO
 
 	DeclStmt struct {
 		Decl Decl
 	}
 	
-	EmptyStmt struct {}
+	EmptyStmt struct {} // TODO
 
 	ReturnStmt struct {
 		Result Expr
@@ -100,13 +95,13 @@ func (*ReturnStmt) stmt_node() {}
 
 type (
 	GenericDecl struct {
-		Name  *IdentExpr
-		Tok   token.TOKEN_TYPE
+		Ident *IdentExpr
 		Value Expr
 	}
 
 	FunDecl struct {
-		Tok token.TOKEN_TYPE
+		Ident *IdentExpr
+		Body  *BlockStmt
 	}
 )
 
@@ -116,21 +111,18 @@ func (*FunDecl) decl_node()     {}
 
 type Object struct {
 	Kind ObjKind
-	Name string // declared name
-	Decl any    // corresponding Field, XxxSpec, FuncDecl, LabeledStmt, AssignStmt, Scope; or nil
-	Data any    // object-specific data; or nil
-	// explore below later
-	// Type any    // placeholder for type information; may be nil
+	Name string
+	Decl any    // Field, FuncDecl, AssignStmt, Scope; or nil
+	Data any    // Expr, object-specific data; or nil
+	// Type any // TODO: explore later; placeholder for type information; may be nil
 }
 
 type ObjKind uint
 
 const (
-	Bad ObjKind = iota // for error handling
-	Pkg                // package
-	Con                // constant
-	Typ                // type
-	Var                // variable
-	Fun                // function or method
-	Lbl                // label
+	Constant ObjKind = iota
+	Variable
+	Function
 )
+
+type Scope map[string][]*IdentExpr

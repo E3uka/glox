@@ -261,7 +261,7 @@ func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
 		return ident_expr
 	}
 	return &ast.IdentExpr{
-		Name:    tok.Literal,
+		Obj: &ast.Object{Kind: ast.Variable, Name: tok.Literal},
 		Mutable: true,
 	}
 }
@@ -333,13 +333,10 @@ func ld_parse_assign_stmt(
 		fmt.Println("ld_assign")
 	}
 	parser.expect(token.ASSIGN)
-	lhs_ident := parser.as_ident(lhs)
-	rhs_expr := parser.parse_basic_expr(operator)
-	return &ast.AssignStmt{
-		Lhs:   lhs_ident,
-		Token: operator,
-		Rhs:   rhs_expr,
-	}
+	identifer := parser.as_ident(lhs)
+	rhs := parser.parse_basic_expr(operator)
+	identifer.Obj.Data = rhs
+	return &ast.AssignStmt{Ident: identifer}
 }
 
 func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
@@ -367,7 +364,7 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 		}
 		switch p.peek().Type {
 		case 
-			token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD, 
+			token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD,
 			token.SUB, token.STAR, token.AND, token.NOT, token.RETURN, 
 			token.BREAK:
 			// parse with lowest precedence to capture all potential nodes
@@ -398,7 +395,7 @@ func nd_parse_branch_stmt(parser *pratt, tok token.Token) ast.Node {
 			parser.peek(),
 		)
 	}
-	return &ast.BranchStmt{Token: tok.Type}
+	return &ast.BranchStmt{}
 }
 
 func ld_parse_decl_stmt(
@@ -427,8 +424,14 @@ func (p *pratt) parse_function_declaration(
 	if p.trace {
 		fmt.Println("function_decl")
 	}
-	_ = p.parse_basic_expr(operator)
-	return &ast.FunDecl{Tok: operator}
+	lhs_ident.Obj.Kind = ast.Function
+    args := p.parse_function_args(lhs_ident.Obj.Name)
+	lhs_ident.Obj.Decl = args
+	p.expect(token.RPAREN) // step past end args list
+	p.expect(token.FUNRETURN) // step past funret
+	p.expect(token.LBRACE) // step into block statement 
+	body := p.as_block(nd_parse_block_stmt(p, p.peek()))
+	return &ast.FunDecl{Ident: lhs_ident, Body: body}
 }
 
 func (p *pratt) parse_generic_declaration(
@@ -439,7 +442,7 @@ func (p *pratt) parse_generic_declaration(
 		fmt.Println("generic_decl")
 	}
 	rhs_expr := p.parse_basic_expr(operator)
-	return &ast.GenericDecl{Name: lhs_ident,Tok: operator, Value: rhs_expr}
+	return &ast.GenericDecl{Ident: lhs_ident, Value: rhs_expr}
 }
 
 func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
@@ -452,6 +455,19 @@ func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
 	}
 	result_expr := parser.parse_basic_expr(tok.Type)
 	return &ast.ReturnStmt{Result: result_expr}
+}
+
+func(p *pratt) parse_function_args(identifier string) ast.Scope {
+	p.expect(token.LPAREN)
+	scope := ast.Scope{}
+	for p.peek().Type != token.RPAREN {
+		ident := p.parse_basic_ident(p.peek().Type)
+		scope[identifier] = append(scope[identifier], ident)
+		if p.peek().Type == token.COMMA {
+			p.expect(token.COMMA)
+		}
+	}
+	return scope
 }
 
 func(p *pratt) parse_basic_expr(tok_type token.TOKEN_TYPE) ast.Expr {
@@ -470,12 +486,12 @@ func(p *pratt) parse_basic_ident(tok token.TOKEN_TYPE) *ast.IdentExpr {
 	return ident
 }
 
-func(p *pratt) as_ident(node ast.Node) *ast.IdentExpr {
-	ident, ok := node.(*ast.IdentExpr)
+func(p *pratt) as_block(node ast.Node) *ast.BlockStmt {
+	block, ok := node.(*ast.BlockStmt)
 	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected identifier")
+		p.report_offset_parse_error(-1, "%v: expected block statement")
 	}
-	return ident
+	return block
 }
 
 func(p *pratt) as_expr(node ast.Node) ast.Expr {
@@ -484,4 +500,12 @@ func(p *pratt) as_expr(node ast.Node) ast.Expr {
 		p.report_offset_parse_error(-1, "%v: expected expression")
 	}
 	return expr
+}
+
+func(p *pratt) as_ident(node ast.Node) *ast.IdentExpr {
+	ident, ok := node.(*ast.IdentExpr)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected identifier")
+	}
+	return ident
 }
