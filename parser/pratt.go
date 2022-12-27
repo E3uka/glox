@@ -78,7 +78,9 @@ func recover_and_sync(parser *pratt) {
 func (p *pratt) parse_node(current_precedence precedence) ast.Node {
 	var left ast.Node
 	cur_tok := p.peek()
-	// step past the first token and parse its subexpression
+	// NOTE: step past the first token to parse the subexpression - this
+	// results in later dispatch methods typically not needing to handle
+	// their first 'expected' tokens, parsing should assume it is consumed
 	p.advance()
 	if p.trace {
 		fmt.Printf(
@@ -481,8 +483,8 @@ func(p *pratt) parse_call_args() []ast.Expr {
 	p.expect(token.LPAREN)
 	args := []ast.Expr{}
 	for p.peek().Type != token.RPAREN {
-		arg := p.parse_basic_expr(p.peek().Type)
-		args = append(args, arg)
+		arg_expr := p.as_expr(p.parse_node(LOWEST))
+		args = append(args, arg_expr)
 		if p.peek().Type == token.COMMA {
 			p.expect(token.COMMA)
 		}
