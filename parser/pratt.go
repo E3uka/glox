@@ -87,7 +87,7 @@ func (p *pratt) parse_node(current_precedence precedence) ast.Node {
 			"parse head: prec %v, cur_tok: %v, next_tok: %v, next_prec: %v\n",
 			current_precedence,
 			cur_tok,
-			p.peek(),
+			p.peek().Type,
 			prec_map[cur_tok.Type],
 		)
 	}
@@ -243,7 +243,11 @@ func ld_parse_binary_expr(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Printf("ld_binary: operator: %v\n", parser.peek())
+		fmt.Printf(
+			"ld_binary: operator: %v, next: %v\n", 
+			operator,
+			parser.peek(),
+		)
 	}
 	lhs_expr := parser.as_expr(lhs)
 	parser.advance() // step past infix operator
@@ -261,7 +265,7 @@ func ld_parse_call_expr(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Printf("ld_call: operator: %v\n", parser.peek())
+		fmt.Println("ld_call")
 	}
 	lhs_ident := parser.as_ident(lhs)
 	args := parser.parse_call_args()
@@ -274,7 +278,7 @@ func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
 		fmt.Printf(
 			"nd_ident: cur_tok: %v, next_tok: %v\n",
 			tok.Literal,
-			parser.peek(),
+			parser.peek().Type,
 		)
 	}
 	if tok.Type == token.CONST {
@@ -291,10 +295,9 @@ func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
 func nd_parse_literal_expr(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
 		fmt.Printf(
-			"nd_literal: kind: %v, value: %v, next: %v\n",
-			tok.Type,
-			tok.Literal,
-			parser.peek(),
+			"nd_literal: cur_tok: %v, next: %v\n",
+			tok,
+			parser.peek().Type,
 		)
 	}
 	return &ast.Literal_Expr{Kind: tok.Type, Value: tok.Literal}
@@ -315,7 +318,11 @@ func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
 
 func nd_parse_pointer_expr(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Printf("nd_pointer: operator %v, next: %v\n", tok, parser.peek())
+		fmt.Printf(
+			"nd_pointer: operator %v, next: %v\n",
+			tok.Type,
+			parser.peek(),
+		)
 	}
 	ident_expr := parser.parse_basic_ident(tok.Type)
 	deref := false
@@ -327,7 +334,11 @@ func nd_parse_pointer_expr(parser *pratt, tok token.Token) ast.Node {
 
 func nd_parse_unary_expr(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Printf("nd_unary: operator %v, next: %v\n", tok, parser.peek())
+		fmt.Printf(
+			"nd_unary: operator %v, next: %v\n",
+			tok.Type,
+			parser.peek(),
+		)
 	}
 	unary_expr := parser.parse_basic_expr(tok.Type)
 	return &ast.Unary_Expr{Operator: tok.Type, Rhs: unary_expr}
@@ -339,7 +350,7 @@ func ld_parse_unary_expr(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Printf("ld_unary: operator: %v\n", parser.peek())
+		fmt.Printf("ld_unary: operator: %v\n", parser.peek().Type)
 	}
 	rhs_expr := parser.as_expr(lhs)
 	parser.advance() // step past postfix operator
@@ -380,8 +391,8 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 	for p.peek().Type != token.RBRACE && p.peek().Type != token.EOF {
 		if p.trace {
 			fmt.Printf(
-				"stmt: cur_tok: %v\n",
-				p.peek(),
+				"stmt_list: cur_tok: %v\n",
+				p.peek().Type,
 			)
 		}
 		switch p.peek().Type {
@@ -411,11 +422,7 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 
 func nd_parse_branch_stmt(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Printf(
-			"nd_branch: cur_tok: %v, next_tok: %v\n",
-			tok.Literal,
-			parser.peek(),
-		)
+		fmt.Printf("nd_branch: cur_tok: %v\n", tok)
 	}
 	return &ast.Branch_Stmt{}
 }
@@ -426,7 +433,7 @@ func ld_parse_decl_stmt(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Printf("ld_decl: lhs: %v, operator: %v\n", lhs, operator)
+		fmt.Println("ld_decl")
 	}
 	lhs_ident := parser.as_ident(lhs)
 	parser.advance() // step past declaration operator
@@ -470,8 +477,7 @@ func (p *pratt) parse_generic_declaration(
 func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
 	if parser.trace {
 		fmt.Printf(
-			"nd_return: cur_tok: %v, next_tok: %v\n",
-			tok.Literal,
+			"nd_return: next_tok: %v\n",
 			parser.peek(),
 		)
 	}
