@@ -86,6 +86,10 @@ type (
 	
 	Empty_Stmt struct {}
 
+	Expr_Stmt struct { 
+		Expr Expr
+	}
+
 	Return_Stmt struct {
 		Result Expr
 	}
@@ -97,6 +101,7 @@ func (*Block_Stmt)  stmt_node() {}
 func (*Branch_Stmt) stmt_node() {}
 func (*Decl_Stmt)   stmt_node() {}
 func (*Empty_Stmt)  stmt_node() {}
+func (*Expr_Stmt)   stmt_node() {}
 func (*Return_Stmt) stmt_node() {}
 
 type (

@@ -30,10 +30,10 @@ func New(path *string, tokens *[]token.Token) *pratt {
 func (p *pratt) Parse() []ast.Node {
 	var nodes []ast.Node
 	for !p.is_at_end() {
-		// wrapped in anonymous function so block is called as unit ~ enables
+		// wrapped in anonymous function so block is called as unit - enables
 		// panic recovery to occur mutiple times instead of short-circuiting on
-		// first capture; recovery advances to start of next viable statement
-		// token which continues the parse operation from that point
+		// first capture; recovery advances to start of next viable Node token, 
+		// the operation continues from that point
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
@@ -41,9 +41,10 @@ func (p *pratt) Parse() []ast.Node {
 					recover_and_sync(p)
 				}
 			}()
-			// may panic - using an initial 'LOWEST - 1' precedence to ensure
-			// all latter found Nodes will be of higher precedence and thus 
-			// accepted as valid nodes due to having a higher binding power
+			// Safety: panics
+			// parse with lower precendence than will encounter during recursive
+			// parse operation to ensure all latter Nodes will be of higher
+			// precendence (binding power) and thus accepted
 			node := p.parse_node(LOWEST - 1)
 			nodes = append(nodes, node)
 			if p.trace {
@@ -57,12 +58,12 @@ func (p *pratt) Parse() []ast.Node {
 func recover_and_sync(parser *pratt) {
 	next_tok := parser.advance()
 	for !parser.is_at_end() {
-		// step past end node boundary ';' to continue parse operation
+		// step past end Node boundary ';' to continue parse operation
 		if next_tok.Type == token.SEMICOLON {
 			parser.expect(token.SEMICOLON)
 			return
 		}
-		// potential beginning statement boundary (if formatted correctly)
+		// potential beginning Node boundaries (if formatted correctly)
 		switch parser.peek().Type {
 		case token.CLASS, token.STRUCT, token.FOR, token.IF, token.CONST,
 			token.RETURN, token.WHILE, token.FUNASSIGN:
@@ -242,11 +243,7 @@ func ld_parse_binary_expr(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Printf(
-			"ld_binary: operator: %v, next: %v\n", 
-			operator,
-			parser.peek(),
-		)
+		fmt.Printf("ld_binary: operator: %v\n", operator)
 	}
 	lhs_expr := parser.as_expr(lhs)
 	parser.advance() // step past infix operator
@@ -264,11 +261,11 @@ func ld_parse_call_expr(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Println("ld_call")
+		fmt.Printf("ld_call: operator: %v\n", operator)
 	}
 	lhs_ident := parser.as_ident(lhs)
-	args := parser.parse_call_args()
-	parser.expect(token.RPAREN)
+	args := parser.parse_call_args() 
+	parser.expect(token.RPAREN) // step past end args list
 	return &ast.Call_Expr{Ident: lhs_ident, Args: args}
 }
 
@@ -349,7 +346,7 @@ func ld_parse_unary_expr(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Printf("ld_unary: operator: %v\n", parser.peek().Type)
+		fmt.Printf("ld_unary: operator: %v\n", operator)
 	}
 	rhs_expr := parser.as_expr(lhs)
 	parser.advance() // step past postfix operator
@@ -362,7 +359,7 @@ func ld_parse_assign_stmt(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Println("ld_assign")
+		fmt.Printf("ld_assign: operator: %v\n", operator)
 	}
 	parser.expect(token.ASSIGN)
 	identifer := parser.as_ident(lhs)
@@ -403,14 +400,15 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 			token.IDENT, token.FLOAT, token.STRING, token.LPAREN, token.ADD,
 			token.SUB, token.STAR, token.AND, token.NOT, token.RETURN, 
 			token.BREAK, token.CONST:
-			// parse with lowest precedence to capture all potential nodes
-			stmt, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
+			node := p.parse_node(LOWEST - 1) 
+			stmt, ok := node.(ast.Stmt)
+			// check if resultant node can be transfomed into a valid statement
 			if !ok {
-				// TODO: handle case where the resultant node is still an expression -
-				// i.e. a standalone expr in a block with side effects e.g. increment operation
-				// try_make_statement
-				p.report_offset_parse_error(-1, "%v: expected statement")
-				continue
+				stmt = p.try_make_statement(node)
+				if stmt == nil {
+					p.report_offset_parse_error(-1, "%v: expected statement")
+					continue
+				}
 			}
 			list = append(list, stmt)
 		case token.LBRACE:
@@ -439,7 +437,7 @@ func ld_parse_decl_stmt(
 	lhs ast.Node,
 ) ast.Node {
 	if parser.trace {
-		fmt.Println("ld_decl")
+		fmt.Printf("ld_decl: operator: %v\n", operator)
 	}
 	lhs_ident := parser.as_ident(lhs)
 	parser.advance() // step past declaration operator
@@ -495,7 +493,7 @@ func(p *pratt) parse_call_args() []ast.Expr {
 	p.expect(token.LPAREN)
 	args := []ast.Expr{}
 	for p.peek().Type != token.RPAREN {
-		arg_expr := p.as_expr(p.parse_node(LOWEST))
+		arg_expr := p.parse_basic_expr(p.peek().Type)
 		args = append(args, arg_expr)
 		if p.peek().Type == token.COMMA {
 			p.expect(token.COMMA)
@@ -560,4 +558,36 @@ func(p *pratt) as_ident(node ast.Node) *ast.Ident_Expr {
 		p.report_offset_parse_error(-1, "%v: expected identifier")
 	}
 	return ident
+}
+
+func (p *pratt) try_make_statement(node ast.Node) ast.Stmt {
+	var stmt ast.Stmt
+	maybe_expr, ok := node.(ast.Expr)
+	if !ok {
+		p.report_parse_error(p.peek(), "%v: expected expression")
+		return nil
+	}
+	// for simplicity only expressions that have side effects can appear
+	// standalone within a block
+	switch maybe_expr.(type) {
+	case *ast.Call_Expr:
+		stmt = &ast.Expr_Stmt{Expr: maybe_expr}
+	case *ast.Binary_Expr:
+		binary_expr := maybe_expr.(*ast.Binary_Expr)
+		if binary_expr.Operator == token.INCRBY || 
+			binary_expr.Operator == token.DECRYBY {
+			stmt = &ast.Expr_Stmt{Expr: binary_expr}
+			break
+		}
+		p.report_offset_parse_error(-2, "%v: cannot cast to statement")
+	case *ast.Unary_Expr:
+		unary_expr := maybe_expr.(*ast.Unary_Expr)
+		if unary_expr.Operator == token.INCR || 
+			unary_expr.Operator == token.DECR {
+			stmt = &ast.Expr_Stmt{Expr: unary_expr}
+			break
+		}
+		p.report_offset_parse_error(-2, "%v: cannot cast to statement")
+	}
+	return stmt
 }
