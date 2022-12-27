@@ -84,7 +84,7 @@ type (
 		Decl Decl
 	}
 	
-	Empty_Stmt struct {} // TODO
+	Empty_Stmt struct {}
 
 	Return_Stmt struct {
 		Result Expr

@@ -111,7 +111,6 @@ func (p *pratt) parse_node(current_precedence precedence) ast.Node {
 func (p *pratt) advance() token.Token { p.current++; return p.peek() }
 func (p *pratt) peek() token.Token    { return p.tokens[p.current] }
 func (p *pratt) is_at_end() bool      { return p.peek().Type == token.EOF }
-
 func (p *pratt) expect(tok token.TOKEN_TYPE) { 
 	if p.peek().Type != tok {
 		p.report_expect_error(p.peek(), tok, "expected '%v'")
@@ -380,6 +379,10 @@ func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
 			parser.peek(),
 		)
 	}
+	if parser.peek().Type == token.RBRACE {
+		parser.expect(token.RBRACE)
+		return &ast.Empty_Stmt{}
+	}
 	list := parser.parse_stmt_list()
 	parser.expect(token.RBRACE)
 	return &ast.Block_Stmt{List: list}
@@ -403,6 +406,9 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 			// parse with lowest precedence to capture all potential nodes
 			stmt, ok := p.parse_node(LOWEST - 1).(ast.Stmt)
 			if !ok {
+				// TODO: handle case where the resultant node is still an expression -
+				// i.e. a standalone expr in a block with side effects e.g. increment operation
+				// try_make_statement
 				p.report_offset_parse_error(-1, "%v: expected statement")
 				continue
 			}
@@ -454,10 +460,10 @@ func (p *pratt) parse_function_declaration(
 		fmt.Println("function_decl")
 	}
 	lhs_ident.Obj.Kind = ast.Function
-    args := p.parse_function_args(lhs_ident.Obj.Name)
+	args := p.parse_function_args(lhs_ident.Obj.Name)
 	lhs_ident.Obj.Decl = args
 	p.expect(token.RPAREN) // step past end args list
-	p.expect(token.FUNRETURN) // step past funret
+	p.expect(token.FUNRETURN) // step past '->'
 	p.expect(token.LBRACE) // step into block statement 
 	body := p.as_block(nd_parse_block_stmt(p, p.peek()))
 	return &ast.Fun_Decl{Ident: lhs_ident, Body: body}

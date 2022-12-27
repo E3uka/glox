@@ -37,9 +37,9 @@ where := &value;
 there := *where;
 
 /*
-TODO: SelectorExpr, FnExpr, IfaceExpr
-TODO: ExprStmt, IfStmt, IncrDecrStmt, ForStmt, WhileStmt
-TODO: ArrayType, FuncType, StructType, Fields
+TODO: explore types ArrayType, FuncType, StructType, Fields
+TODO: IFaceExpr, FnExpr (first class functions)
+TODO: ExprStmt (standalone expr in a block scope), SelectorExpr, IfStmt, ForStmt, WhileStmt
 
 TODO: end semicolon error messages
 TODO: chore: character start locations for error messages
