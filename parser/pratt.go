@@ -22,7 +22,7 @@ func New(path *string, tokens *[]token.Token) *pratt {
 		tokens:  *tokens,
 		current: 0,
 		expr:    nil,
-		trace:   true,
+		trace:   false,
 	}
 	return pratt
 }

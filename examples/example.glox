@@ -11,12 +11,13 @@ changeme := "password"; // mutable declaration
 /* quick maths (correct precedence parsing) */
 grouping := 1 / (3 + 2);
 maths := 9 + 12 / 3 * 5;
+
 /* blocks and scope (soon) */
 outer := "hello";
 {
-	innner := "world";
+	innner := " world";
 	{
-		const inner_squared := outer + inner;
+	outer += inner;
 	}
 
 	/* return and break statements */
@@ -26,8 +27,8 @@ outer := "hello";
 
 /* function syntax */
 create_habit :: (cue, craving, response, reward) -> {
-	atomic := print("I can see clear-ly now");
-	const win := reward("have some chocolate");
+	print("I can see clear-ly now");
+	reward++;
 	return cue + "miss me with that!";
 }
 
@@ -39,7 +40,7 @@ there := *where;
 /*
 TODO: explore types ArrayType, FuncType, StructType, Fields
 TODO: IFaceExpr, FnExpr (first class functions)
-TODO: ExprStmt (standalone expr in a block scope), SelectorExpr, IfStmt, ForStmt, WhileStmt
+TODO: SelectorExpr, IfStmt, ForStmt, WhileStmt
 
 TODO: end semicolon error messages
 TODO: chore: character start locations for error messages
