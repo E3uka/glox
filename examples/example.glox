@@ -5,7 +5,8 @@ multiline
 comments
 */
 
-const old := 28; // immutable declaration & inline comments
+/* declarations */
+const old := 28; // immutable declaration
 changeme := "password"; // mutable declaration
 
 /* quick maths (correct precedence parsing) */
@@ -17,19 +18,19 @@ outer := "hello";
 {
 	innner := " world";
 	{
-	outer += inner;
+		outer += inner;
 	}
-
-	/* return and break statements */
+	/* branch statements */
 	break;
 	return x / y + z;
 };
 
 /* function syntax */
 create_habit :: (cue, craving, response, reward) -> {
-	print("I can see clear-ly now");
+	println("I can see clear-ly now");
 	reward++;
-	return cue + "miss me with that!";
+	result := craving(response(cue)); // nested function calls
+	return result;
 }
 
 /* pointer reference and dereference */

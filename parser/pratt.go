@@ -492,12 +492,21 @@ func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
 func(p *pratt) parse_call_args() []ast.Expr {
 	p.expect(token.LPAREN)
 	args := []ast.Expr{}
+	var expr ast.Expr
 	for p.peek().Type != token.RPAREN {
-		arg_expr := p.parse_basic_expr(p.peek().Type)
-		args = append(args, arg_expr)
 		if p.peek().Type == token.COMMA {
 			p.expect(token.COMMA)
+			continue
 		}
+		if p.peek().Type == token.IDENT {
+			expr = p.parse_basic_expr(p.peek().Type)
+			if p.peek().Type == token.LPAREN {
+				expr = ld_parse_call_expr(p, p.peek().Type, expr).(ast.Expr)
+			}
+		} else {
+			expr = p.parse_basic_expr(p.peek().Type)
+		}
+		args = append(args, expr)
 	}
 	return args
 }
@@ -506,11 +515,12 @@ func(p *pratt) parse_function_args(identifier string) ast.Environment {
 	p.expect(token.LPAREN)
 	scope := ast.Environment{}
 	for p.peek().Type != token.RPAREN {
-		ident_object := p.parse_basic_ident(p.peek().Type).Obj
-		scope[identifier] = append(scope[identifier], ident_object)
 		if p.peek().Type == token.COMMA {
 			p.expect(token.COMMA)
+			continue
 		}
+		ident_object := p.parse_basic_ident(p.peek().Type).Obj
+		scope[identifier] = append(scope[identifier], ident_object)
 	}
 	return scope
 }
