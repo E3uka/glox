@@ -24,101 +24,89 @@ type Decl interface {
 }
 
 type (
-	Binary_Expr struct {
+	BinaryExpr struct {
 		Lhs      Expr
-		Operator token.TOKEN_TYPE
+		Operator token.TokenType
 		Rhs      Expr
 	}
-
-	Call_Expr struct {
-		Ident *Ident_Expr
+	CallExpr struct {
+		Ident *IdentExpr
 		Args  []Expr
 	}
-
-	Ident_Expr struct {
+	IdentExpr struct {
 		Obj     *Object
 		Mutable bool
 	}
-
-	Literal_Expr struct {
-		Kind  token.TOKEN_TYPE
+	LiteralExpr struct {
+		Kind  token.TokenType
 		Value string
 	}
-
-	Paren_Expr struct {
+	ParenExpr struct {
 		Expr Expr
 	}
-
-	Ptr_Expr struct {
-		Ident *Ident_Expr
+	PtrExpr struct {
+		Ident *IdentExpr
 		Deref bool
 	}
-
-	Unary_Expr struct {
-		Operator token.TOKEN_TYPE
+	UnaryExpr struct {
+		Operator token.TokenType
 		Rhs      Expr
 	}
 )
 
 // ensures only expr_node types can be assigned to Expr
-func (*Binary_Expr)  expr_node() {}
-func (*Ident_Expr)   expr_node() {}
-func (*Call_Expr)    expr_node() {}
-func (*Literal_Expr) expr_node() {}
-func (*Paren_Expr)   expr_node() {}
-func (*Ptr_Expr)     expr_node() {}
-func (*Unary_Expr)   expr_node() {}
+func (*BinaryExpr)  expr_node() {}
+func (*IdentExpr)   expr_node() {}
+func (*CallExpr)    expr_node() {}
+func (*LiteralExpr) expr_node() {}
+func (*ParenExpr)   expr_node() {}
+func (*PtrExpr)     expr_node() {}
+func (*UnaryExpr)   expr_node() {}
 
 type (
-	Assign_Stmt struct {
-		Ident *Ident_Expr
+	AssignStmt struct {
+		Ident *IdentExpr
 	}
-
-	Block_Stmt struct {
+	BlockStmt struct {
 		List []Stmt
 	}
-
-	Branch_Stmt struct {} // TODO
-
-	Decl_Stmt struct {
+	BranchStmt struct { /* TODO */}
+	DeclStmt struct {
 		Decl Decl
 	}
-	
-	Empty_Stmt struct {}
-
-	Expr_Stmt struct { 
+	EmptyStmt struct {}
+	ExprStmt struct { 
 		Expr Expr
 	}
-
-	Return_Stmt struct {
+	ReturnStmt struct {
 		Result Expr
 	}
 )
 
 // ensures only stmt_node types can be assigned to Stmt
-func (*Assign_Stmt) stmt_node() {}
-func (*Block_Stmt)  stmt_node() {}
-func (*Branch_Stmt) stmt_node() {}
-func (*Decl_Stmt)   stmt_node() {}
-func (*Empty_Stmt)  stmt_node() {}
-func (*Expr_Stmt)   stmt_node() {}
-func (*Return_Stmt) stmt_node() {}
+func (*AssignStmt) stmt_node() {}
+func (*BlockStmt)  stmt_node() {}
+func (*BranchStmt) stmt_node() {}
+func (*DeclStmt)   stmt_node() {}
+func (*EmptyStmt)  stmt_node() {}
+func (*ExprStmt)   stmt_node() {}
+func (*ReturnStmt) stmt_node() {}
 
 type (
-	Generic_Decl struct {
-		Ident *Ident_Expr
+	GenericDecl struct {
+		Ident *IdentExpr
 		Value Expr
 	}
 
-	Fun_Decl struct {
-		Ident *Ident_Expr
-		Body  *Block_Stmt
+	ProcedureDecl struct {
+		Ident *IdentExpr
+		Body  *BlockStmt
 	}
 )
 
 // ensures only decl_node types can be assigned to Decl
-func (*Generic_Decl) decl_node() {}
-func (*Fun_Decl)     decl_node() {}
+func (*GenericDecl)   decl_node() {}
+func (*ProcedureDecl) decl_node() {}
 
 type Object struct {
 	Kind ObjKind
@@ -132,8 +120,9 @@ type ObjKind uint
 
 const (
 	Constant ObjKind = iota
+	Procedure
+	Type
 	Variable
-	Function
 )
 
 type Scope struct {

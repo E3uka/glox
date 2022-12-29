@@ -191,7 +191,7 @@ func (s *scanner) scan() error {
 				}
 			}
 			if s.is_at_end() {
-				return glox_err.Lex_Error(
+				return glox_err.ScanError(
 					s.path,
 					s.line,
 					"unterminated block comment",
@@ -215,7 +215,7 @@ func (s *scanner) scan() error {
 		} else if is_alpha(char) {
 			s.scan_identifier()
 		} else {
-			return glox_err.Lex_Error(s.path, s.line, "unexpected character")
+			return glox_err.ScanError(s.path, s.line, "unexpected character")
 		}
 	}
 	return nil
@@ -253,7 +253,7 @@ func (s *scanner) peek_next() rune {
 }
 
 func (s *scanner) add_token(
-	tok_type token.TOKEN_TYPE,
+	tok_type token.TokenType,
 	literal string,
 ) {
 	tok := token.Token{
@@ -274,7 +274,7 @@ func (s *scanner) scan_string() error {
 		s.step()
 	}
 	if s.is_at_end() {
-		return glox_err.Lex_Error(s.path, s.line, "unterminated string")
+		return glox_err.ScanError(s.path, s.line, "unterminated string")
 	}
 	// step past the end of the string to the newline char
 	s.step()
@@ -298,7 +298,7 @@ func (s *scanner) scan_float() error {
 
 	value := s.source[s.start:s.current]
 	if _, err := strconv.ParseFloat(value, 64); err != nil {
-		return glox_err.Lex_Error(
+		return glox_err.ScanError(
 			s.path,
 			s.line,
 			"could not parse string value",
@@ -314,7 +314,7 @@ func (s *scanner) scan_identifier() {
 	}
 
 	value := s.source[s.start:s.current]
-	tok := token.Lookup_Keyword(value)
+	tok := token.LookupKeyword(value)
 
 	if tok == token.NULL {
 		s.add_token(tok, "null")

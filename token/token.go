@@ -5,11 +5,11 @@ import (
 	"strconv"
 )
 
-type TOKEN_TYPE uint
+type TokenType uint
 
 const (
 	// Special Tokens
-	ILLEGAL TOKEN_TYPE = iota
+	ILLEGAL TokenType = iota
 	EOF                // added to end of source file for bookeeping
 
 	// Literals
@@ -140,9 +140,9 @@ var tokens = [...]string{
 	WHILE:  "while",
 }
 
-func (tt TOKEN_TYPE) String() string {
+func (tt TokenType) String() string {
 	s := ""
-	if 0 <= tt && tt < TOKEN_TYPE(len(tokens)) {
+	if 0 <= tt && tt < TokenType(len(tokens)) {
 		s = tokens[tt]
 	}
 	if s == "" {
@@ -152,7 +152,7 @@ func (tt TOKEN_TYPE) String() string {
 }
 
 type Token struct {
-	Type    TOKEN_TYPE
+	Type    TokenType
 	Literal string
 	Start   int
 	End     int
@@ -164,7 +164,7 @@ func (tok Token) String() string {
 }
 
 // map with the exact size of number of keywords
-var keywords = make(map[string]TOKEN_TYPE, keyword_end-(keyword_beg+1))
+var keywords = make(map[string]TokenType, keyword_end-(keyword_beg+1))
 
 // Run on initialisation ~ gleaned from go source
 func init() {
@@ -174,7 +174,7 @@ func init() {
 	}
 }
 
-func Lookup_Keyword(ident string) TOKEN_TYPE {
+func LookupKeyword(ident string) TokenType {
 	if tok, is_keyword := keywords[ident]; is_keyword {
 		return tok
 	}

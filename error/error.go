@@ -9,29 +9,29 @@ var LEX_ERROR bool = false
 var PARSE_ERROR bool = false
 var RUNTIME_ERROR bool = false
 
-func Lex_Error(path *string, line int, reason string) error {
+func ScanError(path *string, line int, reason string) error {
 	LEX_ERROR = true
 	msg := fmt.Sprintf("%s:%d: %s\n", *path, line, reason)
 	fmt.Printf(msg)
 	return errors.New(msg)
 }
 
-func Parse_Panic(path *string, line int, reason string) {
+func ParsePanic(path *string, line int, reason string) {
 	msg := fmt.Sprintf("%s:%d: %s", *path, line, reason)
 	panic(msg)
 }
 
-func Parse_Panic_Recover(reason string) {
+func ParsePanicRecover(reason string) {
 	PARSE_ERROR = true
 	fmt.Println(reason)
 }
 
-func Runtime_Panic(path *string, reason string, expr ...interface{}) {
+func RuntimePanic(path *string, reason string, expr ...interface{}) {
 	msg := fmt.Sprintf("%s: %v: %s", *path, expr, reason)
 	panic(msg)
 }
 
-func Runtime_Panic_Recover(reason string) {
+func RuntimePanicRecover(reason string) {
 	RUNTIME_ERROR = true
 	fmt.Println(reason)
 }
