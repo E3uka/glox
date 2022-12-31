@@ -299,7 +299,7 @@ func nd_parse_literal_expr(parser *pratt, tok token.Token) ast.Node {
 			parser.peek().Type,
 		)
 	}
-	typ := parser.get_type(tok.Type, "%v: unrecognised literal")
+	typ := parser.get_or_infer_type(tok, "%v: unrecognised literal")
 	return &ast.LiteralExpr{Type: typ, Value: tok.Literal}
 }
 
@@ -469,6 +469,15 @@ func (p *pratt) parse_procedure_declaration(
 	lhs_ident.Obj.Decl = args
 	p.expect(token.RPAREN) // step past end args list
 	p.expect(token.FUNRETURN) // step past '->'
+	// handle no return type
+	var typ ast.Typ
+	if p.peek().Type == token.LBRACE {
+		typ = ast.NullType
+	} else {
+		typ = p.get_or_infer_type(p.peek(), "%v: unrecognised type")
+		p.advance() // step past type
+	}
+	lhs_ident.Obj.Type = typ
 	p.expect(token.LBRACE) // step into block statement 
 	body := p.as_block(nd_parse_block_stmt(p, p.peek()))
 	return &ast.ProcedureDecl{Ident: lhs_ident, Body: body}
@@ -492,7 +501,7 @@ func (p *pratt) parse_typed_declaration(
 	if p.trace {
 		fmt.Println("typed_decl")
 	}
-	typ := p.get_type(p.peek().Type, "%v: unrecognised type")
+	typ := p.get_or_infer_type(p.peek(), "%v: unrecognised type")
 	lhs_ident.Obj.Type = typ
 	p.advance() // step past type
 	p.expect(token.ASSIGN) // step past '='
@@ -547,9 +556,12 @@ func(p *pratt) parse_procedure_args(identifier string) ast.Environment {
 	return scope
 }
 
-func (p *pratt) get_type(tok token.TokenType, format_string string) ast.Typ {
+func (p *pratt) get_or_infer_type(
+	tok token.Token,
+	format_string string,
+) ast.Typ {
 	var typ ast.Typ
-	switch tok {
+	switch tok.Type {
 	case token.FALSE, token.TRUE, token.BOOLTYPE:
 		typ = ast.BoolType
 	case token.FLOAT, token.FLOATTYPE:
@@ -559,7 +571,8 @@ func (p *pratt) get_type(tok token.TokenType, format_string string) ast.Typ {
 	case token.STRING, token.STRINGTYPE:
 		typ = ast.StringType
 	default:
-		p.report_offset_parse_error(-1, format_string)
+		// TODO: type could be inferred here if it is not a primitive
+		p.report_parse_error(tok, format_string)
 	}
 	return typ
 }

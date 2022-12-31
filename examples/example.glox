@@ -28,7 +28,7 @@ outer := "hello";
 };
 
 /* function syntax */
-create_habit :: (cue, craving, response, reward) -> {
+create_habit :: (cue, craving, response, reward) -> string {
 	println("I can see clear-ly now");
 	reward++;
 	result := craving(response(cue)); // nested function calls
@@ -41,7 +41,6 @@ where := &value;
 there := *where;
 
 /*
-TODO: functions that return types
 TODO: explore types ArrayType, FuncType, StructType, Fields
 TODO: IFaceExpr, FnExpr (first class functions)
 TODO: SelectorExpr, IfStmt, ForStmt, WhileStmt
