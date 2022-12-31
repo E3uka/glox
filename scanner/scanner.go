@@ -312,17 +312,7 @@ func (s *scanner) scan_identifier() {
 	for is_alphanumeric(s.peek()) {
 		s.step()
 	}
-
 	value := s.source[s.start:s.current]
 	tok := token.LookupKeyword(value)
-
-	if tok == token.NULL {
-		s.add_token(tok, "null")
-	} else if tok == token.TRUE {
-		s.add_token(tok, "true")
-	} else if tok == token.FALSE {
-		s.add_token(tok, "false")
-	} else {
-		s.add_token(tok, value)
-	}
+	s.add_token(tok, value)
 }

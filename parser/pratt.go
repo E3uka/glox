@@ -178,6 +178,7 @@ var (
 
 func init() {
 	prec_map[token.ASSIGN]    = LOWEST
+	prec_map[token.COLON]     = LOWEST
 	prec_map[token.CONST]     = LOWEST
 	prec_map[token.FUNASSIGN] = LOWEST
 	prec_map[token.RETURN]    = LOWEST
@@ -219,6 +220,7 @@ func init() {
 
 	left_deno[token.ADD]       = ld_parse_binary_expr
 	left_deno[token.ASSIGN]    = ld_parse_assign_stmt
+	left_deno[token.COLON]     = ld_parse_decl_stmt
 	left_deno[token.DECRYBY]   = ld_parse_binary_expr
 	left_deno[token.DECR]      = ld_parse_unary_expr
 	left_deno[token.EQL]       = ld_parse_binary_expr
@@ -297,7 +299,8 @@ func nd_parse_literal_expr(parser *pratt, tok token.Token) ast.Node {
 			parser.peek().Type,
 		)
 	}
-	return &ast.LiteralExpr{Kind: tok.Type, Value: tok.Literal}
+	typ := parser.get_type(tok.Type, "%v: unrecognised literal")
+	return &ast.LiteralExpr{Type: typ, Value: tok.Literal}
 }
 
 func nd_parse_paren_expr(parser *pratt, tok token.Token) ast.Node {
@@ -443,9 +446,12 @@ func ld_parse_decl_stmt(
 	lhs_ident := parser.as_ident(lhs)
 	parser.advance() // step past declaration operator
 	var decl ast.Decl
-	if operator == token.FUNASSIGN {
+	switch operator {
+	case token.COLON:
+		decl = parser.parse_typed_declaration(lhs_ident, operator)
+	case token.FUNASSIGN:
 		decl = parser.parse_procedure_declaration(lhs_ident, operator)
-	} else {
+	case token.WALRUS:
 		decl = parser.parse_generic_declaration(lhs_ident, operator)
 	}
 	return &ast.DeclStmt{Decl: decl}
@@ -471,12 +477,27 @@ func (p *pratt) parse_procedure_declaration(
 func (p *pratt) parse_generic_declaration(
 	lhs_ident *ast.IdentExpr,
 	operator token.TokenType,
-) *ast.GenericDecl {
+) *ast.BasicDecl {
 	if p.trace {
-		fmt.Println("generic_decl")
+		fmt.Println("basic_decl")
 	}
 	rhs_expr := p.parse_basic_expr(operator)
-	return &ast.GenericDecl{Ident: lhs_ident, Value: rhs_expr}
+	return &ast.BasicDecl{Ident: lhs_ident, Value: rhs_expr}
+}
+
+func (p *pratt) parse_typed_declaration(
+	lhs_ident *ast.IdentExpr,
+	operator token.TokenType,
+) *ast.BasicDecl {
+	if p.trace {
+		fmt.Println("typed_decl")
+	}
+	typ := p.get_type(p.peek().Type, "%v: unrecognised type")
+	lhs_ident.Obj.Type = typ
+	p.advance() // step past type
+	p.expect(token.ASSIGN) // step past '='
+	rhs_expr := p.parse_basic_expr(operator)
+	return &ast.BasicDecl{Ident: lhs_ident, Value: rhs_expr}
 }
 
 func nd_parse_return_stmt(parser *pratt, tok token.Token) ast.Node {
@@ -524,6 +545,23 @@ func(p *pratt) parse_procedure_args(identifier string) ast.Environment {
 		scope[identifier] = append(scope[identifier], ident_object)
 	}
 	return scope
+}
+
+func (p *pratt) get_type(tok token.TokenType, format_string string) ast.Typ {
+	var typ ast.Typ
+	switch tok {
+	case token.FALSE, token.TRUE, token.BOOLTYPE:
+		typ = ast.BoolType
+	case token.FLOAT, token.FLOATTYPE:
+		typ = ast.FloatType
+	case token.NULL:
+		typ = ast.NullType
+	case token.STRING, token.STRINGTYPE:
+		typ = ast.StringType
+	default:
+		p.report_offset_parse_error(-1, format_string)
+	}
+	return typ
 }
 
 // parses the next token as an expression using the supplied tok precedence

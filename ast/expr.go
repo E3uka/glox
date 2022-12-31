@@ -33,12 +33,13 @@ type (
 		Ident *IdentExpr
 		Args  []Expr
 	}
+	CastExpr struct {/* TODO */}
 	IdentExpr struct {
 		Obj     *Object
 		Mutable bool
 	}
 	LiteralExpr struct {
-		Kind  token.TokenType
+		Type  Typ
 		Value string
 	}
 	ParenExpr struct {
@@ -70,7 +71,7 @@ type (
 	BlockStmt struct {
 		List []Stmt
 	}
-	BranchStmt struct { /* TODO */}
+	BranchStmt struct {/* TODO */}
 	DeclStmt struct {
 		Decl Decl
 	}
@@ -93,7 +94,7 @@ func (*ExprStmt)   stmt_node() {}
 func (*ReturnStmt) stmt_node() {}
 
 type (
-	GenericDecl struct {
+	BasicDecl struct {
 		Ident *IdentExpr
 		Value Expr
 	}
@@ -105,7 +106,7 @@ type (
 )
 
 // ensures only decl_node types can be assigned to Decl
-func (*GenericDecl)   decl_node() {}
+func (*BasicDecl)   decl_node() {}
 func (*ProcedureDecl) decl_node() {}
 
 type Object struct {
@@ -113,7 +114,7 @@ type Object struct {
 	Name string
 	Decl any // Field, FuncDecl, AssignStmt, Scope; or nil
 	Data any // Expr, object-specific data; or nil
-	/* TODO:  Type any // placeholder for type information; may be nil */
+	Type any // may be nil
 }
 
 type ObjKind uint
@@ -123,6 +124,15 @@ const (
 	Procedure
 	Type
 	Variable
+)
+
+type Typ uint
+
+const (
+	BoolType Typ = iota
+	FloatType
+	NullType
+	StringType
 )
 
 type Scope struct {

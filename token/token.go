@@ -73,6 +73,10 @@ const (
 	IT
 	TRUE
 	WHILE
+
+	BOOLTYPE   // bool
+	FLOATTYPE  // f64
+	STRINGTYPE // string
 	keyword_end
 )
 
@@ -117,7 +121,7 @@ var tokens = [...]string{
 	FUNASSIGN: "::",
 	FUNRETURN: "->",
 
-	NOT: "!",
+	NOT:    "!",
 	BITAND: "&",
 	AND:    "&&",
 	BITOR:  "|",
@@ -138,6 +142,10 @@ var tokens = [...]string{
 	IT:     "it",
 	TRUE:   "true",
 	WHILE:  "while",
+
+	BOOLTYPE:   "bool",
+	FLOATTYPE:  "f64",
+	STRINGTYPE: "string",
 }
 
 func (tt TokenType) String() string {
