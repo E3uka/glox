@@ -15,14 +15,14 @@ lies: bool = false;         // typed mutable declaration
 grouping := 1 / (3 + 2);
 maths := 9 + 12 / 3 * 5;
 
-/* blocks and scope (soon) */
+/* blocks and scope */
 outer := "hello";
 {
 	innner := " world";
 	{
 		outer += inner;
 	}
-	/* branch statements */
+	/* branch statements (soon) */
 	break;
 	return x / y + z;
 };
@@ -35,15 +35,19 @@ create_habit :: (cue, craving, response, reward) -> string {
 	return result;
 }
 
+/* selections (structs soon) */
+input.field;
+input.method(firstname, lastname);
+
 /* pointer reference and dereference */
 value := "some location";
 where := &value;
 there := *where;
 
 /*
-TODO: explore types ArrayType, FuncType, StructType, Fields
+TODO: ArrayType, FuncType, StructType, Fields
 TODO: IFaceExpr, FnExpr (first class functions)
-TODO: SelectorExpr, IfStmt, ForStmt, WhileStmt
+TODO: IfStmt, ForStmt, WhileStmt
 
 TODO: end semicolon error messages
 TODO: chore: character start locations for error messages

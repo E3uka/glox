@@ -49,6 +49,10 @@ type (
 		Ident *IdentExpr
 		Deref bool
 	}
+	SelectorExpr struct {
+		Parent    *IdentExpr
+		Selection Expr
+	}
 	UnaryExpr struct {
 		Operator token.TokenType
 		Rhs      Expr

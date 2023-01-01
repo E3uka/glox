@@ -233,6 +233,7 @@ func init() {
 	left_deno[token.LPAREN]    = ld_parse_call_expr
 	left_deno[token.LSS]       = ld_parse_binary_expr
 	left_deno[token.NEQ]       = ld_parse_binary_expr
+	left_deno[token.PERIOD]    = ld_parse_selector_expr
 	left_deno[token.QUO]       = ld_parse_binary_expr
 	left_deno[token.STAR]      = ld_parse_binary_expr
 	left_deno[token.SUB]       = ld_parse_binary_expr
@@ -268,7 +269,7 @@ func ld_parse_call_expr(
 	lhs_ident := parser.as_ident(lhs)
 	lhs_ident.Obj.Kind = ast.Procedure
 	args := parser.parse_call_args() 
-	parser.expect(token.RPAREN) // step past end args list
+	parser.expect(token.RPAREN)
 	return &ast.CallExpr{Ident: lhs_ident, Args: args}
 }
 
@@ -344,19 +345,6 @@ func nd_parse_unary_expr(parser *pratt, tok token.Token) ast.Node {
 	return &ast.UnaryExpr{Operator: tok.Type, Rhs: unary_expr}
 }
 
-func ld_parse_unary_expr(
-	parser *pratt,
-	operator token.TokenType,
-	lhs ast.Node,
-) ast.Node {
-	if parser.trace {
-		fmt.Printf("ld_unary: operator: %v\n", operator)
-	}
-	rhs_expr := parser.as_expr(lhs)
-	parser.advance() // step past postfix operator
-	return &ast.UnaryExpr{Operator: operator, Rhs: rhs_expr}
-}
-
 func ld_parse_assign_stmt(
 	parser *pratt,
 	operator token.TokenType,
@@ -370,6 +358,33 @@ func ld_parse_assign_stmt(
 	rhs := parser.parse_basic_expr(operator)
 	identifer.Obj.Data = rhs
 	return &ast.AssignStmt{Ident: identifer}
+}
+
+func ld_parse_selector_expr(
+	parser *pratt,
+	operator token.TokenType,
+	lhs ast.Node,
+) ast.Node {
+	if parser.trace {
+		fmt.Printf("ld_selector: operator: %v\n", operator)
+	}
+	lhs_expr := parser.as_ident(lhs)
+	parser.expect(token.PERIOD)
+	selection := parser.parse_basic_expr(operator)
+	return &ast.SelectorExpr{Parent: lhs_expr, Selection: selection}
+}
+
+func ld_parse_unary_expr(
+	parser *pratt,
+	operator token.TokenType,
+	lhs ast.Node,
+) ast.Node {
+	if parser.trace {
+		fmt.Printf("ld_unary: operator: %v\n", operator)
+	}
+	rhs_expr := parser.as_expr(lhs)
+	parser.advance() // step past postfix operator
+	return &ast.UnaryExpr{Operator: operator, Rhs: rhs_expr}
 }
 
 func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
@@ -406,7 +421,7 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 			token.BREAK, token.CONST:
 			node := p.parse_node(LOWEST - 1) 
 			stmt, ok := node.(ast.Stmt)
-			// check if resultant node can be transfomed into a valid statement
+			// check if resultant node can be transformed into a valid statement
 			if !ok {
 				stmt = p.try_make_statement(node)
 				if stmt == nil {
@@ -467,12 +482,11 @@ func (p *pratt) parse_procedure_declaration(
 	lhs_ident.Obj.Kind = ast.Procedure
 	args := p.parse_procedure_args(lhs_ident.Obj.Name)
 	lhs_ident.Obj.Decl = args
-	p.expect(token.RPAREN) // step past end args list
-	p.expect(token.FUNRETURN) // step past '->'
-	// handle no return type
+	p.expect(token.RPAREN)
+	p.expect(token.FUNRETURN)
 	var typ ast.Typ
 	if p.peek().Type == token.LBRACE {
-		typ = ast.NullType
+		typ = ast.NullType // no return type
 	} else {
 		typ = p.get_or_infer_type(p.peek(), "%v: unrecognised type")
 		p.advance() // step past type
@@ -504,7 +518,7 @@ func (p *pratt) parse_typed_declaration(
 	typ := p.get_or_infer_type(p.peek(), "%v: unrecognised type")
 	lhs_ident.Obj.Type = typ
 	p.advance() // step past type
-	p.expect(token.ASSIGN) // step past '='
+	p.expect(token.ASSIGN)
 	rhs_expr := p.parse_basic_expr(operator)
 	return &ast.BasicDecl{Ident: lhs_ident, Value: rhs_expr}
 }
