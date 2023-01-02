@@ -35,9 +35,16 @@ create_habit :: (cue, craving, response, reward) -> string {
 	return result;
 }
 
-/* selections (structs soon) */
-input.field;
-input.method(firstname, lastname);
+/* structs & selections */
+Connection :: struct {
+	address: string;
+	online:  string;
+	count:   f64;
+}
+
+Connection.address;
+Connection.add_user(user123);
+Connection.count += 1;
 
 /* pointer reference and dereference */
 value := "some location";
@@ -45,9 +52,8 @@ where := &value;
 there := *where;
 
 /*
-TODO: ArrayType, FuncType, StructType, Fields
-TODO: IFaceExpr, FnExpr (first class functions)
-TODO: IfStmt, ForStmt, WhileStmt
+TODO: ArrayType, FuncType, IFaceExpr, FnExpr (for first class functions)
+TODO: Branch Statements (IfStmt, ForStmt, WhileStmt)
 
 TODO: end semicolon error messages
 TODO: chore: character start locations for error messages

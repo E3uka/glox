@@ -24,17 +24,17 @@ type Decl interface {
 }
 
 type (
-	BinaryExpr struct {
+	BinOp struct {
 		Lhs      Expr
 		Operator token.TokenType
 		Rhs      Expr
 	}
 	CallExpr struct {
-		Ident *IdentExpr
+		Ident *Ident
 		Args  []Expr
 	}
 	CastExpr struct {/* TODO */}
-	IdentExpr struct {
+	Ident struct {
 		Obj     *Object
 		Mutable bool
 	}
@@ -46,31 +46,36 @@ type (
 		Expr Expr
 	}
 	PtrExpr struct {
-		Ident *IdentExpr
+		Ident *Ident
 		Deref bool
 	}
 	SelectorExpr struct {
-		Parent    *IdentExpr
+		Parent    *Ident
 		Selection Expr
 	}
-	UnaryExpr struct {
+	UnOp struct {
 		Operator token.TokenType
 		Rhs      Expr
+	}
+
+	StructType struct {
+		Fields []*Field
 	}
 )
 
 // ensures only expr_node types can be assigned to Expr
-func (*BinaryExpr)  expr_node() {}
-func (*IdentExpr)   expr_node() {}
+func (*BinOp)       expr_node() {}
+func (*Ident)       expr_node() {}
 func (*CallExpr)    expr_node() {}
 func (*LiteralExpr) expr_node() {}
 func (*ParenExpr)   expr_node() {}
 func (*PtrExpr)     expr_node() {}
-func (*UnaryExpr)   expr_node() {}
+func (*StructType)  expr_node() {}
+func (*UnOp)        expr_node() {}
 
 type (
 	AssignStmt struct {
-		Ident *IdentExpr
+		Ident *Ident
 	}
 	BlockStmt struct {
 		List []Stmt
@@ -99,19 +104,23 @@ func (*ReturnStmt) stmt_node() {}
 
 type (
 	BasicDecl struct {
-		Ident *IdentExpr
+		Ident *Ident
 		Value Expr
 	}
 
 	ProcedureDecl struct {
-		Ident *IdentExpr
+		Ident *Ident
 		Body  *BlockStmt
 	}
 )
 
 // ensures only decl_node types can be assigned to Decl
-func (*BasicDecl)   decl_node() {}
+func (*BasicDecl)     decl_node() {}
 func (*ProcedureDecl) decl_node() {}
+
+type Field struct {
+	Names []*Ident
+}
 
 type Object struct {
 	Kind ObjKind

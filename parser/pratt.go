@@ -251,7 +251,7 @@ func ld_parse_binary_expr(
 	lhs_expr := parser.as_expr(lhs)
 	parser.advance() // step past infix operator
 	rhs_expr := parser.parse_basic_expr(operator)
-	return &ast.BinaryExpr{
+	return &ast.BinOp{
 		Lhs:      lhs_expr,
 		Operator: operator,
 		Rhs:      rhs_expr,
@@ -283,11 +283,15 @@ func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
 	}
 	if tok.Type == token.CONST {
 		ident_expr := parser.parse_basic_ident(tok.Type)
+		ident_expr.Obj.Kind = ast.Constant
 		ident_expr.Mutable = false
 		return ident_expr
 	}
-	return &ast.IdentExpr{
-		Obj: &ast.Object{Kind: ast.Variable, Name: tok.Literal},
+	return &ast.Ident{
+		Obj: &ast.Object{
+			Kind: ast.Variable,
+			Name: tok.Literal,
+		},
 		Mutable: true,
 	}
 }
@@ -342,7 +346,7 @@ func nd_parse_unary_expr(parser *pratt, tok token.Token) ast.Node {
 		)
 	}
 	unary_expr := parser.parse_basic_expr(tok.Type)
-	return &ast.UnaryExpr{Operator: tok.Type, Rhs: unary_expr}
+	return &ast.UnOp{Operator: tok.Type, Rhs: unary_expr}
 }
 
 func ld_parse_assign_stmt(
@@ -384,7 +388,7 @@ func ld_parse_unary_expr(
 	}
 	rhs_expr := parser.as_expr(lhs)
 	parser.advance() // step past postfix operator
-	return &ast.UnaryExpr{Operator: operator, Rhs: rhs_expr}
+	return &ast.UnOp{Operator: operator, Rhs: rhs_expr}
 }
 
 func nd_parse_block_stmt(parser *pratt, tok token.Token) ast.Node {
@@ -465,7 +469,11 @@ func ld_parse_decl_stmt(
 	case token.COLON:
 		decl = parser.parse_typed_declaration(lhs_ident, operator)
 	case token.FUNASSIGN:
-		decl = parser.parse_procedure_declaration(lhs_ident, operator)
+		if parser.peek().Type == token.STRUCT {
+			decl = parser.parse_struct_declaration(lhs_ident, operator)
+		} else {
+			decl = parser.parse_procedure_declaration(lhs_ident, operator)
+		}
 	case token.WALRUS:
 		decl = parser.parse_generic_declaration(lhs_ident, operator)
 	}
@@ -473,7 +481,7 @@ func ld_parse_decl_stmt(
 }
 
 func (p *pratt) parse_procedure_declaration(
-	lhs_ident *ast.IdentExpr,
+	lhs_ident *ast.Ident,
 	operator token.TokenType,
 ) *ast.ProcedureDecl {
 	if p.trace {
@@ -498,18 +506,34 @@ func (p *pratt) parse_procedure_declaration(
 }
 
 func (p *pratt) parse_generic_declaration(
-	lhs_ident *ast.IdentExpr,
+	lhs_ident *ast.Ident,
 	operator token.TokenType,
 ) *ast.BasicDecl {
 	if p.trace {
 		fmt.Println("basic_decl")
 	}
+	lhs_ident.Obj.Kind = ast.Variable
 	rhs_expr := p.parse_basic_expr(operator)
 	return &ast.BasicDecl{Ident: lhs_ident, Value: rhs_expr}
 }
 
+func (p *pratt) parse_struct_declaration(
+	lhs_ident *ast.Ident,
+	operator token.TokenType,
+) *ast.BasicDecl {
+	if p.trace {
+		fmt.Println("typed_decl")
+	}
+	p.expect(token.STRUCT)
+	p.expect(token.LBRACE) // step into struct fields
+	field_list := p.parse_field_list()
+	p.expect(token.RBRACE)
+	struct_type := &ast.StructType{Fields: field_list}
+	return &ast.BasicDecl{Ident: lhs_ident, Value: struct_type}
+}
+
 func (p *pratt) parse_typed_declaration(
-	lhs_ident *ast.IdentExpr,
+	lhs_ident *ast.Ident,
 	operator token.TokenType,
 ) *ast.BasicDecl {
 	if p.trace {
@@ -517,6 +541,7 @@ func (p *pratt) parse_typed_declaration(
 	}
 	typ := p.get_or_infer_type(p.peek(), "%v: unrecognised type")
 	lhs_ident.Obj.Type = typ
+	lhs_ident.Obj.Kind = ast.Variable
 	p.advance() // step past type
 	p.expect(token.ASSIGN)
 	rhs_expr := p.parse_basic_expr(operator)
@@ -554,6 +579,25 @@ func(p *pratt) parse_call_args() []ast.Expr {
 		args = append(args, expr)
 	}
 	return args
+}
+
+func (p *pratt) parse_field_list() []*ast.Field {
+	fields := []*ast.Field{}
+	for p.peek().Type != token.RBRACE {
+		if p.peek().Type == token.SEMICOLON {
+			p.expect(token.SEMICOLON)
+			continue
+		}
+		name := p.parse_basic_ident(p.peek().Type)
+		p.expect(token.COLON)
+		typ := p.get_or_infer_type(p.peek(), "%v: unrecognised type")
+		name.Obj.Kind = ast.Type
+		name.Obj.Type = typ
+		p.advance() // step past type
+		field := &ast.Field{Names: []*ast.Ident{name}}
+		fields = append(fields, field)
+	}
+	return fields
 }
 
 func(p *pratt) parse_procedure_args(identifier string) ast.Environment {
@@ -601,8 +645,8 @@ func(p *pratt) parse_basic_expr(tok token.TokenType) ast.Expr {
 }
 
 // parses the next token as an identifier using the supplied tok precedence
-func(p *pratt) parse_basic_ident(tok token.TokenType) *ast.IdentExpr {
-	ident, ok := p.parse_node(prec_map[tok]).(*ast.IdentExpr)
+func(p *pratt) parse_basic_ident(tok token.TokenType) *ast.Ident {
+	ident, ok := p.parse_node(prec_map[tok]).(*ast.Ident)
 	if !ok {
 		p.report_offset_parse_error(-1, "%v: expected identifier")
 	}
@@ -628,8 +672,8 @@ func(p *pratt) as_expr(node ast.Node) ast.Expr {
 }
 
 // casts node to an identifier; raises an error if the cast fails
-func(p *pratt) as_ident(node ast.Node) *ast.IdentExpr {
-	ident, ok := node.(*ast.IdentExpr)
+func(p *pratt) as_ident(node ast.Node) *ast.Ident {
+	ident, ok := node.(*ast.Ident)
 	if !ok {
 		p.report_offset_parse_error(-1, "%v: expected identifier")
 	}
@@ -648,16 +692,16 @@ func (p *pratt) try_make_statement(node ast.Node) ast.Stmt {
 	switch maybe_expr.(type) {
 	case *ast.CallExpr:
 		stmt = &ast.ExprStmt{Expr: maybe_expr}
-	case *ast.BinaryExpr:
-		binary_expr := maybe_expr.(*ast.BinaryExpr)
+	case *ast.BinOp:
+		binary_expr := maybe_expr.(*ast.BinOp)
 		if binary_expr.Operator == token.INCRBY || 
 			binary_expr.Operator == token.DECRYBY {
 			stmt = &ast.ExprStmt{Expr: binary_expr}
 			break
 		}
 		p.report_offset_parse_error(-2, "%v: cannot cast to statement")
-	case *ast.UnaryExpr:
-		unary_expr := maybe_expr.(*ast.UnaryExpr)
+	case *ast.UnOp:
+		unary_expr := maybe_expr.(*ast.UnOp)
 		if unary_expr.Operator == token.INCR || 
 			unary_expr.Operator == token.DECR {
 			stmt = &ast.ExprStmt{Expr: unary_expr}
