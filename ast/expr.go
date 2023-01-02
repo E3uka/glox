@@ -146,6 +146,7 @@ const (
 	FloatType
 	NullType
 	StringType
+	Custom
 )
 
 type Scope struct {

@@ -28,7 +28,12 @@ outer := "hello";
 };
 
 /* function syntax */
-create_habit :: (cue, craving, response, reward) -> string {
+create_habit :: (
+	cue: string,
+	craving: string,
+	response: string,
+	reward: f64,
+) -> string {
 	println("I can see clear-ly now");
 	reward++;
 	result := craving(response(cue)); // nested function calls
@@ -52,8 +57,8 @@ where := &value;
 there := *where;
 
 /*
-TODO: ArrayType, FuncType, IFaceExpr, FnExpr (for first class functions)
 TODO: Branch Statements (IfStmt, ForStmt, WhileStmt)
+TODO: ArrayType, IFaceExpr, FnExpr & FuncType (first class functions)
 
 TODO: end semicolon error messages
 TODO: chore: character start locations for error messages

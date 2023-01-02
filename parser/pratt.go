@@ -304,7 +304,7 @@ func nd_parse_literal_expr(parser *pratt, tok token.Token) ast.Node {
 			parser.peek().Type,
 		)
 	}
-	typ := parser.get_or_infer_type(tok, "%v: unrecognised literal")
+	typ := parser.get_type(tok)
 	return &ast.LiteralExpr{Type: typ, Value: tok.Literal}
 }
 
@@ -496,7 +496,7 @@ func (p *pratt) parse_procedure_declaration(
 	if p.peek().Type == token.LBRACE {
 		typ = ast.NullType // no return type
 	} else {
-		typ = p.get_or_infer_type(p.peek(), "%v: unrecognised type")
+		typ = p.get_type(p.peek())
 		p.advance() // step past type
 	}
 	lhs_ident.Obj.Type = typ
@@ -539,7 +539,7 @@ func (p *pratt) parse_typed_declaration(
 	if p.trace {
 		fmt.Println("typed_decl")
 	}
-	typ := p.get_or_infer_type(p.peek(), "%v: unrecognised type")
+	typ := p.get_type(p.peek())
 	lhs_ident.Obj.Type = typ
 	lhs_ident.Obj.Kind = ast.Variable
 	p.advance() // step past type
@@ -590,7 +590,7 @@ func (p *pratt) parse_field_list() []*ast.Field {
 		}
 		name := p.parse_basic_ident(p.peek().Type)
 		p.expect(token.COLON)
-		typ := p.get_or_infer_type(p.peek(), "%v: unrecognised type")
+		typ := p.get_type(p.peek())
 		name.Obj.Kind = ast.Type
 		name.Obj.Type = typ
 		p.advance() // step past type
@@ -609,15 +609,16 @@ func(p *pratt) parse_procedure_args(identifier string) ast.Environment {
 			continue
 		}
 		ident_object := p.parse_basic_ident(p.peek().Type).Obj
+		p.expect(token.COLON)
+		typ := p.get_type(p.peek())
+		ident_object.Type = typ
+		p.advance() // step past type
 		scope[identifier] = append(scope[identifier], ident_object)
 	}
 	return scope
 }
 
-func (p *pratt) get_or_infer_type(
-	tok token.Token,
-	format_string string,
-) ast.Typ {
+func (p *pratt) get_type(tok token.Token) ast.Typ {
 	var typ ast.Typ
 	switch tok.Type {
 	case token.FALSE, token.TRUE, token.BOOLTYPE:
@@ -629,8 +630,8 @@ func (p *pratt) get_or_infer_type(
 	case token.STRING, token.STRINGTYPE:
 		typ = ast.StringType
 	default:
-		// TODO: type could be inferred here if it is not a primitive
-		p.report_parse_error(tok, format_string)
+		// TODO: simple solution for now, could embed the type here
+		typ = ast.Custom
 	}
 	return typ
 }
