@@ -211,7 +211,7 @@ func (s *scanner) scan() error {
 
 	default:
 		if is_digit(char) {
-			s.scan_float()
+			s.scan_number()
 		} else if is_alpha(char) {
 			s.scan_identifier()
 		} else {
@@ -284,7 +284,7 @@ func (s *scanner) scan_string() error {
 	return nil
 }
 
-func (s *scanner) scan_float() error {
+func (s *scanner) scan_number() error {
 	for is_digit(s.peek()) {
 		s.step()
 	}
@@ -304,7 +304,7 @@ func (s *scanner) scan_float() error {
 			"could not parse string value",
 		)
 	}
-	s.add_token(token.FLOAT, value)
+	s.add_token(token.S64, value)
 	return nil
 }
 

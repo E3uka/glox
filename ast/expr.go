@@ -143,8 +143,8 @@ type Typ uint
 
 const (
 	BoolType Typ = iota
-	FloatType
 	NullType
+	S64Type
 	StringType
 	Custom
 )

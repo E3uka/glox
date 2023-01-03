@@ -6,7 +6,7 @@ comments
 */
 
 /* declarations */
-const old_dude: f64 = 28;   // typed immutable declaration
+const old_dude: s64 = 28;   // typed immutable declaration
 const location := "London"; // inferred immutable declaration
 changeme := "password";     // inferred mutable declaration
 lies: bool = false;         // typed mutable declaration
@@ -16,24 +16,19 @@ grouping := 1 / (3 + 2);
 maths := 9 + 12 / 3 * 5;
 
 /* blocks and scope */
-outer := "hello";
 {
-	innner := " world";
+	outer := "hello";
 	{
-		outer += inner;
+		outer += " world";
 	}
-	/* branch statements (soon) */
+	/* branch & return statements (soon) */
 	break;
 	return x / y + z;
 };
 
 /* function syntax */
-create_habit :: (
-	cue: string,
-	craving: string,
-	response: string,
-	reward: f64,
-) -> string {
+create_habit :: (cue: string, craving: string, response: string, reward: s64) -> string
+{
 	println("I can see clear-ly now");
 	reward++;
 	result := craving(response(cue)); // nested function calls
@@ -41,11 +36,12 @@ create_habit :: (
 }
 
 /* structs & selections */
-Connection :: struct {
+Connection :: struct 
+{
 	address: string;
 	online:  string;
-	count:   f64;
-}
+	count:   s64;
+};
 
 Connection.address;
 Connection.add_user(user123);
@@ -59,6 +55,7 @@ there := *where;
 /*
 TODO: Branch Statements (IfStmt, ForStmt, WhileStmt)
 TODO: ArrayType, IFaceExpr, FnExpr & FuncType (first class functions)
+cast(ast.Expr.input)(string)
 
 TODO: end semicolon error messages
 TODO: chore: character start locations for error messages
