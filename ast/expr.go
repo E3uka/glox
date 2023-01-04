@@ -144,6 +144,7 @@ type Typ uint
 const (
 	BoolType Typ = iota
 	NullType
+	F64Type
 	S64Type
 	StringType
 	Custom

@@ -5,6 +5,13 @@ multiline
 comments
 */
 
+/* types */
+name: string = "Chima";
+age: s64 = 24;
+mula: f64 = 32000.55;
+truth: bool = true;
+void: null = NULL;
+
 /* declarations */
 const old_dude: s64 = 28;   // typed immutable declaration
 const location := "London"; // inferred immutable declaration

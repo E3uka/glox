@@ -205,6 +205,7 @@ func init() {
 	null_deno[token.CONST]  = nd_parse_ident_expr
 	null_deno[token.DECR]   = nd_parse_unary_expr
 	null_deno[token.FALSE]  = nd_parse_literal_expr
+	null_deno[token.F64]    = nd_parse_literal_expr
 	null_deno[token.S64]    = nd_parse_literal_expr
 	null_deno[token.IDENT]  = nd_parse_ident_expr
 	null_deno[token.INCR]   = nd_parse_unary_expr
@@ -420,9 +421,9 @@ func (p *pratt) parse_stmt_list() []ast.Stmt {
 		}
 		switch p.peek().Type {
 		case 
-			token.IDENT, token.S64, token.STRING, token.LPAREN, token.ADD,
-			token.SUB, token.STAR, token.AND, token.NOT, token.RETURN, 
-			token.BREAK, token.CONST:
+			token.IDENT, token.F64, token.S64, token.STRING, token.LPAREN,
+			token.ADD, token.SUB, token.STAR, token.AND, token.NOT,
+			token.RETURN, token.BREAK, token.CONST:
 			node := p.parse_node(LOWEST - 1) 
 			stmt, ok := node.(ast.Stmt)
 			if !ok {
@@ -622,6 +623,8 @@ func (p *pratt) get_type(tok token.Token) ast.Typ {
 	switch tok.Type {
 	case token.FALSE, token.TRUE, token.BOOLTYPE:
 		typ = ast.BoolType
+	case token.F64, token.F64TYPE:
+		typ = ast.F64Type
 	case token.S64, token.S64TYPE:
 		typ = ast.S64Type
 	case token.NULL:

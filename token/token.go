@@ -14,7 +14,8 @@ const (
 
 	// Literals
 	IDENT  // main
-	S64    // 123.45
+	F64    // 123.45
+	S64    // 12345
 	STRING // "lets go"
 
 	// Operators and delimiters
@@ -75,6 +76,7 @@ const (
 	WHILE
 
 	BOOLTYPE   // bool
+	F64TYPE    // f64
 	S64TYPE    // s64
 	STRINGTYPE // string
 	keyword_end
@@ -85,6 +87,7 @@ var tokens = [...]string{
 	EOF:     "EOF",
 
 	IDENT:  "IDENT",
+	F64:    "f64",
 	S64:    "s64",
 	STRING: "STRING",
 
@@ -144,6 +147,7 @@ var tokens = [...]string{
 	WHILE:  "while",
 
 	BOOLTYPE:   "bool",
+	F64TYPE:    "f64",
 	S64TYPE:    "s64",
 	STRINGTYPE: "string",
 }

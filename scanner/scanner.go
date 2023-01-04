@@ -285,19 +285,31 @@ func (s *scanner) scan_string() error {
 }
 
 func (s *scanner) scan_number() error {
+	is_float := false
 	for is_digit(s.peek()) {
 		s.step()
 	}
 	// look for the fractional part of the number
 	if s.peek() == '.' && is_digit(s.peek_next()) {
+		is_float = true
 		s.step() // consume the '.'
 	}
 	for is_digit(s.peek()) {
 		s.step()
 	}
-
 	value := s.source[s.start:s.current]
-	if _, err := strconv.ParseFloat(value, 64); err != nil {
+	if is_float {
+		if _, err := strconv.ParseFloat(value, 64); err != nil {
+			return glox_err.ScanError(
+				s.path,
+				s.line,
+				"could not parse string value",
+			)
+		}
+		s.add_token(token.F64, value)
+		return nil
+	}
+	if _, err := strconv.ParseInt(value, 10, 64); err != nil {
 		return glox_err.ScanError(
 			s.path,
 			s.line,
