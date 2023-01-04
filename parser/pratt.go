@@ -199,28 +199,32 @@ func init() {
 	prec_map[token.INCR]      = UNARY
 	prec_map[token.LPAREN]    = PAREN
 	prec_map[token.IDENT]     = PRIMARY
+	prec_map[token.CAST]      = PRIMARY
 
-	null_deno[token.BITAND] = nd_parse_pointer_expr
-	null_deno[token.BREAK]  = nd_parse_branch_stmt
-	null_deno[token.CONST]  = nd_parse_ident_expr
-	null_deno[token.DECR]   = nd_parse_unary_expr
-	null_deno[token.FALSE]  = nd_parse_literal_expr
-	null_deno[token.F64]    = nd_parse_literal_expr
-	null_deno[token.S64]    = nd_parse_literal_expr
-	null_deno[token.IDENT]  = nd_parse_ident_expr
-	null_deno[token.INCR]   = nd_parse_unary_expr
-	null_deno[token.LBRACE] = nd_parse_block_stmt
-	null_deno[token.LPAREN] = nd_parse_paren_expr
-	null_deno[token.STAR]   = nd_parse_pointer_expr
-	null_deno[token.NOT]    = nd_parse_unary_expr
-	null_deno[token.NULL]   = nd_parse_literal_expr
-	null_deno[token.RETURN] = nd_parse_return_stmt
-	null_deno[token.STRING] = nd_parse_literal_expr
-	null_deno[token.SUB]    = nd_parse_unary_expr
-	null_deno[token.TRUE]   = nd_parse_literal_expr
+	null_deno[token.BITAND]   = nd_parse_pointer_expr
+	null_deno[token.BREAK]    = nd_parse_branch_stmt
+	null_deno[token.CONST]    = nd_parse_ident_expr
+	null_deno[token.DECR]     = nd_parse_unary_expr
+	null_deno[token.F64TYPE]  = nd_parse_literal_expr
+	null_deno[token.F64]      = nd_parse_literal_expr
+	null_deno[token.FALSE]    = nd_parse_literal_expr
+	null_deno[token.IDENT]    = nd_parse_ident_expr
+	null_deno[token.INCR]     = nd_parse_unary_expr
+	null_deno[token.LBRACE]   = nd_parse_block_stmt
+	null_deno[token.LPAREN]   = nd_parse_paren_expr
+	null_deno[token.NOT]      = nd_parse_unary_expr
+	null_deno[token.NULL]     = nd_parse_literal_expr
+	null_deno[token.RETURN]   = nd_parse_return_stmt
+	null_deno[token.S64TYPE]  = nd_parse_literal_expr
+	null_deno[token.S64]      = nd_parse_literal_expr
+	null_deno[token.STAR]     = nd_parse_pointer_expr
+	null_deno[token.STRING]   = nd_parse_literal_expr
+	null_deno[token.SUB]      = nd_parse_unary_expr
+	null_deno[token.TRUE]     = nd_parse_literal_expr
 
 	left_deno[token.ADD]       = ld_parse_binary_expr
 	left_deno[token.ASSIGN]    = ld_parse_assign_stmt
+	left_deno[token.CAST]      = ld_parse_cast_expr
 	left_deno[token.COLON]     = ld_parse_decl_stmt
 	left_deno[token.DECRYBY]   = ld_parse_binary_expr
 	left_deno[token.DECR]      = ld_parse_unary_expr
@@ -272,6 +276,20 @@ func ld_parse_call_expr(
 	args := parser.parse_call_args() 
 	parser.expect(token.RPAREN)
 	return &ast.CallExpr{Ident: lhs_ident, Args: args}
+}
+
+func ld_parse_cast_expr(
+	parser *pratt,
+	operator token.TokenType,
+	lhs ast.Node,
+) ast.Node {
+	if parser.trace {
+		fmt.Printf("ld_cast: operator: %v\n", operator)
+	}
+	literal := parser.as_literal(lhs)
+	parser.expect(token.CAST)
+	expr := parser.parse_basic_expr(parser.peek().Type)
+	return &ast.CastExpr{To: literal, From: expr}
 }
 
 func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
@@ -679,6 +697,15 @@ func(p *pratt) as_ident(node ast.Node) *ast.Ident {
 	ident, ok := node.(*ast.Ident)
 	if !ok {
 		p.report_offset_parse_error(-1, "%v: expected identifier")
+	}
+	return ident
+}
+
+// casts node to an identifier; raises an error if the cast fails
+func(p *pratt) as_literal(node ast.Node) *ast.LiteralExpr {
+	ident, ok := node.(*ast.LiteralExpr)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected literal")
 	}
 	return ident
 }

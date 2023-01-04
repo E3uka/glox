@@ -51,6 +51,7 @@ const (
 	WALRUS    // :=
 	FUNASSIGN // ::
 	FUNRETURN // ->
+	CAST      // <-
 
 	NOT // !
 	BITAND // &
@@ -87,8 +88,8 @@ var tokens = [...]string{
 	EOF:     "EOF",
 
 	IDENT:  "IDENT",
-	F64:    "f64",
-	S64:    "s64",
+	F64:    "FLOAT64",
+	S64:    "SIGNED64",
 	STRING: "STRING",
 
 	LPAREN: "(",
@@ -123,6 +124,7 @@ var tokens = [...]string{
 	WALRUS:    ":=",
 	FUNASSIGN: "::",
 	FUNRETURN: "->",
+	CAST:      "<-",
 
 	NOT:    "!",
 	BITAND: "&",

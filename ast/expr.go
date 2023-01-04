@@ -33,7 +33,10 @@ type (
 		Ident *Ident
 		Args  []Expr
 	}
-	CastExpr struct {/* TODO */}
+	CastExpr struct {
+		To     Expr
+		From   Expr
+	}
 	Ident struct {
 		Obj     *Object
 		Mutable bool
@@ -64,14 +67,15 @@ type (
 )
 
 // ensures only expr_node types can be assigned to Expr
-func (*BinOp)       expr_node() {}
-func (*Ident)       expr_node() {}
-func (*CallExpr)    expr_node() {}
-func (*LiteralExpr) expr_node() {}
-func (*ParenExpr)   expr_node() {}
-func (*PtrExpr)     expr_node() {}
-func (*StructType)  expr_node() {}
-func (*UnOp)        expr_node() {}
+func (*BinOp)        expr_node() {}
+func (*Ident)        expr_node() {}
+func (*CallExpr)     expr_node() {}
+func (*LiteralExpr)  expr_node() {}
+func (*ParenExpr)    expr_node() {}
+func (*PtrExpr)      expr_node() {}
+func (*SelectorExpr) expr_node() {}
+func (*StructType)   expr_node() {}
+func (*UnOp)         expr_node() {}
 
 type (
 	AssignStmt struct {

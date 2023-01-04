@@ -12,6 +12,10 @@ mula: f64 = 32000.55;
 truth: bool = true;
 void: null = NULL;
 
+/* casting (TODO: broken) */
+f64<-age;
+s64<-mula;
+
 /* declarations */
 const old_dude: s64 = 28;   // typed immutable declaration
 const location := "London"; // inferred immutable declaration
@@ -62,7 +66,6 @@ there := *where;
 /*
 TODO: Branch Statements (IfStmt, ForStmt, WhileStmt)
 TODO: ArrayType, IFaceExpr, FnExpr & FuncType (first class functions)
-cast(ast.Expr.input)(string)
 
 TODO: end semicolon error messages
 TODO: chore: character start locations for error messages

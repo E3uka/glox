@@ -135,6 +135,8 @@ func (s *scanner) scan() error {
 	case '<':
 		if s.match_advance('=') {
 			s.add_token(token.LEQ, "<=")
+		} else if s.match_advance('-') {
+			s.add_token(token.CAST, "<-")
 		} else {
 			s.add_token(token.LSS, "<")
 		}
