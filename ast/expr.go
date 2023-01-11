@@ -34,7 +34,7 @@ type (
 		Args  []Expr
 	}
 	CastExpr struct {
-		To     Expr
+		To     Typ
 		From   Expr
 	}
 	Ident struct {
@@ -70,6 +70,7 @@ type (
 func (*BinOp)        expr_node() {}
 func (*Ident)        expr_node() {}
 func (*CallExpr)     expr_node() {}
+func (*CastExpr)     expr_node() {}
 func (*LiteralExpr)  expr_node() {}
 func (*ParenExpr)    expr_node() {}
 func (*PtrExpr)      expr_node() {}

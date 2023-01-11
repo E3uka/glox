@@ -12,7 +12,7 @@ mula: f64 = 32000.55;
 truth: bool = true;
 void: null = NULL;
 
-/* casting (TODO: broken) */
+/* casting */
 f64<-age;
 s64<-mula;
 

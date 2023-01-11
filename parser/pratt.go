@@ -85,11 +85,11 @@ func (p *pratt) parse_node(current_precedence precedence) ast.Node {
 	p.advance()
 	if p.trace {
 		fmt.Printf(
-			"parse head: prec %v, cur_tok: %v, next_tok: %v, next_prec: %v\n",
+			"p_head: prev_prec %v, cur_prec: %v, cur_tok: %v, next_tok: %v\n",
 			current_precedence,
+			prec_map[cur_tok.Type],
 			cur_tok,
 			p.peek().Type,
-			prec_map[cur_tok.Type],
 		)
 	}
 	left = null_deno[cur_tok.Type](p, cur_tok)
@@ -156,6 +156,7 @@ const (
 	QUO
 	UNARY
 	PAREN
+	CAST
 	PRIMARY
 )
 
@@ -198,8 +199,8 @@ func init() {
 	prec_map[token.DECR]      = UNARY
 	prec_map[token.INCR]      = UNARY
 	prec_map[token.LPAREN]    = PAREN
+	prec_map[token.CAST]      = CAST
 	prec_map[token.IDENT]     = PRIMARY
-	prec_map[token.CAST]      = PRIMARY
 
 	null_deno[token.BITAND]   = nd_parse_pointer_expr
 	null_deno[token.BREAK]    = nd_parse_branch_stmt
@@ -288,8 +289,8 @@ func ld_parse_cast_expr(
 	}
 	literal := parser.as_literal(lhs)
 	parser.expect(token.CAST)
-	expr := parser.parse_basic_expr(parser.peek().Type)
-	return &ast.CastExpr{To: literal, From: expr}
+	rhs := parser.parse_basic_expr(operator)
+	return &ast.CastExpr{To: literal.Type, From: rhs}
 }
 
 func nd_parse_ident_expr(parser *pratt, tok token.Token) ast.Node {
