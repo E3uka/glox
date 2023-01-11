@@ -155,6 +155,7 @@ const (
 	MUL
 	QUO
 	UNARY
+	METHOD
 	PAREN
 	CAST
 	PRIMARY
@@ -198,6 +199,7 @@ func init() {
 	prec_map[token.QUO]       = QUO
 	prec_map[token.DECR]      = UNARY
 	prec_map[token.INCR]      = UNARY
+	prec_map[token.PERIOD]    = METHOD
 	prec_map[token.LPAREN]    = PAREN
 	prec_map[token.CAST]      = CAST
 	prec_map[token.IDENT]     = PRIMARY

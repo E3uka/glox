@@ -55,7 +55,7 @@ Connection :: struct
 };
 
 Connection.address;
-Connection.add_user(user123);
+Connection.add_user(user123, "GMT");
 Connection.count += 1;
 
 /* pointer reference and dereference */
