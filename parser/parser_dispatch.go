@@ -132,7 +132,7 @@ func nd_parse_branch_stmt(parser *parser, tok token.Token) ast.Node {
 	if parser.trace {
 		fmt.Printf("nd_branch: cur_tok: %v\n", tok)
 	}
-	return &ast.BranchStmt{}
+	return &ast.BranchStmt{Token: tok.Type}
 }
 
 func nd_parse_ident_expr(parser *parser, tok token.Token) ast.Node {

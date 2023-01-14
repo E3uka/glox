@@ -85,7 +85,9 @@ type (
 	BlockStmt struct {
 		List []Stmt
 	}
-	BranchStmt struct {/* TODO */}
+	BranchStmt struct {
+		Token token.TokenType
+	}
 	DeclStmt struct {
 		Decl Decl
 	}

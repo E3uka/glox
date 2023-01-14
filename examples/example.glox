@@ -64,7 +64,7 @@ where := &value;
 there := *where;
 
 /*
-TODO: Branch Statements (IfStmt, ForStmt, WhileStmt)
+TODO: IfStmt, WhileStmt
 TODO: ArrayType, IFaceExpr, FnExpr & FuncType (first class functions)
 
 TODO: end semicolon error messages
