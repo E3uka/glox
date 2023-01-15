@@ -45,7 +45,7 @@ type (
 		Type  Typ
 		Value string
 	}
-	ParenExpr struct {
+		ParenExpr struct {
 		Expr Expr
 	}
 	PtrExpr struct {
@@ -60,7 +60,6 @@ type (
 		Operator token.TokenType
 		Rhs      Expr
 	}
-
 	StructType struct {
 		Fields []*Field
 	}
@@ -95,6 +94,11 @@ type (
 	ExprStmt struct { 
 		Expr Expr
 	}
+	IfStmt struct {
+		Predicate Expr
+		Body      *BlockStmt
+		Else      Stmt // can be null
+	}
 	ReturnStmt struct {
 		Result Expr
 	}
@@ -107,6 +111,7 @@ func (*BranchStmt) stmt_node() {}
 func (*DeclStmt)   stmt_node() {}
 func (*EmptyStmt)  stmt_node() {}
 func (*ExprStmt)   stmt_node() {}
+func (*IfStmt)     stmt_node() {}
 func (*ReturnStmt) stmt_node() {}
 
 type (
@@ -114,7 +119,6 @@ type (
 		Ident *Ident
 		Value Expr
 	}
-
 	ProcedureDecl struct {
 		Ident *Ident
 		Body  *BlockStmt

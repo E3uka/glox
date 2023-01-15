@@ -5,9 +5,11 @@ import (
 	"fmt"
 )
 
-var LEX_ERROR bool = false
-var PARSE_ERROR bool = false
-var RUNTIME_ERROR bool = false
+var (
+	LEX_ERROR bool = false
+	PARSE_ERROR bool = false
+	RUNTIME_ERROR bool = false
+)
 
 func ScanError(path *string, line int, reason string) error {
 	LEX_ERROR = true
