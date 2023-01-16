@@ -53,7 +53,7 @@ type (
 		Deref bool
 	}
 	SelectorExpr struct {
-		Parent    *Ident
+		Parent    Expr
 		Selection Expr
 	}
 	UnOp struct {

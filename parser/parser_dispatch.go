@@ -320,7 +320,7 @@ func ld_parse_selector_expr(
 	if parser.trace {
 		fmt.Printf("ld_selector: operator: %v\n", operator)
 	}
-	lhs_expr := parser.as_ident(lhs)
+	lhs_expr := parser.as_expr(lhs)
 	parser.expect(token.PERIOD)
 	selection := parser.parse_basic_expr(operator)
 	return &ast.SelectorExpr{Parent: lhs_expr, Selection: selection}
@@ -554,7 +554,8 @@ func (p *parser) get_type(tok token.Token) ast.Typ {
 	case token.STRING, token.STRINGTYPE:
 		typ = ast.StringType
 	default:
-		// TODO: simple solution for now, could embed the type here
+		// TODO: simple solution for now, could embed the type here or
+		// recompile the ast including this new type signature
 		typ = ast.Custom
 	}
 	return typ
