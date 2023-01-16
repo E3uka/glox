@@ -79,7 +79,8 @@ func (*UnOp)         expr_node() {}
 
 type (
 	AssignStmt struct {
-		Ident *Ident
+		Lhs Expr
+		Rhs Expr
 	}
 	BlockStmt struct {
 		List []Stmt

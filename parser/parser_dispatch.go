@@ -66,6 +66,7 @@ func init() {
 	prec_map[token.IDENT]     = PRIMARY
 
 	null_deno[token.BITAND]   = nd_parse_pointer_expr
+	null_deno[token.BOOLTYPE] = nd_parse_literal_expr
 	null_deno[token.BREAK]    = nd_parse_branch_stmt
 	null_deno[token.CONST]    = nd_parse_ident_expr
 	null_deno[token.DECR]     = nd_parse_unary_expr
@@ -233,10 +234,9 @@ func ld_parse_assign_stmt(
 		fmt.Printf("ld_assign: operator: %v\n", operator)
 	}
 	parser.expect(token.ASSIGN)
-	identifer := parser.as_ident(lhs)
+	identifer := parser.as_expr(lhs)
 	rhs := parser.parse_basic_expr(operator)
-	identifer.Obj.Data = rhs
-	return &ast.AssignStmt{Ident: identifer}
+	return &ast.AssignStmt{Lhs: identifer, Rhs: rhs}
 }
 
 func ld_parse_binary_expr(
@@ -444,7 +444,7 @@ func (p *parser) parse_stmt_list() []ast.Stmt {
 		if p.trace {
 			fmt.Printf(
 				"stmt_list: cur_tok: %v\n",
-				p.peek().Type,
+				p.peek().Literal,
 			)
 		}
 		switch p.peek().Type {
@@ -517,6 +517,10 @@ func (p *parser) try_make_statement(node ast.Node) ast.Stmt {
 	// standalone within a block
 	switch maybe_expr.(type) {
 	case *ast.CallExpr:
+		stmt = &ast.ExprStmt{Expr: maybe_expr}
+	case *ast.SelectorExpr:
+		// TODO: hack; could just be a field selection instead of a call which
+		// would be semantically wrong
 		stmt = &ast.ExprStmt{Expr: maybe_expr}
 	case *ast.BinOp:
 		binary_expr := maybe_expr.(*ast.BinOp)
