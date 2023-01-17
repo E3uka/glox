@@ -13,6 +13,7 @@ const (
 	// the stronger the relative binding power i.e. the current token will be
 	// parsed before its rhs neighbour
 	LOWEST precedence = iota
+	LOGICAL
 	EQUALITY
 	LESSGREATER
 	SUB
@@ -46,6 +47,8 @@ func init() {
 	prec_map[token.FUNASSIGN] = LOWEST
 	prec_map[token.RETURN]    = LOWEST
 	prec_map[token.WALRUS]    = LOWEST
+	prec_map[token.AND]       = LOGICAL
+	prec_map[token.OR]        = LOGICAL
 	prec_map[token.EQL]       = EQUALITY
 	prec_map[token.NEQ]       = EQUALITY
 	prec_map[token.GEQ]       = LESSGREATER
@@ -88,6 +91,7 @@ func init() {
 	null_deno[token.TRUE]     = nd_parse_literal_expr
 
 	left_deno[token.ADD]       = ld_parse_binary_expr
+	left_deno[token.AND]       = ld_parse_binary_expr
 	left_deno[token.ASSIGN]    = ld_parse_assign_stmt
 	left_deno[token.CAST]      = ld_parse_cast_expr
 	left_deno[token.COLON]     = ld_parse_decl_stmt
@@ -103,6 +107,7 @@ func init() {
 	left_deno[token.LPAREN]    = ld_parse_call_expr
 	left_deno[token.LSS]       = ld_parse_binary_expr
 	left_deno[token.NEQ]       = ld_parse_binary_expr
+	left_deno[token.OR]        = ld_parse_binary_expr
 	left_deno[token.PERIOD]    = ld_parse_selector_expr
 	left_deno[token.QUO]       = ld_parse_binary_expr
 	left_deno[token.STAR]      = ld_parse_binary_expr
