@@ -67,6 +67,7 @@ const (
 	BREAK
 
 	IF
+	ELSE
 	CONST
 	NULL
 
@@ -139,6 +140,7 @@ var tokens = [...]string{
 	BREAK:  "break",
 
 	IF:    "if",
+	ELSE:  "else",
 	CONST: "const",
 	NULL:  "NULL",
 

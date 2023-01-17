@@ -58,13 +58,20 @@ Connection.address;
 Connection.add_user(user123, "GMT");
 Connection.count += 1;
 
+/* if statement */
+if connection.online == true {
+	Connection.count += 1;
+} else {
+	println("not online");
+}
+
 /* pointer reference and dereference */
 value := "some location";
 where := &value;
 there := *where;
 
 /*
-TODO: IfStmt, WhileStmt
+TODO: WhileStmt
 TODO: ArrayType, IFaceExpr, FnExpr & FuncType (first class functions)
 
 TODO: end semicolon error messages

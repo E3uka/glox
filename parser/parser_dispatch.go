@@ -44,7 +44,9 @@ func init() {
 	prec_map[token.ASSIGN]    = LOWEST
 	prec_map[token.COLON]     = LOWEST
 	prec_map[token.CONST]     = LOWEST
+	prec_map[token.ELSE]      = LOWEST
 	prec_map[token.FUNASSIGN] = LOWEST
+	prec_map[token.IF]        = LOWEST
 	prec_map[token.RETURN]    = LOWEST
 	prec_map[token.WALRUS]    = LOWEST
 	prec_map[token.AND]       = LOGICAL
@@ -76,6 +78,7 @@ func init() {
 	null_deno[token.F64TYPE]  = nd_parse_literal_expr
 	null_deno[token.F64]      = nd_parse_literal_expr
 	null_deno[token.FALSE]    = nd_parse_literal_expr
+	null_deno[token.IF]       = nd_parse_if_stmt
 	null_deno[token.IDENT]    = nd_parse_ident_expr
 	null_deno[token.INCR]     = nd_parse_unary_expr
 	null_deno[token.LBRACE]   = nd_parse_block_stmt
@@ -139,6 +142,25 @@ func nd_parse_branch_stmt(parser *parser, tok token.Token) ast.Node {
 		fmt.Printf("nd_branch: cur_tok: %v\n", tok)
 	}
 	return &ast.BranchStmt{Token: tok.Type}
+}
+
+func nd_parse_if_stmt(parser *parser, tok token.Token) ast.Node {
+	if parser.trace {
+		fmt.Printf(
+			"nd_if: cur_tok: %v, next_tok: %v\n",
+			tok.Literal,
+			parser.peek().Type,
+		)
+	}
+	predicate := parser.parse_predicate()
+	body := parser.as_block(parser.parse_basic_stmt(token.LBRACE))
+	parser.advance() // step past if body
+	var else_body ast.Stmt
+	if parser.peek().Type == token.ELSE {
+		parser.expect(token.ELSE)
+		else_body = parser.parse_basic_stmt(parser.peek().Type)
+	}
+	return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
 }
 
 func nd_parse_ident_expr(parser *parser, tok token.Token) ast.Node {
@@ -387,6 +409,18 @@ func (p *parser) parse_generic_declaration(
 	lhs_ident.Obj.Kind = ast.Variable
 	rhs_expr := p.parse_basic_expr(operator)
 	return &ast.BasicDecl{Ident: lhs_ident, Value: rhs_expr}
+}
+
+func(p *parser) parse_predicate() ast.Expr {
+	tokens := []token.Token{}
+	for p.peek().Type != token.LBRACE {
+		tokens = append(tokens, p.peek())
+		p.advance()
+	}
+	tokens = append(tokens, token.Token{Type: token.EOF, Literal: ""})
+	sub_parser := New(p.path, &tokens)
+	predicate := sub_parser.parse_node(LOWEST)
+	return p.as_expr(predicate)
 }
 
 func(p *parser) parse_procedure_args(identifier string) ast.Environment {
