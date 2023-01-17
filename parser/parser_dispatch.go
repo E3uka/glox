@@ -207,10 +207,7 @@ func nd_parse_pointer_expr(parser *parser, tok token.Token) ast.Node {
 
 func nd_parse_return_stmt(parser *parser, tok token.Token) ast.Node {
 	if parser.trace {
-		fmt.Printf(
-			"nd_return: next_tok: %v\n",
-			parser.peek(),
-		)
+		fmt.Printf("nd_return: next_tok: %v\n", parser.peek())
 	}
 	result_expr := parser.parse_basic_expr(tok.Type)
 	return &ast.ReturnStmt{Result: result_expr}
@@ -355,14 +352,7 @@ func(p *parser) parse_call_args() []ast.Expr {
 			p.expect(token.COMMA)
 			continue
 		}
-		if p.peek().Type == token.IDENT {
-			expr = p.parse_basic_expr(p.peek().Type)
-			if p.peek().Type == token.LPAREN {
-				expr = ld_parse_call_expr(p, p.peek().Type, expr).(ast.Expr)
-			}
-		} else {
-			expr = p.parse_basic_expr(p.peek().Type)
-		}
+		expr = p.parse_basic_expr(p.peek().Type)
 		args = append(args, expr)
 	}
 	return args
@@ -437,8 +427,7 @@ func (p *parser) parse_procedure_declaration(
 		p.advance() // step past type
 	}
 	lhs_ident.Obj.Type = typ
-	p.expect(token.LBRACE) // step into block statement 
-	body := p.as_block(nd_parse_block_stmt(p, p.peek()))
+	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
 	return &ast.ProcedureDecl{Ident: lhs_ident, Body: body}
 }
 
@@ -447,10 +436,7 @@ func (p *parser) parse_stmt_list() []ast.Stmt {
 	var stmt ast.Stmt
 	for p.peek().Type != token.RBRACE && p.peek().Type != token.EOF {
 		if p.trace {
-			fmt.Printf(
-				"stmt_list: cur_tok: %v\n",
-				p.peek().Literal,
-			)
+			fmt.Printf("stmt_list: cur_tok: %v\n", p.peek().Literal)
 		}
 		switch p.peek().Type {
 		case 
@@ -468,8 +454,7 @@ func (p *parser) parse_stmt_list() []ast.Stmt {
 			}
 			list = append(list, stmt)
 		case token.LBRACE:
-			p.expect(token.LBRACE)
-			stmt = nd_parse_block_stmt(p, p.peek()).(ast.Stmt)
+			stmt = p.parse_basic_stmt(p.peek().Type)
 			list = append(list, stmt)
 		case token.SEMICOLON:
 			p.expect(token.SEMICOLON)
@@ -586,6 +571,15 @@ func(p *parser) parse_basic_ident(tok token.TokenType) *ast.Ident {
 		p.report_offset_parse_error(-1, "%v: expected identifier")
 	}
 	return ident
+}
+
+// parses the next token as a statement using the supplied tok precedence
+func(p *parser) parse_basic_stmt(tok token.TokenType) ast.Stmt {
+	stmt, ok := p.parse_node(prec_map[tok]).(ast.Stmt)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected statement")
+	}
+	return stmt
 }
 
 // casts node to a block statement; raises an error if the cast fails
