@@ -22,7 +22,7 @@ func New(path *string, tokens *[]token.Token) *parser {
 		tokens:  *tokens,
 		current: 0,
 		expr:    nil,
-		trace:   false,
+		trace:   true,
 	}
 	return parser
 }
@@ -45,7 +45,7 @@ func (p *parser) Parse() []ast.Node {
 			// parse with lower precendence than will encounter during 
 			// recursive parse operation to ensure all latter Nodes will be of
 			// higher precendence (binding power) and thus accepted
-			node := p.parse_node(LOWEST - 1)
+			node := p.parse_node(INIT)
 			nodes = append(nodes, node)
 			if p.trace {
 				fmt.Printf("----- PARSED: [%v] -----\n", reflect.TypeOf(node))

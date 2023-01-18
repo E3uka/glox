@@ -12,6 +12,7 @@ const (
 	// why go doesn't have proper enums escapes me - the higher the precedence
 	// the stronger the relative binding power i.e. the current token will be
 	// parsed before its rhs neighbour
+	INIT precedence = -1
 	LOWEST precedence = iota
 	LOGICAL
 	EQUALITY
@@ -47,9 +48,9 @@ func init() {
 	prec_map[token.ELSE]      = LOWEST
 	prec_map[token.FUNASSIGN] = LOWEST
 	prec_map[token.IF]        = LOWEST
-	prec_map[token.WHILE]     = LOWEST
 	prec_map[token.RETURN]    = LOWEST
 	prec_map[token.WALRUS]    = LOWEST
+	prec_map[token.WHILE]     = LOWEST
 	prec_map[token.AND]       = LOGICAL
 	prec_map[token.OR]        = LOGICAL
 	prec_map[token.EQL]       = EQUALITY
@@ -79,8 +80,8 @@ func init() {
 	null_deno[token.F64TYPE]  = nd_parse_literal_expr
 	null_deno[token.F64]      = nd_parse_literal_expr
 	null_deno[token.FALSE]    = nd_parse_literal_expr
-	null_deno[token.IF]       = nd_parse_if_stmt
 	null_deno[token.IDENT]    = nd_parse_ident_expr
+	null_deno[token.IF]       = nd_parse_if_stmt
 	null_deno[token.INCR]     = nd_parse_unary_expr
 	null_deno[token.LBRACE]   = nd_parse_block_stmt
 	null_deno[token.LPAREN]   = nd_parse_paren_expr
@@ -155,12 +156,16 @@ func nd_parse_if_stmt(parser *parser, tok token.Token) ast.Node {
 		)
 	}
 	predicate := parser.parse_predicate()
-	body := parser.as_block(parser.parse_basic_stmt(token.LBRACE))
-	parser.advance() // step past if body
+	parser.expect(token.LBRACE)
+	body := parser.as_block(nd_parse_block_stmt(parser, parser.peek()))
+	parser.advance() // step past end if stmt
 	var else_body ast.Stmt
 	if parser.peek().Type == token.ELSE {
 		parser.expect(token.ELSE)
-		else_body = parser.parse_basic_stmt(parser.peek().Type)
+		parser.expect(token.LBRACE)
+		else_body = parser.as_statement(
+			nd_parse_block_stmt(parser, parser.peek()),
+		)
 	}
 	return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
 }
@@ -491,8 +496,8 @@ func (p *parser) parse_stmt_list() []ast.Stmt {
 		case 
 			token.IDENT, token.F64, token.S64, token.STRING, token.LPAREN,
 			token.ADD, token.SUB, token.STAR, token.AND, token.NOT,
-			token.RETURN, token.BREAK, token.CONST:
-			node := p.parse_node(LOWEST - 1) 
+			token.RETURN, token.BREAK, token.CONST, token.IF, token.WHILE:
+			node := p.parse_node(INIT)
 			stmt, ok := node.(ast.Stmt)
 			if !ok {
 				stmt = p.try_make_statement(node)
@@ -549,7 +554,7 @@ func (p *parser) try_make_statement(node ast.Node) ast.Stmt {
 	var stmt ast.Stmt
 	maybe_expr, ok := node.(ast.Expr)
 	if !ok {
-		p.report_parse_error(p.peek(), "%v: expected expression")
+		p.report_parse_error(p.peek(), "%v: expected statement")
 		return nil
 	}
 	// for simplicity only expressions that have side effects can appear
@@ -658,11 +663,20 @@ func(p *parser) as_ident(node ast.Node) *ast.Ident {
 	return ident
 }
 
-// casts node to an identifier; raises an error if the cast fails
+// casts node to a literal; raises an error if the cast fails
 func(p *parser) as_literal(node ast.Node) *ast.LiteralExpr {
 	ident, ok := node.(*ast.LiteralExpr)
 	if !ok {
 		p.report_offset_parse_error(-1, "%v: expected literal")
 	}
 	return ident
+}
+
+// casts node to a statement; raises an error if the cast fails
+func(p *parser) as_statement(node ast.Node) ast.Stmt {
+	stmt, ok := node.(ast.Stmt)
+	if !ok {
+		p.report_offset_parse_error(-1, "%v: expected statement")
+	}
+	return stmt
 }
