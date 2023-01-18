@@ -47,6 +47,7 @@ func init() {
 	prec_map[token.ELSE]      = LOWEST
 	prec_map[token.FUNASSIGN] = LOWEST
 	prec_map[token.IF]        = LOWEST
+	prec_map[token.WHILE]     = LOWEST
 	prec_map[token.RETURN]    = LOWEST
 	prec_map[token.WALRUS]    = LOWEST
 	prec_map[token.AND]       = LOGICAL
@@ -92,6 +93,7 @@ func init() {
 	null_deno[token.STRING]   = nd_parse_literal_expr
 	null_deno[token.SUB]      = nd_parse_unary_expr
 	null_deno[token.TRUE]     = nd_parse_literal_expr
+	null_deno[token.WHILE]    = nd_parse_while_stmt
 
 	left_deno[token.ADD]       = ld_parse_binary_expr
 	left_deno[token.AND]       = ld_parse_binary_expr
@@ -245,6 +247,19 @@ func nd_parse_unary_expr(parser *parser, tok token.Token) ast.Node {
 	}
 	unary_expr := parser.parse_basic_expr(tok.Type)
 	return &ast.UnOp{Operator: tok.Type, Rhs: unary_expr}
+}
+
+func nd_parse_while_stmt(parser *parser, tok token.Token) ast.Node {
+	if parser.trace {
+		fmt.Printf(
+			"nd_while: cur_tok: %v, next_tok: %v\n",
+			tok.Literal,
+			parser.peek().Type,
+		)
+	}
+	predicate := parser.parse_predicate()
+	body := parser.as_block(parser.parse_basic_stmt(token.LBRACE))
+	return &ast.WhileStmt{Predicate: predicate, Body: body}
 }
 
 /* LEFT DENOTATION PARSERS */

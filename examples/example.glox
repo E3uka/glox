@@ -58,11 +58,14 @@ Connection.address;
 Connection.add_user(user123, "GMT");
 Connection.count += 1;
 
-/* if statement */
-if connection.online == true {
-	Connection.count += 1;
+/* if and while statements */
+while connection.is_online() { 
+	return true; 
+}
+if connection.address == "" {
+	println("no address supplied");
 } else {
-	println("not online");
+	printf("address is %v\n", address);
 }
 
 /* pointer reference and dereference */
@@ -71,7 +74,6 @@ where := &value;
 there := *where;
 
 /*
-TODO: WhileStmt
 TODO: ArrayType, IFaceExpr, FnExpr & FuncType (first class functions)
 
 TODO: end semicolon error messages

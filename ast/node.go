@@ -103,6 +103,10 @@ type (
 	ReturnStmt struct {
 		Result Expr
 	}
+	WhileStmt struct {
+		Predicate Expr
+		Body      *BlockStmt
+	}
 )
 
 // ensures only stmt_node types can be assigned to Stmt
@@ -114,6 +118,7 @@ func (*EmptyStmt)  stmt_node() {}
 func (*ExprStmt)   stmt_node() {}
 func (*IfStmt)     stmt_node() {}
 func (*ReturnStmt) stmt_node() {}
+func (*WhileStmt)  stmt_node() {}
 
 type (
 	BasicDecl struct {
