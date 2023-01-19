@@ -136,7 +136,6 @@ func nd_parse_block_stmt(parser *parser, tok token.Token) ast.Node {
 		return &ast.EmptyStmt{}
 	}
 	list := parser.parse_stmt_list()
-	parser.expect(token.RBRACE)
 	return &ast.BlockStmt{List: list}
 }
 
@@ -156,16 +155,14 @@ func nd_parse_if_stmt(parser *parser, tok token.Token) ast.Node {
 		)
 	}
 	predicate := parser.parse_predicate()
-	parser.expect(token.LBRACE)
-	body := parser.as_block(nd_parse_block_stmt(parser, parser.peek()))
-	parser.advance() // step past end if stmt
+	body := parser.as_block(parser.parse_basic_stmt(parser.peek().Type))
+	parser.expect(token.RBRACE)
 	var else_body ast.Stmt
 	if parser.peek().Type == token.ELSE {
 		parser.expect(token.ELSE)
-		parser.expect(token.LBRACE)
-		else_body = parser.as_statement(
-			nd_parse_block_stmt(parser, parser.peek()),
-		)
+		else_body = parser.parse_basic_stmt(parser.peek().Type)
+		parser.expect(token.RBRACE)
+		return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
 	}
 	return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
 }
@@ -263,7 +260,8 @@ func nd_parse_while_stmt(parser *parser, tok token.Token) ast.Node {
 		)
 	}
 	predicate := parser.parse_predicate()
-	body := parser.as_block(parser.parse_basic_stmt(token.LBRACE))
+	body := parser.as_block(parser.parse_basic_stmt(parser.peek().Type))
+	parser.expect(token.RBRACE)
 	return &ast.WhileStmt{Predicate: predicate, Body: body}
 }
 
@@ -401,6 +399,7 @@ func(p *parser) parse_call_args() []ast.Expr {
 }
 
 func (p *parser) parse_field_list() []*ast.Field {
+	p.expect(token.LBRACE)
 	fields := []*ast.Field{}
 	for p.peek().Type != token.RBRACE {
 		if p.peek().Type == token.SEMICOLON {
@@ -498,20 +497,16 @@ func (p *parser) parse_stmt_list() []ast.Stmt {
 			token.ADD, token.SUB, token.STAR, token.AND, token.NOT,
 			token.RETURN, token.BREAK, token.CONST, token.IF, token.WHILE:
 			node := p.parse_node(INIT)
-			stmt, ok := node.(ast.Stmt)
-			if !ok {
+			if maybe_stmt, ok := node.(ast.Stmt); !ok {
 				stmt = p.try_make_statement(node)
 				if stmt == nil {
 					p.report_offset_parse_error(-1, "%v: expected statement")
 					continue
 				}
+				list = append(list, stmt)
+			} else {
+				list = append(list, maybe_stmt)
 			}
-			list = append(list, stmt)
-		case token.LBRACE:
-			stmt = p.parse_basic_stmt(p.peek().Type)
-			list = append(list, stmt)
-		case token.SEMICOLON:
-			p.expect(token.SEMICOLON)
 		default:
 			p.report_parse_error(p.peek(), "%v: expected statement")
 		}
@@ -527,7 +522,6 @@ func (p *parser) parse_struct_declaration(
 		fmt.Println("typed_decl")
 	}
 	p.expect(token.STRUCT)
-	p.expect(token.LBRACE) // step into struct fields
 	field_list := p.parse_field_list()
 	p.expect(token.RBRACE)
 	struct_type := &ast.StructType{Fields: field_list}
