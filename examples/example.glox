@@ -26,16 +26,18 @@ lies: bool = false;         // typed mutable declaration
 grouping := 1 / (3 + 2);
 maths := 9 + 12 / 3 * 5;
 
-/* blocks and scope */
+/* blocks and scope (TODO) */
+/*
 {
 	outer := "hello";
 	{
 		outer += " world";
-	}
+	};
 	/* branch & return statements (soon) */
 	break;
 	return x / y + z;
 };
+*/
 
 /* function syntax */
 create_habit :: (cue: string, craving: string, response: string, reward: s64) -> string
@@ -44,7 +46,7 @@ create_habit :: (cue: string, craving: string, response: string, reward: s64) ->
 	reward++;
 	result := craving(response(cue)); // nested function calls
 	return result;
-}
+};
 
 /* structs & selections */
 Connection :: struct 
@@ -61,12 +63,12 @@ Connection.count += 1;
 /* if and while statements */
 while connection.is_online() { 
 	return true; 
-}
+};
 if connection.address == "" {
 	println("no address supplied");
 } else {
 	printf("address is %v\n", address);
-}
+};
 
 /* pointer reference and dereference */
 value := "some location";

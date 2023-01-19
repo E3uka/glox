@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"glox/ast"
 	"glox/token"
+	"reflect"
 )
 
 type precedence int
@@ -491,24 +492,22 @@ func (p *parser) parse_stmt_list() []ast.Stmt {
 		if p.trace {
 			fmt.Printf("stmt_list: cur_tok: %v\n", p.peek().Literal)
 		}
-		switch p.peek().Type {
-		case 
-			token.IDENT, token.F64, token.S64, token.STRING, token.LPAREN,
-			token.ADD, token.SUB, token.STAR, token.AND, token.NOT,
-			token.RETURN, token.BREAK, token.CONST, token.IF, token.WHILE:
-			node := p.parse_node(INIT)
-			if maybe_stmt, ok := node.(ast.Stmt); !ok {
-				stmt = p.try_make_statement(node)
-				if stmt == nil {
-					p.report_offset_parse_error(-1, "%v: expected statement")
-					continue
-				}
-				list = append(list, stmt)
-			} else {
-				list = append(list, maybe_stmt)
+		node := p.parse_node(INIT)
+		if maybe_stmt, ok := node.(ast.Stmt); !ok {
+			stmt = p.try_make_statement(node)
+			if stmt == nil {
+				p.report_offset_parse_error(-1, "%v: expected statement")
+				continue
 			}
-		default:
-			p.report_parse_error(p.peek(), "%v: expected statement")
+			if p.trace {
+				fmt.Printf("----- SUB PARSED: [%v] -----\n", reflect.TypeOf(stmt))
+			}
+			list = append(list, stmt)
+		} else {
+			if p.trace {
+				fmt.Printf("----- SUB PARSED: [%v] -----\n", reflect.TypeOf(maybe_stmt))
+			}
+			list = append(list, maybe_stmt)
 		}
 	}
 	return list
