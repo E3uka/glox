@@ -88,10 +88,6 @@ func (s *scanner) scan() error {
 		s.add_token(token.LBRACE, "{")
 	case '}':
 		s.add_token(token.RBRACE, "}")
-		if s.peek_next() != ';' {
-			s.add_token(token.SEMICOLON, ";")
-			s.step()
-		}
 	case ',':
 		s.add_token(token.COMMA, ",")
 	case '.':
