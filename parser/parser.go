@@ -22,7 +22,7 @@ func New(path *string, tokens *[]token.Token) *parser {
 		tokens:  *tokens,
 		current: 0,
 		expr:    nil,
-		trace:   true,
+		trace:   false,
 	}
 	return parser
 }
@@ -129,13 +129,12 @@ func (p *parser) parse_node(current_precedence precedence) ast.Node {
 	// precedence calculations) and the top level expresssion but only if the
 	// subexpression has a higher precedence (binding power)
 	for !p.is_at_end() && current_precedence < prec_map[p.peek().Type] {
+		INNER:
 		cur_tok = p.peek()
-		// step past end node boundary ';' to next token boundary and break
-		// from recursive loop
-		if cur_tok.Type == token.SEMICOLON {
-			p.advance()
-			break
-		}
+		// skip past '}'
+		if cur_tok.Type == token.RBRACE { cur_tok = p.advance(); goto INNER }
+		// terminate at ';'
+		if cur_tok.Type == token.SEMICOLON { p.advance(); break }
 		left = left_deno[cur_tok.Type](p, cur_tok.Type, left)
 	}
 	return left

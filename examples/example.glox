@@ -26,7 +26,16 @@ lies: bool = false;         // typed mutable declaration
 grouping := 1 / (3 + 2);
 maths := 9 + 12 / 3 * 5;
 
-/* blocks and scope (TODO: broken by recent change) */
+/* blocks and scope */
+{
+	outer := "hello";
+	{
+		outer += " world";
+	};
+	/* branch & return statements (soon) */
+	break;
+	return x / y + z;
+};
 
 /* function syntax */
 create_habit :: (cue: string, craving: string, response: string, reward: s64) -> string

@@ -162,7 +162,6 @@ func nd_parse_if_stmt(parser *parser, tok token.Token) ast.Node {
 	if parser.peek().Type == token.ELSE {
 		parser.expect(token.ELSE)
 		else_body = parser.parse_basic_stmt(parser.peek().Type)
-		parser.expect(token.RBRACE)
 		return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
 	}
 	return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
@@ -262,7 +261,6 @@ func nd_parse_while_stmt(parser *parser, tok token.Token) ast.Node {
 	}
 	predicate := parser.parse_predicate()
 	body := parser.as_block(parser.parse_basic_stmt(parser.peek().Type))
-	parser.expect(token.RBRACE)
 	return &ast.WhileStmt{Predicate: predicate, Body: body}
 }
 
