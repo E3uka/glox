@@ -482,6 +482,7 @@ func (p *parser) parse_procedure_declaration(
 	}
 	lhs_ident.Obj.Type = typ
 	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
+	p.expect(token.RBRACE)
 	return &ast.ProcedureDecl{Ident: lhs_ident, Body: body}
 }
 
