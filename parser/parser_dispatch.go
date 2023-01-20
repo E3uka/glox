@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"glox/ast"
 	"glox/token"
-	"reflect"
 )
 
 type precedence int
@@ -124,59 +123,39 @@ func init() {
 
 /* NULL DENOTATION PARSERS */
 
-func nd_parse_block_stmt(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf(
-			"nd_block: cur_tok: %v, next_tok: %v\n",
-			tok.Literal,
-			parser.peek(),
-		)
-	}
-	if parser.peek().Type == token.RBRACE {
-		parser.expect(token.RBRACE)
+func nd_parse_block_stmt(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_block", tok)
+	if p.peek().Type == token.RBRACE {
+		p.expect(token.RBRACE)
 		return &ast.EmptyStmt{}
 	}
-	list := parser.parse_stmt_list()
+	list := p.parse_stmt_list()
 	return &ast.BlockStmt{List: list}
 }
 
-func nd_parse_branch_stmt(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf("nd_branch: cur_tok: %v\n", tok)
-	}
+func nd_parse_branch_stmt(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_branch", tok)
 	return &ast.BranchStmt{Token: tok.Type}
 }
 
-func nd_parse_if_stmt(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf(
-			"nd_if: cur_tok: %v, next_tok: %v\n",
-			tok.Literal,
-			parser.peek().Type,
-		)
-	}
-	predicate := parser.parse_predicate()
-	body := parser.as_block(parser.parse_basic_stmt(parser.peek().Type))
-	parser.expect(token.RBRACE)
+func nd_parse_if_stmt(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_if", tok)
+	predicate := p.parse_predicate()
+	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
+	p.expect(token.RBRACE)
 	var else_body ast.Stmt
-	if parser.peek().Type == token.ELSE {
-		parser.expect(token.ELSE)
-		else_body = parser.parse_basic_stmt(parser.peek().Type)
+	if p.peek().Type == token.ELSE {
+		p.expect(token.ELSE)
+		else_body = p.parse_basic_stmt(p.peek().Type)
 		return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
 	}
 	return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
 }
 
-func nd_parse_ident_expr(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf(
-			"nd_ident: cur_tok: %v, next_tok: %v\n",
-			tok.Literal,
-			parser.peek().Type,
-		)
-	}
+func nd_parse_ident_expr(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_ident", tok)
 	if tok.Type == token.CONST {
-		ident_expr := parser.parse_basic_ident(tok.Type)
+		ident_expr := p.parse_basic_ident(tok.Type)
 		ident_expr.Obj.Kind = ast.Constant
 		ident_expr.Mutable = false
 		return ident_expr
@@ -190,40 +169,22 @@ func nd_parse_ident_expr(parser *parser, tok token.Token) ast.Node {
 	}
 }
 
-func nd_parse_literal_expr(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf(
-			"nd_literal: cur_tok: %v, next: %v\n",
-			tok,
-			parser.peek().Type,
-		)
-	}
-	typ := parser.get_type(tok)
+func nd_parse_literal_expr(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_literal", tok)
+	typ := p.get_type(tok)
 	return &ast.LiteralExpr{Type: typ, Value: tok.Literal}
 }
 
-func nd_parse_paren_expr(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf(
-			"nd_paren: cur_tok: %v, next_tok: %v\n",
-			tok.Literal,
-			parser.peek(),
-		)
-	}
-	expr := parser.parse_basic_expr(parser.peek().Type)
-	parser.expect(token.RPAREN)
+func nd_parse_paren_expr(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_paren", tok)
+	expr := p.parse_basic_expr(p.peek().Type)
+	p.expect(token.RPAREN)
 	return &ast.ParenExpr{Expr: expr}
 }
 
-func nd_parse_pointer_expr(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf(
-			"nd_pointer: operator %v, next: %v\n",
-			tok.Type,
-			parser.peek(),
-		)
-	}
-	ident_expr := parser.parse_basic_ident(tok.Type)
+func nd_parse_pointer_expr(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_pointer", tok)
+	ident_expr := p.parse_basic_ident(tok.Type)
 	deref := false
 	if tok.Type == token.STAR {
 		deref = true
@@ -231,153 +192,126 @@ func nd_parse_pointer_expr(parser *parser, tok token.Token) ast.Node {
 	return &ast.PtrExpr{Ident: ident_expr, Deref: deref}
 }
 
-func nd_parse_return_stmt(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf("nd_return: next_tok: %v\n", parser.peek())
-	}
-	result_expr := parser.parse_basic_expr(tok.Type)
+func nd_parse_return_stmt(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_return", tok)
+	result_expr := p.parse_basic_expr(tok.Type)
 	return &ast.ReturnStmt{Result: result_expr}
 }
 
-func nd_parse_unary_expr(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf(
-			"nd_unary: operator %v, next: %v\n",
-			tok.Type,
-			parser.peek(),
-		)
-	}
-	unary_expr := parser.parse_basic_expr(tok.Type)
+func nd_parse_unary_expr(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_unary", tok)
+	unary_expr := p.parse_basic_expr(tok.Type)
 	return &ast.UnOp{Operator: tok.Type, Rhs: unary_expr}
 }
 
-func nd_parse_while_stmt(parser *parser, tok token.Token) ast.Node {
-	if parser.trace {
-		fmt.Printf(
-			"nd_while: cur_tok: %v, next_tok: %v\n",
-			tok.Literal,
-			parser.peek().Type,
-		)
-	}
-	predicate := parser.parse_predicate()
-	body := parser.as_block(parser.parse_basic_stmt(parser.peek().Type))
+func nd_parse_while_stmt(p *parser, tok token.Token) ast.Node {
+	p.trace_nd("nd_while", tok)
+	predicate := p.parse_predicate()
+	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
 	return &ast.WhileStmt{Predicate: predicate, Body: body}
 }
 
 /* LEFT DENOTATION PARSERS */
 
 func ld_parse_assign_stmt(
-	parser *parser,
-	operator token.TokenType,
+	p *parser,
+	tok token.TokenType,
 	lhs ast.Node,
 ) ast.Node {
-	if parser.trace {
-		fmt.Printf("ld_assign: operator: %v\n", operator)
-	}
-	parser.expect(token.ASSIGN)
-	identifer := parser.as_expr(lhs)
-	rhs := parser.parse_basic_expr(operator)
+	p.trace_ld("ld_assign", tok)
+	p.expect(token.ASSIGN)
+	identifer := p.as_expr(lhs)
+	rhs := p.parse_basic_expr(tok)
 	return &ast.AssignStmt{Lhs: identifer, Rhs: rhs}
 }
 
 func ld_parse_binary_expr(
-	parser *parser,
-	operator token.TokenType,
+	p *parser,
+	tok token.TokenType,
 	lhs ast.Node,
 ) ast.Node {
-	if parser.trace {
-		fmt.Printf("ld_binary: operator: %v\n", operator)
-	}
-	lhs_expr := parser.as_expr(lhs)
-	parser.advance() // step past infix operator
-	rhs_expr := parser.parse_basic_expr(operator)
+	p.trace_ld("ld_binary", tok)
+	lhs_expr := p.as_expr(lhs)
+	p.advance() // step past infix operator
+	rhs_expr := p.parse_basic_expr(tok)
 	return &ast.BinOp{
 		Lhs:      lhs_expr,
-		Operator: operator,
+		Operator: tok,
 		Rhs:      rhs_expr,
 	}
 }
 
 func ld_parse_call_expr(
-	parser *parser,
-	operator token.TokenType,
+	p *parser,
+	tok token.TokenType,
 	lhs ast.Node,
 ) ast.Node {
-	if parser.trace {
-		fmt.Printf("ld_call: operator: %v\n", operator)
-	}
-	lhs_ident := parser.as_ident(lhs)
+	p.trace_ld("ld_call", tok)
+	if p.trace { fmt.Printf("ld_call: operator: %v\n", tok) }
+	lhs_ident := p.as_ident(lhs)
 	lhs_ident.Obj.Kind = ast.Procedure
-	args := parser.parse_call_args() 
-	parser.expect(token.RPAREN)
+	args := p.parse_call_args()
+	p.expect(token.RPAREN)
 	return &ast.CallExpr{Ident: lhs_ident, Args: args}
 }
 
 func ld_parse_cast_expr(
-	parser *parser,
-	operator token.TokenType,
+	p *parser,
+	tok token.TokenType,
 	lhs ast.Node,
 ) ast.Node {
-	if parser.trace {
-		fmt.Printf("ld_cast: operator: %v\n", operator)
-	}
-	literal := parser.as_literal(lhs)
-	parser.expect(token.CAST)
-	rhs := parser.parse_basic_expr(operator)
+	p.trace_ld("ld_cast", tok)
+	literal := p.as_literal(lhs)
+	p.expect(token.CAST)
+	rhs := p.parse_basic_expr(tok)
 	return &ast.CastExpr{To: literal.Type, From: rhs}
 }
 
 func ld_parse_decl_stmt(
-	parser *parser,
-	operator token.TokenType,
+	p *parser,
+	tok token.TokenType,
 	lhs ast.Node,
 ) ast.Node {
-	if parser.trace {
-		fmt.Printf("ld_decl: operator: %v\n", operator)
-	}
-	lhs_ident := parser.as_ident(lhs)
-	parser.advance() // step past declaration operator
+	p.trace_ld("ld_decl", tok)
+	lhs_ident := p.as_ident(lhs)
+	p.advance() // step past declaration operator
 	var decl ast.Decl
-	switch operator {
+	switch tok {
 	case token.COLON:
-		decl = parser.parse_typed_declaration(lhs_ident, operator)
+		decl = p.parse_typed_declaration(lhs_ident, tok)
 	case token.FUNASSIGN:
-		if parser.peek().Type == token.STRUCT {
-			decl = parser.parse_struct_declaration(lhs_ident, operator)
+		if p.peek().Type == token.STRUCT {
+			decl = p.parse_struct_declaration(lhs_ident, tok)
 		} else {
-			decl = parser.parse_procedure_declaration(lhs_ident, operator)
+			decl = p.parse_procedure_declaration(lhs_ident, tok)
 		}
 	case token.WALRUS:
-		decl = parser.parse_generic_declaration(lhs_ident, operator)
+		decl = p.parse_generic_declaration(lhs_ident, tok)
 	}
 	return &ast.DeclStmt{Decl: decl}
 }
 
 func ld_parse_selector_expr(
-	parser *parser,
-	operator token.TokenType,
+	p *parser,
+	tok token.TokenType,
 	lhs ast.Node,
 ) ast.Node {
-	if parser.trace {
-		fmt.Printf("ld_selector: operator: %v\n", operator)
-	}
-	lhs_expr := parser.as_expr(lhs)
-	parser.expect(token.PERIOD)
-	selection := parser.parse_basic_expr(operator)
+	p.trace_ld("ld_selector", tok)
+	lhs_expr := p.as_expr(lhs)
+	p.expect(token.PERIOD)
+	selection := p.parse_basic_expr(tok)
 	return &ast.SelectorExpr{Parent: lhs_expr, Selection: selection}
 }
 
 func ld_parse_unary_expr(
-	parser *parser,
-	operator token.TokenType,
+	p *parser,
+	tok token.TokenType,
 	lhs ast.Node,
 ) ast.Node {
-	if parser.trace {
-		fmt.Printf("ld_unary: operator: %v\n", operator)
-	}
-	rhs_expr := parser.as_expr(lhs)
-	parser.advance() // step past postfix operator
-	return &ast.UnOp{Operator: operator, Rhs: rhs_expr}
+	p.trace_ld("ld_unary", tok)
+	rhs_expr := p.as_expr(lhs)
+	p.advance() // step past postfix operator
+	return &ast.UnOp{Operator: tok, Rhs: rhs_expr}
 }
 
 /* PARSER SPECIFIC UTILS */
@@ -421,9 +355,6 @@ func (p *parser) parse_generic_declaration(
 	lhs_ident *ast.Ident,
 	operator token.TokenType,
 ) *ast.BasicDecl {
-	if p.trace {
-		fmt.Println("basic_decl")
-	}
 	lhs_ident.Obj.Kind = ast.Variable
 	rhs_expr := p.parse_basic_expr(operator)
 	return &ast.BasicDecl{Ident: lhs_ident, Value: rhs_expr}
@@ -463,9 +394,6 @@ func (p *parser) parse_procedure_declaration(
 	lhs_ident *ast.Ident,
 	operator token.TokenType,
 ) *ast.ProcedureDecl {
-	if p.trace {
-		fmt.Println("Procedure_decl")
-	}
 	lhs_ident.Obj.Kind = ast.Procedure
 	args := p.parse_procedure_args(lhs_ident.Obj.Name)
 	lhs_ident.Obj.Decl = args
@@ -488,24 +416,17 @@ func (p *parser) parse_stmt_list() []ast.Stmt {
 	list := []ast.Stmt{}
 	var stmt ast.Stmt
 	for p.peek().Type != token.RBRACE && p.peek().Type != token.EOF {
-		if p.trace {
-			fmt.Printf("stmt_list: cur_tok: %v\n", p.peek().Literal)
-		}
+		p.trace_ld("stmt_list:", p.peek().Type)
 		node := p.parse_node(INIT)
 		if maybe_stmt, ok := node.(ast.Stmt); !ok {
 			stmt = p.try_make_statement(node)
 			if stmt == nil {
 				p.report_offset_parse_error(-1, "%v: expected statement")
-				continue
 			}
-			if p.trace {
-				fmt.Printf("----- SUB PARSED: [%v] -----\n", reflect.TypeOf(stmt))
-			}
+			p.trace_node("PARSED SUB NODE", stmt)
 			list = append(list, stmt)
 		} else {
-			if p.trace {
-				fmt.Printf("----- SUB PARSED: [%v] -----\n", reflect.TypeOf(maybe_stmt))
-			}
+			p.trace_node("PARSED SUB NODE", maybe_stmt)
 			list = append(list, maybe_stmt)
 		}
 	}
@@ -516,9 +437,6 @@ func (p *parser) parse_struct_declaration(
 	lhs_ident *ast.Ident,
 	operator token.TokenType,
 ) *ast.BasicDecl {
-	if p.trace {
-		fmt.Println("typed_decl")
-	}
 	p.expect(token.STRUCT)
 	field_list := p.parse_field_list()
 	p.expect(token.RBRACE)
@@ -530,9 +448,6 @@ func (p *parser) parse_typed_declaration(
 	lhs_ident *ast.Ident,
 	operator token.TokenType,
 ) *ast.BasicDecl {
-	if p.trace {
-		fmt.Println("typed_decl")
-	}
 	typ := p.get_type(p.peek())
 	lhs_ident.Obj.Type = typ
 	lhs_ident.Obj.Kind = ast.Variable

@@ -5,7 +5,6 @@ import (
 	"glox/ast"
 	glox_err "glox/error"
 	"glox/token"
-	"reflect"
 )
 
 type parser struct {
@@ -47,9 +46,7 @@ func (p *parser) Parse() []ast.Node {
 			// higher precendence (binding power) and thus accepted
 			node := p.parse_node(INIT)
 			nodes = append(nodes, node)
-			if p.trace {
-				fmt.Printf("----- PARSED: [%v] -----\n", reflect.TypeOf(node))
-			}
+			p.trace_node("PARSED NODE", node)
 		}()
 	}
 	return nodes
@@ -74,6 +71,8 @@ func recover_and_sync(parser *parser) {
 	}
 }
 
+/* PARSE HELPERS */
+
 func (p *parser) advance() token.Token { p.current++; return p.peek() }
 func (p *parser) peek() token.Token    { return p.tokens[p.current] }
 func (p *parser) is_at_end() bool      { return p.peek().Type == token.EOF }
@@ -84,6 +83,8 @@ func (p *parser) expect(tok token.TokenType) {
 	p.advance()
 	return
 }
+
+/* PANIC REPORTERS */
 
 func (p *parser) report_parse_error(token token.Token, format_string string) {
 	msg := fmt.Sprintf(format_string, token)
@@ -104,6 +105,29 @@ func (p *parser) report_expect_error(
 ) {
 	msg := fmt.Sprintf(format_string, expected)
 	glox_err.ParsePanic(p.path, token.Line, msg)
+}
+
+/* TRACE HELPERS */
+
+func (p *parser) trace_nd(dispatcher string, t token.Token) {
+	if p.trace {
+		fmt.Printf(
+			"%v: cur_tok: %v, next_tok: %v\n",
+			dispatcher,
+			t.Literal,
+			p.peek(),
+		)
+	}
+}
+
+func (p *parser) trace_ld(dispatcher string, tt token.TokenType) {
+	if p.trace {
+		fmt.Printf("%v: operator: %v\n", dispatcher, tt)
+	}
+}
+
+func (p *parser) trace_node(s string, node ast.Node) {
+	if p.trace { fmt.Printf("\n--- %v: [%#v] ---\n\n", s, node) }
 }
 
 // Top Down Operator Precedence Algorithm - Vaughan R. parser, 1973
