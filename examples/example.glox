@@ -37,7 +37,7 @@ maths := 9 + 12 / 3 * 5;
 	return x / y + z;
 };
 
-/* function syntax */
+/* function syntax (can return types) */
 create_habit :: (cue: string, craving: string, response: string, reward: s64) -> string
 {
 	println("I can see clear-ly now");
@@ -45,6 +45,8 @@ create_habit :: (cue: string, craving: string, response: string, reward: s64) ->
 	result := craving(response(cue)); // nested function calls
 	return result;
 };
+
+noop :: () { /* does nothing */ };
 
 /* structs & selections */
 Connection :: struct 

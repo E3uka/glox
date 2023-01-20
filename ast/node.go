@@ -91,7 +91,6 @@ type (
 	DeclStmt struct {
 		Decl Decl
 	}
-	EmptyStmt struct {}
 	ExprStmt struct { 
 		Expr Expr
 	}
@@ -114,7 +113,6 @@ func (*AssignStmt) stmt_node() {}
 func (*BlockStmt)  stmt_node() {}
 func (*BranchStmt) stmt_node() {}
 func (*DeclStmt)   stmt_node() {}
-func (*EmptyStmt)  stmt_node() {}
 func (*ExprStmt)   stmt_node() {}
 func (*IfStmt)     stmt_node() {}
 func (*ReturnStmt) stmt_node() {}

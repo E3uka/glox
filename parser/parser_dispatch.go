@@ -125,10 +125,6 @@ func init() {
 
 func nd_parse_block_stmt(p *parser, tok token.Token) ast.Node {
 	p.trace_nd("nd_block", tok)
-	if p.peek().Type == token.RBRACE {
-		p.expect(token.RBRACE)
-		return &ast.EmptyStmt{}
-	}
 	list := p.parse_stmt_list()
 	return &ast.BlockStmt{List: list}
 }
@@ -398,13 +394,13 @@ func (p *parser) parse_procedure_declaration(
 	args := p.parse_procedure_args(lhs_ident.Obj.Name)
 	lhs_ident.Obj.Decl = args
 	p.expect(token.RPAREN)
-	p.expect(token.FUNRETURN)
 	var typ ast.Typ
-	if p.peek().Type == token.LBRACE {
-		typ = ast.NullType // no return type
-	} else {
+	if p.peek().Type == token.FUNRETURN {
+		p.expect(token.FUNRETURN)
 		typ = p.get_type(p.peek())
 		p.advance() // step past type
+	} else {
+		typ = ast.NullType
 	}
 	lhs_ident.Obj.Type = typ
 	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
@@ -413,7 +409,7 @@ func (p *parser) parse_procedure_declaration(
 }
 
 func (p *parser) parse_stmt_list() []ast.Stmt {
-	list := []ast.Stmt{}
+	stmt_list := []ast.Stmt{}
 	var stmt ast.Stmt
 	for p.peek().Type != token.RBRACE && p.peek().Type != token.EOF {
 		p.trace_ld("stmt_list:", p.peek().Type)
@@ -424,13 +420,13 @@ func (p *parser) parse_stmt_list() []ast.Stmt {
 				p.report_offset_parse_error(-1, "%v: expected statement")
 			}
 			p.trace_node("PARSED SUB NODE", stmt)
-			list = append(list, stmt)
+			stmt_list = append(stmt_list, stmt)
 		} else {
 			p.trace_node("PARSED SUB NODE", maybe_stmt)
-			list = append(list, maybe_stmt)
+			stmt_list = append(stmt_list, maybe_stmt)
 		}
 	}
-	return list
+	return stmt_list
 }
 
 func (p *parser) parse_struct_declaration(
@@ -508,6 +504,8 @@ func (p *parser) get_type(tok token.Token) ast.Typ {
 		typ = ast.NullType
 	case token.STRING, token.STRINGTYPE:
 		typ = ast.StringType
+	case token.LBRACE:
+		p.report_parse_error(tok, "%v expected type")
 	default:
 		// TODO: simple solution for now, could embed the type here or
 		// recompile the ast including this new type signature
