@@ -469,46 +469,40 @@ func (p *parser) parse_typed_declaration(
 func (p *parser) try_make_statement(node ast.Node) ast.Stmt {
 	var stmt ast.Stmt
 	maybe_expr, ok := node.(ast.Expr)
-	if !ok {
-		p.report_parse_error(p.peek(), "%v: expected statement")
-		return nil
-	}
+	if !ok { p.report_parse_error(p.peek(), "%v: expected statement") }
 	// for simplicity only expressions that have side effects can appear
 	// standalone within a block
-	switch maybe_expr.(type) {
+	switch maybe_stmt := maybe_expr.(type) {
 	case *ast.CallExpr:
-		stmt = &ast.ExprStmt{Expr: maybe_expr}
+		stmt = &ast.ExprStmt{Expr: maybe_stmt}
 	case *ast.SelectorExpr:
-		// TODO: hack; could just be a field selection instead of a call which
-		// would be semantically wrong
-		stmt = &ast.ExprStmt{Expr: maybe_expr}
+		if _, ok = maybe_stmt.Selection.(*ast.CallExpr); !ok {
+			p.report_offset_parse_error(-2, "%v: expected statement")
+		}
+		stmt = &ast.ExprStmt{Expr: maybe_stmt}
 	case *ast.BinOp:
-		binary_expr := maybe_expr.(*ast.BinOp)
-		if binary_expr.Operator == token.INCRBY || 
-			binary_expr.Operator == token.DECRYBY {
-			stmt = &ast.ExprStmt{Expr: binary_expr}
+		if maybe_stmt.Operator == token.INCRBY || maybe_stmt.Operator == token.DECRYBY {
+			stmt = &ast.ExprStmt{Expr: maybe_stmt}
 			break
 		}
-		p.report_offset_parse_error(-2, "%v: cannot cast to statement")
+		p.report_offset_parse_error(-2, "%v: expected statement")
 	case *ast.UnOp:
-		unary_expr := maybe_expr.(*ast.UnOp)
-		if unary_expr.Operator == token.INCR || 
-			unary_expr.Operator == token.DECR {
-			stmt = &ast.ExprStmt{Expr: unary_expr}
+		if maybe_stmt.Operator == token.INCR || maybe_stmt.Operator == token.DECR {
+			stmt = &ast.ExprStmt{Expr: maybe_stmt}
 			break
 		}
-		p.report_offset_parse_error(-2, "%v: cannot cast to statement")
+		p.report_offset_parse_error(-2, "%v: expected statement")
 	}
 	return stmt
 }
 
-func(p *parser) parse_until(tok token.TokenType) ast.Expr {
+func (p *parser) parse_until(tok token.TokenType) ast.Expr {
 	tokens := []token.Token{}
 	for p.peek().Type != tok {
 		tokens = append(tokens, p.peek())
 		p.advance()
 	}
-	tokens = append(tokens, token.Token{Type: token.EOF, Literal: ""})
+	tokens = append(tokens, token.Token{Type: token.EOF, Lit: ""})
 	sub_parser := New(p.path, &tokens)
 	predicate := sub_parser.parse_node(LOWEST)
 	return p.as_expr(predicate)
