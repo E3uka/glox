@@ -44,7 +44,6 @@ func init() {
 	prec_map[token.ASSIGN]    = LOWEST
 	prec_map[token.COLON]     = LOWEST
 	prec_map[token.CONST]     = LOWEST
-	prec_map[token.ELSE]      = LOWEST
 	prec_map[token.FUNASSIGN] = LOWEST
 	prec_map[token.IF]        = LOWEST
 	prec_map[token.RETURN]    = LOWEST
@@ -274,10 +273,13 @@ func ld_parse_decl_stmt(
 	case token.COLON:
 		decl = p.parse_typed_declaration(lhs_ident, tok)
 	case token.FUNASSIGN:
-		if p.peek().Type == token.STRUCT {
+		switch p.peek().Type {
+		case token.STRUCT:
 			decl = p.parse_struct_declaration(lhs_ident, tok)
-		} else {
+		case token.LPAREN:
 			decl = p.parse_procedure_declaration(lhs_ident, tok)
+		case token.INTERFACE:
+			decl = p.parse_interface_declaration(lhs_ident, tok)
 		}
 	case token.WALRUS:
 		decl = p.parse_generic_declaration(lhs_ident, tok)
@@ -355,34 +357,42 @@ func (p *parser) parse_generic_declaration(
 	return &ast.BasicDecl{Ident: lhs_ident, Value: rhs_expr}
 }
 
-func(p *parser) parse_predicate() ast.Expr {
-	tokens := []token.Token{}
-	for p.peek().Type != token.LBRACE {
-		tokens = append(tokens, p.peek())
-		p.advance()
-	}
-	tokens = append(tokens, token.Token{Type: token.EOF, Literal: ""})
-	sub_parser := New(p.path, &tokens)
-	predicate := sub_parser.parse_node(LOWEST)
-	return p.as_expr(predicate)
-}
-
-func(p *parser) parse_procedure_args(identifier string) ast.Environment {
-	p.expect(token.LPAREN)
-	scope := ast.Environment{}
-	for p.peek().Type != token.RPAREN {
-		if p.peek().Type == token.COMMA {
-			p.expect(token.COMMA)
+func (p *parser) parse_interface_declaration(
+	lhs_ident *ast.Ident,
+	operator token.TokenType,
+) *ast.BasicDecl {
+	lhs_ident.Obj.Kind = ast.Interface
+	p.expect(token.INTERFACE)
+	p.expect(token.LBRACE)
+	fields := ast.Fields{}
+	for p.peek().Type != token.RBRACE {
+		if p.peek().Type == token.SEMICOLON {
+			p.expect(token.SEMICOLON)
 			continue
 		}
-		ident_object := p.parse_basic_ident(p.peek().Type).Obj
-		p.expect(token.COLON)
-		typ := p.get_type(p.peek())
-		ident_object.Type = typ
-		p.advance() // step past type
-		scope[identifier] = append(scope[identifier], ident_object)
+		method_ident := p.parse_interface_method()
+		fields.Names = append(fields.Names, method_ident)
 	}
-	return scope
+	p.expect(token.RBRACE)
+	iface_type := ast.IfaceType{Methods: &fields}
+	return &ast.BasicDecl{Ident: lhs_ident, Value: &iface_type}
+}
+
+func (p *parser) parse_interface_method() *ast.Ident {
+	ident := p.as_ident(p.parse_until(token.LPAREN))
+	fields := p.parse_fields_between(token.LPAREN, token.RPAREN, token.COLON)
+	p.expect(token.RPAREN)
+	var return_type ast.Typ
+	if p.peek().Type == token.FUNRETURN {
+		p.expect(token.FUNRETURN)
+		return_type = p.get_type(p.peek())
+		p.advance() // step past type
+	} else {
+		return_type = ast.NullType
+	}
+	ident.Obj.Decl = fields
+	ident.Obj.Type = return_type
+	return ident
 }
 
 func (p *parser) parse_procedure_declaration(

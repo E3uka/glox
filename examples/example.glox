@@ -60,6 +60,14 @@ Connection.address;
 Connection.add_user(user123, "GMT");
 Connection.count += 1;
 
+Reader :: interface {
+	// read into buffer returning len
+	read(reader: Reader, buffer: Buffer) -> s64;
+
+	// flushes the buffer
+	flush(buffer: Buffer);
+};
+
 /* if and while statements */
 while connection.is_online() { 
 	return true; 
@@ -77,7 +85,7 @@ where := &value;
 there := *where;
 
 /*
-TODO: ArrayType, IFaceExpr, FnExpr & FuncType (first class functions)
+TODO: ArrayType, ImplBlocks, FuncType (first class functions)
 
 TODO: end semicolon error messages
 TODO: chore: character start locations for error messages

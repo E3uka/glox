@@ -60,6 +60,9 @@ type (
 		Operator token.TokenType
 		Rhs      Expr
 	}
+	IfaceType struct {
+		Methods *Fields
+	}
 	StructType struct {
 		Fields *Fields
 	}
@@ -74,6 +77,7 @@ func (*LiteralExpr)  expr_node() {}
 func (*ParenExpr)    expr_node() {}
 func (*PtrExpr)      expr_node() {}
 func (*SelectorExpr) expr_node() {}
+func (*IfaceType)    expr_node() {}
 func (*StructType)   expr_node() {}
 func (*UnOp)         expr_node() {}
 
@@ -152,6 +156,7 @@ const (
 	Procedure
 	Type
 	Variable
+	Interface
 )
 
 type Typ uint

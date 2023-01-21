@@ -65,6 +65,7 @@ const (
 	FALSE
 	FOR
 	BREAK
+	INTERFACE
 
 	IF
 	ELSE
@@ -133,11 +134,12 @@ var tokens = [...]string{
 	BITOR:  "|",
 	OR:     "||",
 
-	CLASS:  "class",
-	STRUCT: "struct",
-	FALSE:  "false",
-	FOR:    "for",
-	BREAK:  "break",
+	CLASS:     "class",
+	STRUCT:    "struct",
+	FALSE:     "false",
+	FOR:       "for",
+	BREAK:     "break",
+	INTERFACE: "interface",
 
 	IF:    "if",
 	ELSE:  "else",
