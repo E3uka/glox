@@ -14,14 +14,10 @@ var SOURCE_CODE string
 
 func run() {
 	file, err := os.ReadFile(PROGRAM_PATH)
-	if err != nil {
-		os.Exit(1)
-	}
+	if err != nil { os.Exit(1) }
 	SOURCE_CODE = string(file)
 	scn, err := scanner.New(&PROGRAM_PATH, &SOURCE_CODE)
-	if err != nil {
-		return
-	}
+	if err != nil { return }
 	parser := parser.New(&PROGRAM_PATH, scn.Tokens())
 	trees := parser.Parse()
 	json, _ := json.Marshal(trees)
@@ -43,12 +39,8 @@ func main() {
 	} else if len(os.Args) == 2 {
 		PROGRAM_PATH = os.Args[1]
 		run()
-		if gloxError.LEX_ERROR || gloxError.PARSE_ERROR {
-			os.Exit(65)
-		}
-		if gloxError.RUNTIME_ERROR {
-			os.Exit(70)
-		}
+		if gloxError.LEX_ERROR || gloxError.PARSE_ERROR { os.Exit(65) }
+		if gloxError.RUNTIME_ERROR { os.Exit(70) }
 	} else {
 		fmt.Println("expected at least one input file")
 	}

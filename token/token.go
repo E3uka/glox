@@ -10,7 +10,7 @@ type TokenType uint
 const (
 	// Special Tokens
 	ILLEGAL TokenType = iota
-	EOF                // added to end of source file for bookeeping
+	EOF // added to end of source file for bookeeping
 
 	// Literals
 	IDENT  // main
@@ -53,13 +53,14 @@ const (
 	FUNRETURN // ->
 	CAST      // <-
 
-	NOT // !
+	NOT    // !
 	BITAND // &
 	AND    // &&
 	BITOR  // |
 	OR     // ||
 
-	keyword_beg // Keywords
+	// Keywords
+	keyword_beg
 	CLASS
 	STRUCT
 	FALSE
@@ -160,41 +161,30 @@ var tokens = [...]string{
 
 func (tt TokenType) String() string {
 	s := ""
-	if 0 <= tt && tt < TokenType(len(tokens)) {
-		s = tokens[tt]
-	}
-	if s == "" {
-		s = "token(" + strconv.Itoa(int(tt)) + ")"
-	}
+	if tt < TokenType(len(tokens)) { s = tokens[tt] }
+	if s == "" { s = "token(" + strconv.Itoa(int(tt)) + ")" }
 	return s
 }
 
 type Token struct {
-	Type    TokenType
-	Literal string
-	Start   int
-	End     int
-	Line    int
+	Type  TokenType
+	Lit   string
+	Start int
+	End   int
+	Line  int
 }
 
-func (tok Token) String() string {
-	return fmt.Sprintf("%s %s", tok.Type, tok.Literal)
-}
+func (tok Token) String() string { return fmt.Sprintf("%s %s", tok.Type, tok.Lit) }
 
 // map with the exact size of number of keywords
-var keywords = make(map[string]TokenType, keyword_end-(keyword_beg+1))
+var keywords = make(map[string]TokenType, keyword_end - (keyword_beg + 1))
 
-// Run on initialisation ~ gleaned from go source
+// run on initialisation ~ gleaned from go source
 func init() {
-	// loop through tokens and add to map
-	for i := keyword_beg + 1; i < keyword_end; i++ {
-		keywords[tokens[i]] = i
-	}
+	for i := keyword_beg + 1; i < keyword_end; i++ { keywords[tokens[i]] = i }
 }
 
 func LookupKeyword(ident string) TokenType {
-	if tok, is_keyword := keywords[ident]; is_keyword {
-		return tok
-	}
+	if tok, is_keyword := keywords[ident]; is_keyword { return tok }
 	return IDENT
 }

@@ -1,7 +1,7 @@
 /* Examples of valid glox syntax (should parse) */
 
 /*
-multiline 
+multiline
 comments
 */
 
@@ -38,8 +38,7 @@ maths := 9 + 12 / 3 * 5;
 };
 
 /* function syntax (can return types) */
-create_habit :: (cue: string, craving: string, response: string, reward: s64) -> string
-{
+create_habit :: (cue: string, craving: string, response: string, reward: s64) -> string {
 	println("I can see clear-ly now");
 	reward++;
 	result := craving(response(cue)); // nested function calls
@@ -49,8 +48,7 @@ create_habit :: (cue: string, craving: string, response: string, reward: s64) ->
 noop :: () { /* does nothing */ };
 
 /* structs & selections */
-Connection :: struct 
-{
+Connection :: struct {
 	address: string;
 	online:  string;
 	count:   s64;
@@ -69,8 +67,8 @@ Reader :: interface {
 };
 
 /* if and while statements */
-while connection.is_online() { 
-	return true; 
+while connection.is_online() {
+	return true;
 };
 
 if connection.address == "" {
@@ -85,7 +83,7 @@ where := &value;
 there := *where;
 
 /*
-TODO: ArrayType, ImplBlocks, FuncType (first class functions)
+TODO: ImplBlocks, FuncType (first class functions)
 
 TODO: end semicolon error messages
 TODO: chore: character start locations for error messages

@@ -4,3 +4,6 @@ glox
 
 # test files directory
 /test_files
+
+# IDE
+.vscode

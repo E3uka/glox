@@ -12,6 +12,7 @@ const (
 	// the stronger the relative binding power i.e. the current token will be
 	// parsed before its rhs neighbour
 	INIT precedence = -1
+
 	LOWEST precedence = iota
 	LOGICAL
 	EQUALITY
@@ -31,11 +32,11 @@ var (
 	// token type -> operator precedence (binding power)
 	prec_map = map[token.TokenType]precedence{}
 
-	// token type -> null denotation parser i.e. dispatches a token specific 
+	// token type -> null denotation parser i.e. dispatches a token specific
 	// parser when no expression was found left of the current token
 	null_deno = map[token.TokenType]func(*parser, token.Token) ast.Node{}
 
-	// token type -> left denotation parser i.e. dispatches a token specific 
+	// token type -> left denotation parser i.e. dispatches a token specific
 	// parser when an expression was found left of the current token
 	left_deno = map[token.TokenType]func(*parser, token.TokenType, ast.Node) ast.Node{}
 )
@@ -154,19 +155,13 @@ func nd_parse_ident_expr(p *parser, tok token.Token) ast.Node {
 		ident_expr.Mutable = false
 		return ident_expr
 	}
-	return &ast.Ident{
-		Obj: &ast.Object{
-			Kind: ast.Variable,
-			Name: tok.Literal,
-		},
-		Mutable: true,
-	}
+	return &ast.Ident{Obj: &ast.Object{Kind: ast.Variable, Name: tok.Lit}, Mutable: true}
 }
 
 func nd_parse_literal_expr(p *parser, tok token.Token) ast.Node {
 	p.trace_nd("nd_literal", tok)
 	typ := p.get_type(tok)
-	return &ast.LiteralExpr{Type: typ, Value: tok.Literal}
+	return &ast.LiteralExpr{Type: typ, Value: tok.Lit}
 }
 
 func nd_parse_paren_expr(p *parser, tok token.Token) ast.Node {
@@ -180,9 +175,7 @@ func nd_parse_pointer_expr(p *parser, tok token.Token) ast.Node {
 	p.trace_nd("nd_pointer", tok)
 	ident_expr := p.parse_basic_ident(tok.Type)
 	deref := false
-	if tok.Type == token.STAR {
-		deref = true
-	}
+	if tok.Type == token.STAR { deref = true }
 	return &ast.PtrExpr{Ident: ident_expr, Deref: deref}
 }
 
@@ -207,11 +200,7 @@ func nd_parse_while_stmt(p *parser, tok token.Token) ast.Node {
 
 /* LEFT DENOTATION PARSERS */
 
-func ld_parse_assign_stmt(
-	p *parser,
-	tok token.TokenType,
-	lhs ast.Node,
-) ast.Node {
+func ld_parse_assign_stmt(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 	p.trace_ld("ld_assign", tok)
 	p.expect(token.ASSIGN)
 	identifer := p.as_expr(lhs)
@@ -219,27 +208,15 @@ func ld_parse_assign_stmt(
 	return &ast.AssignStmt{Lhs: identifer, Rhs: rhs}
 }
 
-func ld_parse_binary_expr(
-	p *parser,
-	tok token.TokenType,
-	lhs ast.Node,
-) ast.Node {
+func ld_parse_binary_expr(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 	p.trace_ld("ld_binary", tok)
 	lhs_expr := p.as_expr(lhs)
 	p.advance() // step past infix operator
 	rhs_expr := p.parse_basic_expr(tok)
-	return &ast.BinOp{
-		Lhs:      lhs_expr,
-		Operator: tok,
-		Rhs:      rhs_expr,
-	}
+	return &ast.BinOp{Lhs: lhs_expr, Operator: tok, Rhs: rhs_expr}
 }
 
-func ld_parse_call_expr(
-	p *parser,
-	tok token.TokenType,
-	lhs ast.Node,
-) ast.Node {
+func ld_parse_call_expr(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 	p.trace_ld("ld_call", tok)
 	lhs_ident := p.as_ident(lhs)
 	lhs_ident.Obj.Kind = ast.Procedure
@@ -248,11 +225,7 @@ func ld_parse_call_expr(
 	return &ast.CallExpr{Ident: lhs_ident, Args: args}
 }
 
-func ld_parse_cast_expr(
-	p *parser,
-	tok token.TokenType,
-	lhs ast.Node,
-) ast.Node {
+func ld_parse_cast_expr(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 	p.trace_ld("ld_cast", tok)
 	literal := p.as_literal(lhs)
 	p.expect(token.CAST)
@@ -260,11 +233,7 @@ func ld_parse_cast_expr(
 	return &ast.CastExpr{To: literal.Type, From: rhs}
 }
 
-func ld_parse_decl_stmt(
-	p *parser,
-	tok token.TokenType,
-	lhs ast.Node,
-) ast.Node {
+func ld_parse_decl_stmt(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 	p.trace_ld("ld_decl", tok)
 	lhs_ident := p.as_ident(lhs)
 	p.advance() // step past declaration operator
@@ -287,11 +256,7 @@ func ld_parse_decl_stmt(
 	return &ast.DeclStmt{Decl: decl}
 }
 
-func ld_parse_selector_expr(
-	p *parser,
-	tok token.TokenType,
-	lhs ast.Node,
-) ast.Node {
+func ld_parse_selector_expr(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 	p.trace_ld("ld_selector", tok)
 	lhs_expr := p.as_expr(lhs)
 	p.expect(token.PERIOD)
@@ -299,11 +264,7 @@ func ld_parse_selector_expr(
 	return &ast.SelectorExpr{Parent: lhs_expr, Selection: selection}
 }
 
-func ld_parse_unary_expr(
-	p *parser,
-	tok token.TokenType,
-	lhs ast.Node,
-) ast.Node {
+func ld_parse_unary_expr(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 	p.trace_ld("ld_unary", tok)
 	rhs_expr := p.as_expr(lhs)
 	p.advance() // step past postfix operator
@@ -312,7 +273,7 @@ func ld_parse_unary_expr(
 
 /* PARSER SPECIFIC UTILS */
 
-func(p *parser) parse_call_args() []ast.Expr {
+func (p *parser) parse_call_args() []ast.Expr {
 	p.expect(token.LPAREN)
 	args := []ast.Expr{}
 	var expr ast.Expr
@@ -327,9 +288,7 @@ func(p *parser) parse_call_args() []ast.Expr {
 	return args
 }
 
-func (p *parser) parse_fields_between(
-	left, right, delimiter token.TokenType,
-) *ast.Fields {
+func (p *parser) parse_fields_between(left, right, delim token.TokenType) *ast.Fields {
 	p.expect(left)
 	fields := ast.Fields{}
 	for p.peek().Type != right {
@@ -338,7 +297,7 @@ func (p *parser) parse_fields_between(
 			continue
 		}
 		name := p.parse_basic_ident(p.peek().Type)
-		p.expect(delimiter)
+		p.expect(delim)
 		typ := p.get_type(p.peek())
 		name.Obj.Kind = ast.Type
 		name.Obj.Type = typ
@@ -374,8 +333,8 @@ func (p *parser) parse_interface_declaration(
 		fields.Names = append(fields.Names, method_ident)
 	}
 	p.expect(token.RBRACE)
-	iface_type := ast.IfaceType{Methods: &fields}
-	return &ast.BasicDecl{Ident: lhs_ident, Value: &iface_type}
+	iface_type := &ast.IfaceType{Methods: &fields}
+	return &ast.BasicDecl{Ident: lhs_ident, Value: iface_type}
 }
 
 func (p *parser) parse_interface_method() *ast.Ident {
@@ -429,9 +388,7 @@ func (p *parser) parse_stmt_list() []ast.Stmt {
 		node := p.parse_node(INIT)
 		if maybe_stmt, ok := node.(ast.Stmt); !ok {
 			stmt = p.try_make_statement(node)
-			if stmt == nil {
-				p.report_offset_parse_error(-1, "%v: expected statement")
-			}
+			if stmt == nil { p.report_offset_parse_error(-1, "%v: expected statement") }
 			p.trace_node("PARSED SUB NODE", stmt)
 			stmt_list = append(stmt_list, stmt)
 		} else {
@@ -534,73 +491,50 @@ func (p *parser) get_type(tok token.Token) ast.Typ {
 }
 
 // parses the next token as an expression using the supplied tok precedence
-func(p *parser) parse_basic_expr(tok token.TokenType) ast.Expr {
+func (p *parser) parse_basic_expr(tok token.TokenType) ast.Expr {
 	expr, ok := p.parse_node(prec_map[tok]).(ast.Expr)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected expression")
-	}
+	if !ok { p.report_offset_parse_error(-1, "%v: expected expression") }
 	return expr
 }
 
 // parses the next token as an identifier using the supplied tok precedence
-func(p *parser) parse_basic_ident(tok token.TokenType) *ast.Ident {
+func (p *parser) parse_basic_ident(tok token.TokenType) *ast.Ident {
 	ident, ok := p.parse_node(prec_map[tok]).(*ast.Ident)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected identifier")
-	}
+	if !ok { p.report_offset_parse_error(-1, "%v: expected identifier") }
 	return ident
 }
 
 // parses the next token as a statement using the supplied tok precedence
-func(p *parser) parse_basic_stmt(tok token.TokenType) ast.Stmt {
+func (p *parser) parse_basic_stmt(tok token.TokenType) ast.Stmt {
 	stmt, ok := p.parse_node(prec_map[tok]).(ast.Stmt)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected statement")
-	}
+	if !ok { p.report_offset_parse_error(-1, "%v: expected statement") }
 	return stmt
 }
 
 // casts node to a block statement; raises an error if the cast fails
-func(p *parser) as_block(node ast.Node) *ast.BlockStmt {
+func (p *parser) as_block(node ast.Node) *ast.BlockStmt {
 	block, ok := node.(*ast.BlockStmt)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected block statement")
-	}
+	if !ok { p.report_offset_parse_error(-1, "%v: expected block statement") }
 	return block
 }
 
 // casts node to an expression; raises an error if the cast fails
-func(p *parser) as_expr(node ast.Node) ast.Expr {
+func (p *parser) as_expr(node ast.Node) ast.Expr {
 	expr, ok := node.(ast.Expr)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected expression")
-	}
+	if !ok { p.report_offset_parse_error(-1, "%v: expected expression") }
 	return expr
 }
 
 // casts node to an identifier; raises an error if the cast fails
-func(p *parser) as_ident(node ast.Node) *ast.Ident {
+func (p *parser) as_ident(node ast.Node) *ast.Ident {
 	ident, ok := node.(*ast.Ident)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected identifier")
-	}
+	if !ok { p.report_offset_parse_error(-1, "%v: expected identifier") }
 	return ident
 }
 
 // casts node to a literal; raises an error if the cast fails
-func(p *parser) as_literal(node ast.Node) *ast.LiteralExpr {
+func (p *parser) as_literal(node ast.Node) *ast.LiteralExpr {
 	ident, ok := node.(*ast.LiteralExpr)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected literal")
-	}
+	if !ok { p.report_offset_parse_error(-1, "%v: expected literal") }
 	return ident
-}
-
-// casts node to a statement; raises an error if the cast fails
-func(p *parser) as_statement(node ast.Node) ast.Stmt {
-	stmt, ok := node.(ast.Stmt)
-	if !ok {
-		p.report_offset_parse_error(-1, "%v: expected statement")
-	}
-	return stmt
 }

@@ -1,7 +1,7 @@
 package scanner
 
 import (
-	glox_err "glox/error"
+	g_err "glox/error"
 	"glox/token"
 	"strconv"
 )
@@ -24,9 +24,7 @@ func New(path *string, source *string) (*scanner, error) {
 		current: 0,
 		line:    1, // beginning line of file
 	}
-	if err := scanner.init(); err != nil {
-		return nil, err
-	}
+	if err := scanner.init(); err != nil { return nil, err }
 	return scanner, nil
 }
 
@@ -43,9 +41,7 @@ func is_digit(char rune) bool {
 }
 
 func is_alpha(char rune) bool {
-	return (char >= 'a' && char <= 'z') ||
-		(char >= 'A' && char <= 'Z') ||
-		char == '_'
+	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_'
 }
 
 func is_alphanumeric(char rune) bool {
@@ -55,9 +51,7 @@ func is_alphanumeric(char rune) bool {
 func (s *scanner) init() error {
 	for !s.is_at_end() {
 		s.start = s.current
-		if err := s.scan(); err != nil {
-			return err
-		}
+		if err := s.scan(); err != nil { return err }
 	}
 	// append EOF token at end of source file
 	s.add_token(token.EOF, "")
@@ -70,7 +64,6 @@ func (s *scanner) scan() error {
 	switch char {
 	case '\n':
 		s.line += 1
-		break
 
 	// ignore the following
 	case ' ', '\r', '\t':
@@ -165,9 +158,7 @@ func (s *scanner) scan() error {
 	case '/':
 		if s.match_advance('/') {
 			// step past all remaining characters until newline
-			for s.peek() != '\n' && !s.is_at_end() {
-				s.step()
-			}
+			for s.peek() != '\n' && !s.is_at_end() { s.step() }
 			// currently at the newline char, step again and update start
 			// position to move past newline
 			s.line += 1
@@ -176,9 +167,7 @@ func (s *scanner) scan() error {
 		} else if s.match_advance('*') {
 			// keep it stepping
 			for !s.is_at_end() {
-				if s.peek() == '\n' {
-					s.line += 1
-				}
+				if s.peek() == '\n' { s.line += 1 }
 				s.step()
 
 				if s.peek() == '*' {
@@ -189,11 +178,7 @@ func (s *scanner) scan() error {
 				}
 			}
 			if s.is_at_end() {
-				return glox_err.ScanError(
-					s.path,
-					s.line,
-					"unterminated block comment",
-				)
+				return g_err.ScanError(s.path, s.line, "unterminated block comment")
 			}
 			// currently at the '/' end of newline char, step again and update
 			// start position to move past it.
@@ -213,7 +198,7 @@ func (s *scanner) scan() error {
 		} else if is_alpha(char) {
 			s.scan_identifier()
 		} else {
-			return glox_err.ScanError(s.path, s.line, "unexpected character")
+			return g_err.ScanError(s.path, s.line, "unexpected character")
 		}
 	}
 	return nil
@@ -237,16 +222,12 @@ func (s *scanner) match_advance(char rune) bool {
 }
 
 func (s *scanner) peek() rune {
-	if s.is_at_end() {
-		return '\x00' // null terminated string in go
-	}
+	if s.is_at_end() { return '\x00' /* null terminated string in go */ }
 	return rune(s.source[s.current])
 }
 
 func (s *scanner) peek_next() rune {
-	if s.current+1 >= len(s.source) {
-		return '\x00'
-	}
+	if s.current+1 >= len(s.source) { return '\x00' }
 	return rune(s.source[s.current+1])
 }
 
@@ -255,25 +236,21 @@ func (s *scanner) add_token(
 	literal string,
 ) {
 	tok := token.Token{
-		Type:    tok_type,
-		Literal: literal,
-		Start:   s.start,
-		End:     s.start + len(literal),
-		Line:    s.line,
+		Type:  tok_type,
+		Lit:   literal,
+		Start: s.start,
+		End:   s.start + len(literal),
+		Line:  s.line,
 	}
 	s.tokens = append(s.tokens, tok)
 }
 
 func (s *scanner) scan_string() error {
 	for s.peek() != '"' && !s.is_at_end() {
-		if s.peek() == '\n' {
-			s.line += 1
-		}
+		if s.peek() == '\n' { s.line += 1 }
 		s.step()
 	}
-	if s.is_at_end() {
-		return glox_err.ScanError(s.path, s.line, "unterminated string")
-	}
+	if s.is_at_end() { return g_err.ScanError(s.path, s.line, "unterminated string") }
 	// step past the end of the string to the newline char
 	s.step()
 	// trim the surrounding quotes
@@ -284,44 +261,30 @@ func (s *scanner) scan_string() error {
 
 func (s *scanner) scan_number() error {
 	is_float := false
-	for is_digit(s.peek()) {
-		s.step()
-	}
+	for is_digit(s.peek()) { s.step() }
 	// look for the fractional part of the number
 	if s.peek() == '.' && is_digit(s.peek_next()) {
 		is_float = true
 		s.step() // consume the '.'
 	}
-	for is_digit(s.peek()) {
-		s.step()
-	}
+	for is_digit(s.peek()) { s.step() }
 	value := s.source[s.start:s.current]
 	if is_float {
 		if _, err := strconv.ParseFloat(value, 64); err != nil {
-			return glox_err.ScanError(
-				s.path,
-				s.line,
-				"could not parse string value",
-			)
+			return g_err.ScanError(s.path, s.line, "could not parse string value")
 		}
 		s.add_token(token.F64, value)
 		return nil
 	}
 	if _, err := strconv.ParseInt(value, 10, 64); err != nil {
-		return glox_err.ScanError(
-			s.path,
-			s.line,
-			"could not parse string value",
-		)
+		return g_err.ScanError(s.path, s.line, "could not parse string value")
 	}
 	s.add_token(token.S64, value)
 	return nil
 }
 
 func (s *scanner) scan_identifier() {
-	for is_alphanumeric(s.peek()) {
-		s.step()
-	}
+	for is_alphanumeric(s.peek()) { s.step() }
 	value := s.source[s.start:s.current]
 	tok := token.LookupKeyword(value)
 	s.add_token(tok, value)

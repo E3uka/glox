@@ -34,8 +34,8 @@ type (
 		Args  []Expr
 	}
 	CastExpr struct {
-		To     Typ
-		From   Expr
+		To   Typ
+		From Expr
 	}
 	Ident struct {
 		Obj     *Object
@@ -45,7 +45,7 @@ type (
 		Type  Typ
 		Value string
 	}
-		ParenExpr struct {
+	ParenExpr struct {
 		Expr Expr
 	}
 	PtrExpr struct {
@@ -95,7 +95,7 @@ type (
 	DeclStmt struct {
 		Decl Decl
 	}
-	ExprStmt struct { 
+	ExprStmt struct {
 		Expr Expr
 	}
 	IfStmt struct {
