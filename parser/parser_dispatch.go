@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"glox/ast"
 	"glox/token"
 )
@@ -136,7 +135,7 @@ func nd_parse_branch_stmt(p *parser, tok token.Token) ast.Node {
 
 func nd_parse_if_stmt(p *parser, tok token.Token) ast.Node {
 	p.trace_nd("nd_if", tok)
-	predicate := p.parse_predicate()
+	predicate := p.parse_until(token.LBRACE)
 	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
 	p.expect(token.RBRACE)
 	var else_body ast.Stmt
@@ -202,7 +201,7 @@ func nd_parse_unary_expr(p *parser, tok token.Token) ast.Node {
 
 func nd_parse_while_stmt(p *parser, tok token.Token) ast.Node {
 	p.trace_nd("nd_while", tok)
-	predicate := p.parse_predicate()
+	predicate := p.parse_until(token.LBRACE)
 	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
 	return &ast.WhileStmt{Predicate: predicate, Body: body}
 }
@@ -243,7 +242,6 @@ func ld_parse_call_expr(
 	lhs ast.Node,
 ) ast.Node {
 	p.trace_ld("ld_call", tok)
-	if p.trace { fmt.Printf("ld_call: operator: %v\n", tok) }
 	lhs_ident := p.as_ident(lhs)
 	lhs_ident.Obj.Kind = ast.Procedure
 	args := p.parse_call_args()
@@ -327,24 +325,25 @@ func(p *parser) parse_call_args() []ast.Expr {
 	return args
 }
 
-func (p *parser) parse_field_list() []*ast.Field {
-	p.expect(token.LBRACE)
-	fields := []*ast.Field{}
-	for p.peek().Type != token.RBRACE {
-		if p.peek().Type == token.SEMICOLON {
-			p.expect(token.SEMICOLON)
+func (p *parser) parse_fields_between(
+	left, right, delimiter token.TokenType,
+) *ast.Fields {
+	p.expect(left)
+	fields := ast.Fields{}
+	for p.peek().Type != right {
+		if p.peek().Type == token.SEMICOLON || p.peek().Type == token.COMMA {
+			p.advance()
 			continue
 		}
 		name := p.parse_basic_ident(p.peek().Type)
-		p.expect(token.COLON)
+		p.expect(delimiter)
 		typ := p.get_type(p.peek())
 		name.Obj.Kind = ast.Type
 		name.Obj.Type = typ
 		p.advance() // step past type
-		field := &ast.Field{Names: []*ast.Ident{name}}
-		fields = append(fields, field)
+		fields.Names = append(fields.Names, name)
 	}
-	return fields
+	return &fields
 }
 
 func (p *parser) parse_generic_declaration(
@@ -391,8 +390,12 @@ func (p *parser) parse_procedure_declaration(
 	operator token.TokenType,
 ) *ast.ProcedureDecl {
 	lhs_ident.Obj.Kind = ast.Procedure
-	args := p.parse_procedure_args(lhs_ident.Obj.Name)
-	lhs_ident.Obj.Decl = args
+	fields := p.parse_fields_between(token.LPAREN, token.RPAREN, token.COLON)
+	env := ast.Environment{}
+	for _, arg := range fields.Names {
+		env[arg.Obj.Name] = append(env[arg.Obj.Name], arg.Obj)
+	}
+	lhs_ident.Obj.Decl = env
 	p.expect(token.RPAREN)
 	var typ ast.Typ
 	if p.peek().Type == token.FUNRETURN {
@@ -434,9 +437,9 @@ func (p *parser) parse_struct_declaration(
 	operator token.TokenType,
 ) *ast.BasicDecl {
 	p.expect(token.STRUCT)
-	field_list := p.parse_field_list()
+	fields := p.parse_fields_between(token.LBRACE, token.RBRACE, token.COLON)
 	p.expect(token.RBRACE)
-	struct_type := &ast.StructType{Fields: field_list}
+	struct_type := &ast.StructType{Fields: fields}
 	return &ast.BasicDecl{Ident: lhs_ident, Value: struct_type}
 }
 
@@ -489,6 +492,18 @@ func (p *parser) try_make_statement(node ast.Node) ast.Stmt {
 	return stmt
 }
 
+func(p *parser) parse_until(tok token.TokenType) ast.Expr {
+	tokens := []token.Token{}
+	for p.peek().Type != tok {
+		tokens = append(tokens, p.peek())
+		p.advance()
+	}
+	tokens = append(tokens, token.Token{Type: token.EOF, Literal: ""})
+	sub_parser := New(p.path, &tokens)
+	predicate := sub_parser.parse_node(LOWEST)
+	return p.as_expr(predicate)
+}
+
 /* PARSER GENERIC UTILS */
 
 func (p *parser) get_type(tok token.Token) ast.Typ {
@@ -504,7 +519,7 @@ func (p *parser) get_type(tok token.Token) ast.Typ {
 		typ = ast.NullType
 	case token.STRING, token.STRINGTYPE:
 		typ = ast.StringType
-	case token.LBRACE:
+	case token.EOF, token.LBRACE, token.SEMICOLON:
 		p.report_parse_error(tok, "%v expected type")
 	default:
 		// TODO: simple solution for now, could embed the type here or

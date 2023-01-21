@@ -61,7 +61,7 @@ type (
 		Rhs      Expr
 	}
 	StructType struct {
-		Fields []*Field
+		Fields *Fields
 	}
 )
 
@@ -133,14 +133,14 @@ type (
 func (*BasicDecl)     decl_node() {}
 func (*ProcedureDecl) decl_node() {}
 
-type Field struct {
+type Fields struct {
 	Names []*Ident
 }
 
 type Object struct {
 	Kind ObjKind
 	Name string
-	Decl any // Field, FuncDecl, AssignStmt, Scope; or nil
+	Decl any // Field, FuncDecl, AssignStmt, Environment; or nil
 	Data any // Expr, object-specific data; or nil
 	Type any // may be nil
 }
