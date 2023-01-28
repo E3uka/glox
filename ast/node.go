@@ -39,7 +39,6 @@ type (
 	}
 	Ident struct {
 		Obj     *Object
-		Mutable bool
 	}
 	LiteralExpr struct {
 		Type  Typ
@@ -140,39 +139,3 @@ func (*ProcedureDecl) decl_node() {}
 type Fields struct {
 	Names []*Ident
 }
-
-type Object struct {
-	Kind ObjKind
-	Name string
-	Decl any // Field, FuncDecl, AssignStmt, Environment; or nil
-	Data any // Expr, object-specific data; or nil
-	Type any // may be nil
-}
-
-type ObjKind uint
-
-const (
-	Constant ObjKind = iota
-	Procedure
-	Type
-	Variable
-	Interface
-)
-
-type Typ uint
-
-const (
-	BoolType Typ = iota
-	NullType
-	F64Type
-	S64Type
-	StringType
-	Custom
-)
-
-type Scope struct {
-	Env *Environment
-	Parent *Scope
-}
-
-type Environment map[string][]*Object
