@@ -6,12 +6,12 @@ import (
 )
 
 type resolver struct {
-	local      *Scope
-	procedure  *Scope
+	local     *Scope
+	procedure *Scope
 	// unresolved []*Ident
 }
 
-func new_resolver() *resolver {
+func scope_resolver() *resolver {
 	local_scope := new_scope(nil)
 	proc_scope := new_scope(nil)
 	return &resolver{local: local_scope, procedure: proc_scope}
@@ -19,11 +19,12 @@ func new_resolver() *resolver {
 
 func new_object_from(ident *Ident) *Object {
 	return &Object{
-		Kind: ident.Obj.Kind,
-		Name: ident.Obj.Name,
+		Kind:    ident.Obj.Kind,
+		Name:    ident.Obj.Name,
 		Mutable: ident.Obj.Mutable,
 	}
 }
+
 // associates a ident with its subsequent data
 func (r *resolver) declare(ident *Ident, data, decl any) {
 	if ident.Obj.Data != nil {
@@ -32,7 +33,9 @@ func (r *resolver) declare(ident *Ident, data, decl any) {
 	obj := new_object_from(ident)
 	obj.Data = data
 	obj.Decl = decl
-	if _, ok := decl.(*ast.Ident); !ok { ident.Obj = obj }
+	if _, ok := decl.(*ast.Ident); !ok {
+		ident.Obj = obj
+	}
 
 	if ins := r.local.Insert(obj); ins == obj {
 		panic(fmt.Sprintf("already inserted %v\n", ins))
@@ -84,7 +87,9 @@ func (r *resolver) Visit(node Node) Visitor {
 	case *IfStmt:
 		Walk(r, n.Predicate)
 		Walk(r, n.Body)
-		if n.Else != nil { Walk(r, n.Else) }
+		if n.Else != nil {
+			Walk(r, n.Else)
+		}
 	case *ReturnStmt:
 		Walk(r, n.Result)
 	case *WhileStmt:
