@@ -134,12 +134,11 @@ func (p *parser) parse_node(prior_precedence precedence) ast.Node {
 	// precedence calculations) and the top level expresssion but only if the
 	// subexpression has a higher precedence (binding power)
 	for !p.is_at_end() && prior_precedence < prec_map[p.peek().Type] {
-	INNER:
 		cur_tok = p.peek()
 		// skip past '}'
 		if cur_tok.Type == token.RBRACE {
 			cur_tok = p.advance()
-			goto INNER
+			continue
 		}
 		// terminate at ';'
 		if cur_tok.Type == token.SEMICOLON {
