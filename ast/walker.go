@@ -8,7 +8,7 @@ type Visitor interface {
 	Visit(node Node) (Visitor)
 }
 
-/* Helper methods for tree walker */
+/* WALK HELPERS */
 
 func WalkIdentList(v Visitor, list []*Ident) {
 	for _, i := range list { Walk(v, i) }
@@ -26,11 +26,11 @@ func WalkDeclList(v Visitor, list []Decl) {
 	for _, i := range list { Walk(v, i) }
 }
 
-// walks the abstract syntax tree visiting each node
 func Walk(v Visitor, node Node) {
+	// calls the visit method with the node element in question, this produces
+	// a visitor that can be called on the children nodes of the ast tree - if
+	// there is no visit method defined for a specific node, nothing is invoked.
 	if v = v.Visit(node); v == nil { return }
-
-	// walk the ast visiting nodes that require further coercion
 
 	switch n := node.(type) {
 	/* Fields */
