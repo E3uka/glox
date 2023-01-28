@@ -16,7 +16,7 @@ type parser struct {
 }
 
 func New(path *string, tokens *[]token.Token) *parser {
-	parser := &parser{path: path, tokens: *tokens, current: 0, expr: nil, trace: true}
+	parser := &parser{path: path, tokens: *tokens, current: 0, expr: nil, trace: false}
 	return parser
 }
 

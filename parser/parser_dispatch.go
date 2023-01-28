@@ -152,10 +152,18 @@ func nd_parse_ident_expr(p *parser, tok token.Token) ast.Node {
 	if tok.Type == token.CONST {
 		ident_expr := p.parse_basic_ident(tok.Type)
 		ident_expr.Obj.Kind = ast.Constant
-		ident_expr.Mutable = false
+		ident_expr.Obj.Mutable = false
 		return ident_expr
 	}
-	return &ast.Ident{Obj: &ast.Object{Kind: ast.Variable, Name: tok.Lit}, Mutable: true}
+	typ := p.get_type(tok)
+	return &ast.Ident{
+		Obj: &ast.Object{
+			Kind: ast.Variable,
+			Name: tok.Lit,
+			Type: typ,
+			Mutable: true,
+		},
+	}
 }
 
 func nd_parse_literal_expr(p *parser, tok token.Token) ast.Node {
@@ -219,7 +227,7 @@ func ld_parse_binary_expr(p *parser, tok token.TokenType, lhs ast.Node) ast.Node
 func ld_parse_call_expr(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 	p.trace_ld("ld_call", tok)
 	lhs_ident := p.as_ident(lhs)
-	lhs_ident.Obj.Kind = ast.Procedure
+	lhs_ident.Obj.Kind = ast.Call
 	args := p.parse_call_args()
 	p.expect(token.RPAREN)
 	return &ast.CallExpr{Ident: lhs_ident, Args: args}
@@ -251,7 +259,7 @@ func ld_parse_decl_stmt(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 			decl = p.parse_interface_declaration(lhs_ident, tok)
 		}
 	case token.WALRUS:
-		decl = p.parse_generic_declaration(lhs_ident, tok)
+		decl = p.parse_basic_decl(lhs_ident, tok)
 	}
 	return &ast.DeclStmt{Decl: decl}
 }
@@ -272,6 +280,14 @@ func ld_parse_unary_expr(p *parser, tok token.TokenType, lhs ast.Node) ast.Node 
 }
 
 /* PARSER SPECIFIC UTILS */
+
+func (p *parser) parse_basic_decl(
+	lhs_ident *ast.Ident,
+	operator token.TokenType,
+) *ast.BasicDecl {
+	rhs_expr := p.parse_basic_expr(operator)
+	return &ast.BasicDecl{Ident: lhs_ident, Value: rhs_expr}
+}
 
 func (p *parser) parse_call_args() []ast.Expr {
 	p.expect(token.LPAREN)
@@ -305,15 +321,6 @@ func (p *parser) parse_fields_between(left, right, delim token.TokenType) *ast.F
 		fields.Names = append(fields.Names, name)
 	}
 	return &fields
-}
-
-func (p *parser) parse_generic_declaration(
-	lhs_ident *ast.Ident,
-	operator token.TokenType,
-) *ast.BasicDecl {
-	lhs_ident.Obj.Kind = ast.Variable
-	rhs_expr := p.parse_basic_expr(operator)
-	return &ast.BasicDecl{Ident: lhs_ident, Value: rhs_expr}
 }
 
 func (p *parser) parse_interface_declaration(
@@ -361,9 +368,7 @@ func (p *parser) parse_procedure_declaration(
 	lhs_ident.Obj.Kind = ast.Procedure
 	fields := p.parse_fields_between(token.LPAREN, token.RPAREN, token.COLON)
 	env := ast.Environment{}
-	for _, arg := range fields.Names {
-		env[arg.Obj.Name] = append(env[arg.Obj.Name], arg.Obj)
-	}
+	for _, arg := range fields.Names {  env[arg.Obj.Name] = arg.Obj }
 	lhs_ident.Obj.Decl = env
 	p.expect(token.RPAREN)
 	var typ ast.Typ
