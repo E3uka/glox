@@ -1,20 +1,15 @@
 package ast
 
-import (
-	"fmt"
-	"go/ast"
-)
+import "fmt"
 
 type resolver struct {
 	local     *Scope
-	procedure *Scope
-	// unresolved []*Ident
+	unresolved []*Ident
 }
 
 func scope_resolver() *resolver {
-	local_scope := new_scope(nil)
-	proc_scope := new_scope(nil)
-	return &resolver{local: local_scope, procedure: proc_scope}
+	local := new_scope(nil)
+	return &resolver{local: local}
 }
 
 func new_object_from(ident *Ident) *Object {
@@ -25,27 +20,30 @@ func new_object_from(ident *Ident) *Object {
 	}
 }
 
-// associates a ident with its subsequent data
 func (r *resolver) declare(ident *Ident, data, decl any) {
-	if ident.Obj.Data != nil {
-		panic("already declared identifier")
-	}
+	if ident.Obj.Data != nil { panic("already declared identifier") }
 	obj := new_object_from(ident)
 	obj.Data = data
 	obj.Decl = decl
-	if _, ok := decl.(*ast.Ident); !ok {
-		ident.Obj = obj
-	}
-
+	if _, ok := decl.(*Ident); !ok { ident.Obj = obj }
+	// TODO: if the ident is a procedure this should bubble up and live at
+	// the 'highest' parent scope.
 	if ins := r.local.Insert(obj); ins == obj {
 		panic(fmt.Sprintf("already inserted %v\n", ins))
 	}
 }
 
 func (r *resolver) resolve_ident(ident *Ident) {
-	for s := r.local; s != nil; s = s.Parent {
-		s.Find(ident.Obj.Name)
+	for cur_scope := r.local; cur_scope != nil; cur_scope = cur_scope.Parent {
+		if item := cur_scope.Find(ident.Obj.Name); item != nil {
+			return // found declaration in either local or parent scope
+		}
 	}
+	marked_unresolved := false
+	for _, entry := range r.unresolved {
+		if entry == ident { marked_unresolved = true}
+	}
+	if !marked_unresolved { r.unresolved = append(r.unresolved, ident) }
 }
 
 // resolves identifiers into an environment scope for lookup

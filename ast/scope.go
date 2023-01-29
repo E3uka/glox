@@ -8,7 +8,7 @@ type Scope struct {
 type Environment map[string]*Object
 
 func new_scope(parent *Scope) *Scope {
-	return &Scope{Local: Environment{}, Parent: parent}
+	return &Scope{Local: make(Environment, 4), Parent: parent}
 }
 
 func (s *Scope) Find(name string) *Object { return s.Local[name] }

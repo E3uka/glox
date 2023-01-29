@@ -25,8 +25,12 @@ func (i *interpreter) Interpret() {
 		// Walk(types, n)
 	}
 	for _, val := range scopes.local.Local {
-		json, _ := json.Marshal(val)
-		fmt.Printf("%s\n\n", json)
+		local_scope, _ := json.Marshal(val)
+		fmt.Printf("local scope: %s\n\n", local_scope)
+	}
+	for _, val := range scopes.unresolved {
+		json, _ := json.Marshal(val.Obj)
+		fmt.Printf("unresolved: %s\n\n", json)
 	}
 
 	// eval(scopes, types)
