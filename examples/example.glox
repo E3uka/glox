@@ -83,8 +83,8 @@ where := &value;
 there := *where;
 
 /*
+TODO: simple type resolution
+TODO: compile to LLVM IR
 TODO: ImplBlocks, FuncType (first class functions)
-
-TODO: end semicolon error messages
 TODO: chore: character start locations for error messages
 */

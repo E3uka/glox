@@ -17,7 +17,7 @@ func New(path *string, nodes []Node) *interpreter {
 // Walks the abstract syntax tree mutliple times each time resolving
 // individual pieces needed to build-up and evaluate the program.
 func (i *interpreter) Interpret() {
-	scopes := scope_resolver()
+	scopes := sc_walker()
 	// types := type_resolver()
 
 	for _, n := range i.nodes {
@@ -32,6 +32,5 @@ func (i *interpreter) Interpret() {
 		json, _ := json.Marshal(val.Obj)
 		fmt.Printf("unresolved: %s\n\n", json)
 	}
-
-	// eval(scopes, types)
+	// compile to llvm IR
 }
