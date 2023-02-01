@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	g_err "glox/error"
 	"glox/token"
 	"strconv"
@@ -59,7 +60,7 @@ func (s *scanner) is_at_end() bool { return s.current >= len(s.source) }
 
 func (s *scanner) step() rune {
 	s.current += 1
-	return rune(s.source[s.current-1])
+		return rune(s.source[s.current-1])
 }
 
 func (s *scanner) match_advance(char rune) bool {
@@ -224,7 +225,11 @@ func (s *scanner) scan() {
 		} else if is_alpha(char) {
 			s.scan_identifier()
 		} else {
-			g_err.ScanPanic(s.path, s.line, "unexpected character")
+			g_err.ScanPanic(
+				s.path,
+				s.line,
+				fmt.Sprintf("unexpected character %v", string(char)),
+			)
 		}
 	}
 }
