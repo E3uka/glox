@@ -15,8 +15,8 @@ type scanner struct {
 	line    int
 }
 
-func New(path *string, source *string) (*scanner, error) {
-	scanner := &scanner{
+func New(path *string, source *string) *scanner {
+	return &scanner{
 		path:    path,
 		source:  *source,
 		tokens:  []token.Token{},
@@ -24,41 +24,67 @@ func New(path *string, source *string) (*scanner, error) {
 		current: 0,
 		line:    1, // beginning line of file
 	}
-	if err := scanner.init(); err != nil { return nil, err }
-	return scanner, nil
-}
-
-func (s *scanner) Tokens() *[]token.Token {
-	return &s.tokens
-}
-
-func (s *scanner) is_at_end() bool {
-	return s.current >= len(s.source)
-}
-
-func is_digit(char rune) bool {
-	return char >= '0' && char <= '9'
 }
 
 func is_alpha(char rune) bool {
-	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_'
+	return (char >= 'a' && char <= 'z') ||
+		(char >= 'A' && char <= 'Z') ||
+		char == '_'
+}
+func is_alphanumeric(char rune) bool { return is_alpha(char) || is_digit(char) }
+func is_digit(char rune) bool { return char >= '0' && char <= '9' }
+
+func (s *scanner) add_token( tok_type token.TokenType, literal string) {
+	tok := token.Token{
+		Type:  tok_type,
+		Lit:   literal,
+		Start: s.start,
+		End:   s.start + len(literal),
+		Line:  s.line,
+	}
+	s.tokens = append(s.tokens, tok)
 }
 
-func is_alphanumeric(char rune) bool {
-	return is_alpha(char) || is_digit(char)
-}
-
-func (s *scanner) init() error {
+func (s *scanner) Tokens() *[]token.Token {
 	for !s.is_at_end() {
 		s.start = s.current
-		if err := s.scan(); err != nil { return err }
+		s.scan()
 	}
 	// append EOF token at end of source file
 	s.add_token(token.EOF, "")
-	return nil
+	return &s.tokens
 }
 
-func (s *scanner) scan() error {
+func (s *scanner) is_at_end() bool { return s.current >= len(s.source) }
+
+func (s *scanner) step() rune {
+	s.current += 1
+	return rune(s.source[s.current-1])
+}
+
+func (s *scanner) match_advance(char rune) bool {
+	if s.is_at_end() {
+		return false
+	} else if rune(s.source[s.current]) != char {
+		return false
+	} else {
+		// a match is found, it is safe to step
+		s.current += 1
+		return true
+	}
+}
+
+func (s *scanner) peek() rune {
+	if s.is_at_end() { return '\x00' /* null terminated string in go */ }
+	return rune(s.source[s.current])
+}
+
+func (s *scanner) peek_next() rune {
+	if s.current+1 >= len(s.source) { return '\x00' }
+	return rune(s.source[s.current+1])
+}
+
+func (s *scanner) scan() {
 	char := s.step()
 
 	switch char {
@@ -169,7 +195,6 @@ func (s *scanner) scan() error {
 			for !s.is_at_end() {
 				if s.peek() == '\n' { s.line += 1 }
 				s.step()
-
 				if s.peek() == '*' {
 					if s.peek_next() == '/' {
 						s.step()
@@ -178,7 +203,7 @@ func (s *scanner) scan() error {
 				}
 			}
 			if s.is_at_end() {
-				return g_err.ScanError(s.path, s.line, "unterminated block comment")
+				g_err.ScanPanic(s.path, s.line, "unterminated block comment")
 			}
 			// currently at the '/' end of newline char, step again and update
 			// start position to move past it.
@@ -188,78 +213,30 @@ func (s *scanner) scan() error {
 			s.add_token(token.QUO, "/")
 		}
 
-		// string literals
+	// string literals
 	case '"':
 		s.scan_string()
 
+	// number or identifier
 	default:
 		if is_digit(char) {
 			s.scan_number()
 		} else if is_alpha(char) {
 			s.scan_identifier()
 		} else {
-			return g_err.ScanError(s.path, s.line, "unexpected character")
+			g_err.ScanPanic(s.path, s.line, "unexpected character")
 		}
 	}
-	return nil
 }
 
-func (s *scanner) step() rune {
-	s.current += 1
-	return rune(s.source[s.current-1])
+func (s *scanner) scan_identifier() {
+	for is_alphanumeric(s.peek()) { s.step() }
+	value := s.source[s.start:s.current]
+	tok := token.LookupKeyword(value)
+	s.add_token(tok, value)
 }
 
-func (s *scanner) match_advance(char rune) bool {
-	if s.is_at_end() {
-		return false
-	} else if rune(s.source[s.current]) != char {
-		return false
-	} else {
-		// a match is found, it is safe to step
-		s.current += 1
-		return true
-	}
-}
-
-func (s *scanner) peek() rune {
-	if s.is_at_end() { return '\x00' /* null terminated string in go */ }
-	return rune(s.source[s.current])
-}
-
-func (s *scanner) peek_next() rune {
-	if s.current+1 >= len(s.source) { return '\x00' }
-	return rune(s.source[s.current+1])
-}
-
-func (s *scanner) add_token(
-	tok_type token.TokenType,
-	literal string,
-) {
-	tok := token.Token{
-		Type:  tok_type,
-		Lit:   literal,
-		Start: s.start,
-		End:   s.start + len(literal),
-		Line:  s.line,
-	}
-	s.tokens = append(s.tokens, tok)
-}
-
-func (s *scanner) scan_string() error {
-	for s.peek() != '"' && !s.is_at_end() {
-		if s.peek() == '\n' { s.line += 1 }
-		s.step()
-	}
-	if s.is_at_end() { return g_err.ScanError(s.path, s.line, "unterminated string") }
-	// step past the end of the string to the newline char
-	s.step()
-	// trim the surrounding quotes
-	value := s.source[s.start+1 : s.current-1]
-	s.add_token(token.STRING, value)
-	return nil
-}
-
-func (s *scanner) scan_number() error {
+func (s *scanner) scan_number() {
 	is_float := false
 	for is_digit(s.peek()) { s.step() }
 	// look for the fractional part of the number
@@ -271,21 +248,26 @@ func (s *scanner) scan_number() error {
 	value := s.source[s.start:s.current]
 	if is_float {
 		if _, err := strconv.ParseFloat(value, 64); err != nil {
-			return g_err.ScanError(s.path, s.line, "could not parse string value")
+			g_err.ScanPanic(s.path, s.line, "could not parse string value")
 		}
 		s.add_token(token.F64, value)
-		return nil
+		return
 	}
 	if _, err := strconv.ParseInt(value, 10, 64); err != nil {
-		return g_err.ScanError(s.path, s.line, "could not parse string value")
+		g_err.ScanPanic(s.path, s.line, "could not parse string value")
 	}
 	s.add_token(token.S64, value)
-	return nil
 }
 
-func (s *scanner) scan_identifier() {
-	for is_alphanumeric(s.peek()) { s.step() }
-	value := s.source[s.start:s.current]
-	tok := token.LookupKeyword(value)
-	s.add_token(tok, value)
+func (s *scanner) scan_string() {
+	for s.peek() != '"' && !s.is_at_end() {
+		if s.peek() == '\n' { s.line += 1 }
+		s.step()
+	}
+	if s.is_at_end() { g_err.ScanPanic(s.path, s.line, "unterminated string") }
+	// step past the end of the string to the newline char
+	s.step()
+	// trim the surrounding quotes
+	value := s.source[s.start+1 : s.current-1]
+	s.add_token(token.STRING, value)
 }

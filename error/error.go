@@ -1,21 +1,17 @@
 package error
 
-import (
-	"errors"
-	"fmt"
-)
+import "fmt"
 
 var (
-	LEX_ERROR bool = false
-	PARSE_ERROR bool = false
+	SCAN_ERROR    bool = false
+	PARSE_ERROR   bool = false
 	RUNTIME_ERROR bool = false
 )
 
-func ScanError(path *string, line int, reason string) error {
-	LEX_ERROR = true
+func ScanPanic(path *string, line int, reason string) {
+	SCAN_ERROR = true
 	msg := fmt.Sprintf("%s:%d: %s\n", *path, line, reason)
-	fmt.Printf(msg)
-	return errors.New(msg)
+	panic(msg)
 }
 
 func ParsePanic(path *string, line int, reason string) {
