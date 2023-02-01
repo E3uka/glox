@@ -158,9 +158,9 @@ func nd_parse_ident_expr(p *parser, tok token.Token) ast.Node {
 	typ := p.get_type(tok)
 	return &ast.Ident{
 		Obj: &ast.Object{
-			Kind: ast.Variable,
-			Name: tok.Lit,
-			Type: typ,
+			Name:    tok.Lit,
+			Kind:    ast.Variable,
+			Type:    typ,
 			Mutable: true,
 		},
 	}
@@ -348,7 +348,7 @@ func (p *parser) parse_interface_method() *ast.Ident {
 	ident := p.as_ident(p.parse_until(token.LPAREN))
 	fields := p.parse_fields_between(token.LPAREN, token.RPAREN, token.COLON)
 	p.expect(token.RPAREN)
-	var return_type ast.Typ
+	var return_type ast.ObjectType
 	if p.peek().Type == token.FUNRETURN {
 		p.expect(token.FUNRETURN)
 		return_type = p.get_type(p.peek())
@@ -371,7 +371,7 @@ func (p *parser) parse_procedure_declaration(
 	for _, arg := range fields.Names {  env[arg.Obj.Name] = arg.Obj }
 	lhs_ident.Obj.Decl = env
 	p.expect(token.RPAREN)
-	var typ ast.Typ
+	var typ ast.ObjectType
 	if p.peek().Type == token.FUNRETURN {
 		p.expect(token.FUNRETURN)
 		typ = p.get_type(p.peek())
@@ -472,8 +472,8 @@ func (p *parser) parse_until(tok token.TokenType) ast.Expr {
 
 /* PARSER GENERIC UTILS */
 
-func (p *parser) get_type(tok token.Token) ast.Typ {
-	var typ ast.Typ
+func (p *parser) get_type(tok token.Token) ast.ObjectType {
+	var typ ast.ObjectType
 	switch tok.Type {
 	case token.FALSE, token.TRUE, token.BOOLTYPE:
 		typ = ast.BoolType

@@ -1,9 +1,9 @@
 package ast
 
-type ObjKind uint
+type ObjectKind int
 
 const (
-	Constant ObjKind = iota
+	Constant ObjectKind = iota
 	Procedure
 	Call
 	Type
@@ -11,10 +11,10 @@ const (
 	Interface
 )
 
-type Typ uint
+type ObjectType int
 
 const (
-	BoolType Typ = iota
+	BoolType ObjectType = iota
 	NullType
 	F64Type
 	S64Type
@@ -23,10 +23,10 @@ const (
 )
 
 type Object struct {
-	Kind ObjKind
-	Name string
+	Name    string
+	Kind    ObjectKind
+	Type    ObjectType // may be set, nil; or later inferred
 	Mutable bool
-	Decl any // Field, FuncDecl, AssignStmt, Environment; or nil
-	Data any // Object-specific data or nil; added during resolution pass
-	Type Typ // may be set, nil; or later inferred
+	Decl    any        // Field, FuncDecl, AssignStmt, Environment; or nil
+	Data    any        // Object-specific data or nil; added during resolution pass
 }

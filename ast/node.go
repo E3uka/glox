@@ -34,14 +34,14 @@ type (
 		Args  []Expr
 	}
 	CastExpr struct {
-		To   Typ
+		To   ObjectType
 		From Expr
 	}
 	Ident struct {
-		Obj     *Object
+		Obj *Object
 	}
 	LiteralExpr struct {
-		Type  Typ
+		Type  ObjectType
 		Value string
 	}
 	ParenExpr struct {
@@ -64,6 +64,9 @@ type (
 	}
 	StructType struct {
 		Fields *Fields
+	}
+	Fields struct {
+		Names []*Ident
 	}
 )
 
@@ -135,7 +138,3 @@ type (
 // ensures only decl_node types can be assigned to Decl
 func (*BasicDecl)     decl_node() {}
 func (*ProcedureDecl) decl_node() {}
-
-type Fields struct {
-	Names []*Ident
-}
