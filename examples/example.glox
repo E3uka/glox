@@ -58,7 +58,7 @@ Connection.address;
 Connection.add_user(user123, "GMT");
 Connection.count += 1;
 
-Reader :: interface {
+Reader :: trait {
 	// read into buffer returning len
 	read(reader: Reader, buffer: Buffer) -> s64;
 

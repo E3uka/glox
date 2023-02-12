@@ -255,8 +255,8 @@ func ld_parse_decl_stmt(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 			decl = p.parse_struct_declaration(lhs_ident, tok)
 		case token.LPAREN:
 			decl = p.parse_procedure_declaration(lhs_ident, tok)
-		case token.INTERFACE:
-			decl = p.parse_interface_declaration(lhs_ident, tok)
+		case token.TRAIT:
+			decl = p.parse_trait_declaration(lhs_ident, tok)
 		}
 	case token.WALRUS:
 		decl = p.parse_basic_decl(lhs_ident, tok)
@@ -323,28 +323,7 @@ func (p *parser) parse_fields_between(left, right, delim token.TokenType) *ast.F
 	return &fields
 }
 
-func (p *parser) parse_interface_declaration(
-	lhs_ident *ast.Ident,
-	operator token.TokenType,
-) *ast.BasicDecl {
-	lhs_ident.Obj.Kind = ast.Interface
-	p.expect(token.INTERFACE)
-	p.expect(token.LBRACE)
-	fields := ast.Fields{}
-	for p.peek().Type != token.RBRACE {
-		if p.peek().Type == token.SEMICOLON {
-			p.expect(token.SEMICOLON)
-			continue
-		}
-		method_ident := p.parse_interface_method()
-		fields.Names = append(fields.Names, method_ident)
-	}
-	p.expect(token.RBRACE)
-	iface_type := &ast.IfaceType{Methods: &fields}
-	return &ast.BasicDecl{Ident: lhs_ident, Value: iface_type}
-}
-
-func (p *parser) parse_interface_method() *ast.Ident {
+func (p *parser) parse_trait_method() *ast.Ident {
 	ident := p.as_ident(p.parse_until(token.LPAREN))
 	fields := p.parse_fields_between(token.LPAREN, token.RPAREN, token.COLON)
 	p.expect(token.RPAREN)
@@ -413,6 +392,27 @@ func (p *parser) parse_struct_declaration(
 	p.expect(token.RBRACE)
 	struct_type := &ast.StructType{Fields: fields}
 	return &ast.BasicDecl{Ident: lhs_ident, Value: struct_type}
+}
+
+func (p *parser) parse_trait_declaration(
+	lhs_ident *ast.Ident,
+	operator token.TokenType,
+) *ast.BasicDecl {
+	lhs_ident.Obj.Kind = ast.Interface
+	p.expect(token.TRAIT)
+	p.expect(token.LBRACE)
+	fields := ast.Fields{}
+	for p.peek().Type != token.RBRACE {
+		if p.peek().Type == token.SEMICOLON {
+			p.expect(token.SEMICOLON)
+			continue
+		}
+		method_ident := p.parse_trait_method()
+		fields.Names = append(fields.Names, method_ident)
+	}
+	p.expect(token.RBRACE)
+	iface_type := &ast.IfaceType{Methods: &fields}
+	return &ast.BasicDecl{Ident: lhs_ident, Value: iface_type}
 }
 
 func (p *parser) parse_typed_declaration(
