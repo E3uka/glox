@@ -41,15 +41,11 @@ func new_object_from(ident *Ident) *Object {
 }
 
 func (sw *scope_walker) declare(ident *Ident, data, decl any) {
-	if ident.Obj.Data != nil {
-		panic("already declared identifier")
-	}
+	if ident.Obj.Data != nil { panic("already declared identifier") }
 	obj := new_object_from(ident)
 	obj.Data = data
 	obj.Decl = decl
-	if _, ok := decl.(*Ident); !ok {
-		ident.Obj = obj
-	}
+	if _, ok := decl.(*Ident); !ok { ident.Obj = obj }
 	// TODO: if the ident is a procedure this should bubble up and live at
 	// the 'highest' parent scope.
 	if ins := sw.local.Insert(obj); ins == obj {
@@ -65,13 +61,9 @@ func (sw *scope_walker) resolve_ident(ident *Ident) {
 	}
 	marked_unresolved := false
 	for _, entry := range sw.unresolved {
-		if entry == ident {
-			marked_unresolved = true
-		}
+		if entry == ident { marked_unresolved = true }
 	}
-	if !marked_unresolved {
-		sw.unresolved = append(sw.unresolved, ident)
-	}
+	if !marked_unresolved { sw.unresolved = append(sw.unresolved, ident) }
 }
 
 // resolves identifiers into an environment scope for lookup
@@ -96,7 +88,7 @@ func (sw *scope_walker) Visit(node Node) Visitor {
 	case *UnOp:
 		Walk(sw, n.Rhs)
 	case *IfaceType:
-		Walk(sw, n.Methods)
+		for _, f := range n.Methods.Names { sw.declare(f, nil, nil) }
 	case *StructType:
 		Walk(sw, n.Fields)
 
@@ -113,9 +105,7 @@ func (sw *scope_walker) Visit(node Node) Visitor {
 	case *IfStmt:
 		Walk(sw, n.Predicate)
 		Walk(sw, n.Body)
-		if n.Else != nil {
-			Walk(sw, n.Else)
-		}
+		if n.Else != nil { Walk(sw, n.Else) }
 	case *ReturnStmt:
 		Walk(sw, n.Result)
 	case *WhileStmt:

@@ -59,6 +59,7 @@ type (
 		Operator token.TokenType
 		Rhs      Expr
 	}
+	ProcType struct {/* TODO */}
 	IfaceType struct {
 		Methods *Fields
 	}
