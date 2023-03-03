@@ -20,17 +20,23 @@ func (i *interpreter) Interpret() {
 	scopes := sc_walker()
 	// types := type_resolver()
 
+	// invoke the various walker methods
 	for _, n := range i.nodes {
 		Walk(scopes, n)
 		// Walk(types, n)
 	}
-	for _, val := range scopes.local.Local {
-		local_scope, _ := json.Marshal(val)
+	for _, item := range scopes.scope.Local {
+		local_scope, _ := json.Marshal(item)
 		fmt.Printf("local scope: %s\n\n", local_scope)
 	}
-	for _, val := range scopes.unresolved {
-		json, _ := json.Marshal(val.Obj)
+	for _, item := range scopes.scope.Parent.Local {
+		parent_scope, _ := json.Marshal(item)
+		fmt.Printf("parent scope: %s\n\n", parent_scope)
+	}
+	for _, item := range scopes.unresolved {
+		json, _ := json.Marshal(item.Obj)
 		fmt.Printf("unresolved: %s\n\n", json)
 	}
-	// compile to llvm IR
+
+	// TODO: compile to LLVM IR
 }

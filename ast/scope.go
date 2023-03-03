@@ -15,21 +15,22 @@ func new_scope(parent *Scope) *Scope {
 
 func (s *Scope) Find(name string) *Object { return s.Local[name] }
 
-func (s *Scope) Insert(obj *Object) (return_obj *Object) {
-	if return_obj = s.Local[obj.Name]; return_obj == nil {
-		s.Local[obj.Name] = obj
+func (env Environment) Inject(obj *Object) (return_obj *Object) {
+	if return_obj = env[obj.Name]; return_obj == nil {
+		env[obj.Name] = obj
 	}
 	return
 }
 
 type scope_walker struct {
-	local      *Scope
+	scope      *Scope
 	unresolved []*Ident
 }
 
 func sc_walker() *scope_walker {
-	local := new_scope(nil)
-	return &scope_walker{local: local}
+	parent := new_scope(nil)
+	local := new_scope(parent)
+	return &scope_walker{scope: local}
 }
 
 func new_object_from(ident *Ident) *Object {
@@ -46,15 +47,20 @@ func (sw *scope_walker) declare(ident *Ident, data, decl any) {
 	obj.Data = data
 	obj.Decl = decl
 	if _, ok := decl.(*Ident); !ok { ident.Obj = obj }
-	// TODO: if the ident is a procedure this should bubble up and live at
-	// the 'highest' parent scope.
-	if ins := sw.local.Insert(obj); ins == obj {
-		panic(fmt.Sprintf("already inserted %v\n", ins))
+	// procedures must live at the highest possible scope to be accessible
+	if ident.Obj.Kind == Procedure {
+		if ins := sw.scope.Parent.Local.Inject(obj); ins == obj {
+			panic(fmt.Sprintf("already inserted %v\n", ins))
+		}
+	} else {
+		if ins := sw.scope.Local.Inject(obj); ins == obj {
+			panic(fmt.Sprintf("already inserted %v\n", ins))
+		}
 	}
 }
 
 func (sw *scope_walker) resolve_ident(ident *Ident) {
-	for cur_scope := sw.local; cur_scope != nil; cur_scope = cur_scope.Parent {
+	for cur_scope := sw.scope; cur_scope != nil; cur_scope = cur_scope.Parent {
 		if item := cur_scope.Find(ident.Obj.Name); item != nil {
 			return // found declaration in either local or parent scope
 		}
