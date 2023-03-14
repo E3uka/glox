@@ -13,11 +13,9 @@ var PROGRAM_PATH string
 var SOURCE_CODE string
 
 func run() {
-	if file, err := os.ReadFile(PROGRAM_PATH); err != nil {
-		os.Exit(1)
-	} else {
-		SOURCE_CODE = string(file)
-	}
+	file, err := os.ReadFile(PROGRAM_PATH)
+	if err != nil { os.Exit(1) }
+	SOURCE_CODE = string(file)
 	scanner := scanner.New(&PROGRAM_PATH, &SOURCE_CODE)
 	parser := parser.New(&PROGRAM_PATH, scanner.Tokens())
 	interp := ast.New(&PROGRAM_PATH, parser.Parse())

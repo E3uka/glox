@@ -24,13 +24,18 @@ func (env Environment) Inject(obj *Object) (return_obj *Object) {
 
 type scope_walker struct {
 	scope      *Scope
-	unresolved []*Ident
+	declared   map[string]*Object
+	unresolved []*Object
 }
 
 func sc_walker() *scope_walker {
 	parent := new_scope(nil)
 	local := new_scope(parent)
-	return &scope_walker{scope: local}
+	return &scope_walker{
+		scope: local,
+		declared: make(map[string]*Object),
+		unresolved: []*Object{},
+	}
 }
 
 func new_object_from(ident *Ident) *Object {
@@ -38,16 +43,14 @@ func new_object_from(ident *Ident) *Object {
 		Kind:    ident.Obj.Kind,
 		Name:    ident.Obj.Name,
 		Mutable: ident.Obj.Mutable,
+		Decl:    ident.Obj.Decl,
+		Data:    nil,
 	}
 }
 
 func (sw *scope_walker) declare(ident *Ident, data, decl any) {
 	if ident.Obj.Data != nil { panic("already declared identifier") }
 	obj := new_object_from(ident)
-	obj.Data = data
-	obj.Decl = decl
-	if _, ok := decl.(*Ident); !ok { ident.Obj = obj }
-	// procedures must live at the highest possible scope to be accessible
 	if ident.Obj.Kind == Procedure {
 		if ins := sw.scope.Parent.Local.Inject(obj); ins == obj {
 			panic(fmt.Sprintf("already inserted %v\n", ins))
@@ -57,19 +60,22 @@ func (sw *scope_walker) declare(ident *Ident, data, decl any) {
 			panic(fmt.Sprintf("already inserted %v\n", ins))
 		}
 	}
+	sw.declared[ident.Obj.Name] = ident.Obj
 }
 
 func (sw *scope_walker) resolve_ident(ident *Ident) {
+	found_in_scope := false;
 	for cur_scope := sw.scope; cur_scope != nil; cur_scope = cur_scope.Parent {
-		if item := cur_scope.Find(ident.Obj.Name); item != nil {
-			return // found declaration in either local or parent scope
+	    // two objects may share the same name, i.e. procedure and its method call
+		// but they may have differnt underlying data
+		if obj := cur_scope.Find(ident.Obj.Name); obj == ident.Obj {
+			found_in_scope = true
+			break
 		}
 	}
-	marked_unresolved := false
-	for _, entry := range sw.unresolved {
-		if entry == ident { marked_unresolved = true }
+	if _, exists := sw.declared[ident.Obj.Name]; !exists && !found_in_scope {
+		sw.unresolved = append(sw.unresolved, ident.Obj)
 	}
-	if !marked_unresolved { sw.unresolved = append(sw.unresolved, ident) }
 }
 
 // resolves identifiers into an environment scope for lookup
@@ -90,7 +96,7 @@ func (sw *scope_walker) Visit(node Node) Visitor {
 		Walk(sw, n.Ident)
 	case *SelectorExpr:
 		Walk(sw, n.Parent)
-		// Walk(r, n.Selection)
+		// Walk(sw, n.Selection)
 	case *UnOp:
 		Walk(sw, n.Rhs)
 	case *IfaceType:

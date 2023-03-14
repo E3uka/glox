@@ -7,36 +7,36 @@ import (
 
 type interpreter struct {
 	path  *string
-	nodes []Node
+	tree  []Node
 }
 
 func New(path *string, nodes []Node) *interpreter {
-	return &interpreter{path: path, nodes: nodes}
+	return &interpreter{path: path, tree: nodes}
 }
 
-// Walks the abstract syntax tree mutliple times each time resolving
-// individual pieces needed to build-up and evaluate the program.
 func (i *interpreter) Interpret() {
+	fmt.Println()
 	scopes := sc_walker()
 	// types := type_resolver()
-
-	// invoke the various walker methods
-	for _, n := range i.nodes {
-		Walk(scopes, n)
-		// Walk(types, n)
+	for _, node := range i.tree {
+		Walk(scopes, node)
+		// Walk(types, node)
 	}
 	for _, item := range scopes.scope.Local {
 		local_scope, _ := json.Marshal(item)
-		fmt.Printf("local scope: %s\n\n", local_scope)
+		fmt.Printf("local-scope: %s\n", local_scope)
 	}
+	fmt.Println()
 	for _, item := range scopes.scope.Parent.Local {
 		parent_scope, _ := json.Marshal(item)
-		fmt.Printf("parent scope: %s\n\n", parent_scope)
+		fmt.Printf("parent-scope: %s\n", parent_scope)
 	}
+	fmt.Println()
 	for _, item := range scopes.unresolved {
-		json, _ := json.Marshal(item.Obj)
-		fmt.Printf("unresolved: %s\n\n", json)
+		json, _ := json.Marshal(item)
+		fmt.Printf("unresolved: %s\n", json)
 	}
+	fmt.Println()
 
 	// TODO: compile to LLVM IR
 }
