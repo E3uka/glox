@@ -1,11 +1,10 @@
 package token
 
 import (
-	"fmt"
 	"strconv"
 )
 
-type TokenType uint
+type TokenType uint16
 
 const (
 	// Special Tokens
@@ -166,15 +165,11 @@ func (tt TokenType) String() string {
 	return s
 }
 
-type Token struct {
-	Type  TokenType
-	Lit   string
-	Start int
-	End   int
-	Line  int
+type Tokens struct {
+	Tokens []TokenType
+	Lit [][]byte
+	Line []uint16
 }
-
-func (tok Token) String() string { return fmt.Sprintf("%s %s", tok.Type, tok.Lit) }
 
 // map with the exact size of number of keywords
 var keywords = make(map[string]TokenType, keyword_end - (keyword_beg + 1))

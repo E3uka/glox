@@ -10,7 +10,7 @@ import (
 type scanner struct {
 	path    *string
 	source  string
-	tokens  []token.Token
+	tokens token.Tokens
 	start   int
 	current int
 	line    int
@@ -20,7 +20,7 @@ func New(path *string, source *string) *scanner {
 	return &scanner{
 		path:    path,
 		source:  *source,
-		tokens:  []token.Token{},
+		tokens: token.Tokens{},
 		start:   0,
 		current: 0,
 		line:    1, // beginning line of file
@@ -35,24 +35,22 @@ func is_alpha(char rune) bool {
 func is_alphanumeric(char rune) bool { return is_alpha(char) || is_digit(char) }
 func is_digit(char rune) bool { return char >= '0' && char <= '9' }
 
-func (s *scanner) add_token( tok_type token.TokenType, literal string) {
-	tok := token.Token{
-		Type:  tok_type,
-		Lit:   literal,
-		Start: s.start,
-		End:   s.start + len(literal),
-		Line:  s.line,
-	}
-	s.tokens = append(s.tokens, tok)
+func (s *scanner) add_token_2(tok_type token.TokenType, literal []byte) {
+	s.tokens.Tokens = append(s.tokens.Tokens, tok_type)
+	s.tokens.Lit = append(s.tokens.Lit, literal)
+	s.tokens.Line = append(s.tokens.Line, uint16(s.line))
 }
 
-func (s *scanner) Tokens() *[]token.Token {
+
+func (s *scanner) Tokens2() *token.Tokens {
 	for !s.is_at_end() {
 		s.start = s.current
-		s.scan()
+		s.scan2()
 	}
 	// append EOF token at end of source file
-	s.add_token(token.EOF, "")
+	s.tokens.Tokens = append(s.tokens.Tokens, token.EOF)
+	s.tokens.Lit = append(s.tokens.Lit, []byte{})
+	s.tokens.Line = append(s.tokens.Line, uint16(s.line))
 	return &s.tokens
 }
 
@@ -85,7 +83,7 @@ func (s *scanner) peek_next() rune {
 	return rune(s.source[s.current+1])
 }
 
-func (s *scanner) scan() {
+func (s *scanner) scan2() {
 	char := s.step()
 
 	switch char {
@@ -97,90 +95,90 @@ func (s *scanner) scan() {
 
 	// single character lexemes
 	case '(':
-		s.add_token(token.LPAREN, "(")
+		s.add_token_2(token.LPAREN, []byte("("))
 	case ')':
-		s.add_token(token.RPAREN, ")")
+		s.add_token_2(token.RPAREN, []byte(")"))
 	case '[':
-		s.add_token(token.LBRACK, "[")
+		s.add_token_2(token.LBRACK, []byte("["))
 	case ']':
-		s.add_token(token.RBRACK, "]")
+		s.add_token_2(token.RBRACK, []byte("]"))
 	case '{':
-		s.add_token(token.LBRACE, "{")
+		s.add_token_2(token.LBRACE, []byte("{"))
 	case '}':
-		s.add_token(token.RBRACE, "}")
+		s.add_token_2(token.RBRACE, []byte("}"))
 	case ',':
-		s.add_token(token.COMMA, ",")
+		s.add_token_2(token.COMMA, []byte(","))
 	case '.':
-		s.add_token(token.PERIOD, ".")
+		s.add_token_2(token.PERIOD, []byte("."))
 	case ';':
-		s.add_token(token.SEMICOLON, ";")
+		s.add_token_2(token.SEMICOLON, []byte(";"))
 	case '*':
-		s.add_token(token.STAR, "*")
+		s.add_token_2(token.STAR, []byte("*"))
 
 	// double-character lexemes
 	case '+':
 		if s.match_advance('+') {
-			s.add_token(token.INCR, "++")
+			s.add_token_2(token.INCR, []byte("++"))
 		} else if s.match_advance('=') {
-			s.add_token(token.INCRBY, "+=")
+			s.add_token_2(token.INCRBY, []byte("+="))
 		} else {
-			s.add_token(token.ADD, "+")
+			s.add_token_2(token.ADD, []byte("+"))
 		}
 	case '-':
 		if s.match_advance('>') {
-			s.add_token(token.FUNRETURN, "->")
+			s.add_token_2(token.FUNRETURN, []byte("->"))
 		} else if s.match_advance('-') {
-			s.add_token(token.DECR, "--")
+			s.add_token_2(token.DECR, []byte("--"))
 		} else if s.match_advance('=') {
-			s.add_token(token.DECRYBY, "-=")
+			s.add_token_2(token.DECRYBY, []byte("-="))
 		} else {
-			s.add_token(token.SUB, "-")
+			s.add_token_2(token.SUB, []byte("-"))
 		}
 	case '!':
 		if s.match_advance('=') {
-			s.add_token(token.NEQ, "!=")
+			s.add_token_2(token.NEQ, []byte("!="))
 		} else {
-			s.add_token(token.NOT, "!")
+			s.add_token_2(token.NOT, []byte("!"))
 		}
 	case '=':
 		if s.match_advance('=') {
-			s.add_token(token.EQL, "==")
+			s.add_token_2(token.EQL, []byte("=="))
 		} else {
-			s.add_token(token.ASSIGN, "=")
+			s.add_token_2(token.ASSIGN, []byte("="))
 		}
 	case '<':
 		if s.match_advance('=') {
-			s.add_token(token.LEQ, "<=")
+			s.add_token_2(token.LEQ, []byte("<="))
 		} else if s.match_advance('-') {
-			s.add_token(token.CAST, "<-")
+			s.add_token_2(token.CAST, []byte("<-"))
 		} else {
-			s.add_token(token.LSS, "<")
+			s.add_token_2(token.LSS, []byte("<"))
 		}
 	case '>':
 		if s.match_advance('=') {
-			s.add_token(token.GEQ, ">=")
+			s.add_token_2(token.GEQ, []byte(">="))
 		} else {
-			s.add_token(token.GTR, ">")
+			s.add_token_2(token.GTR, []byte(">"))
 		}
 	case ':':
 		if s.match_advance(':') {
-			s.add_token(token.FUNASSIGN, "::")
+			s.add_token_2(token.FUNASSIGN, []byte("::"))
 		} else if s.match_advance('=') {
-			s.add_token(token.WALRUS, ":=")
+			s.add_token_2(token.WALRUS, []byte(":="))
 		} else {
-			s.add_token(token.COLON, ":")
+			s.add_token_2(token.COLON, []byte(":"))
 		}
 	case '&':
 		if s.match_advance('&') {
-			s.add_token(token.AND, "&&")
+			s.add_token_2(token.AND, []byte("&&"))
 		} else {
-			s.add_token(token.BITAND, "&")
+			s.add_token_2(token.BITAND, []byte("&"))
 		}
 	case '|':
 		if s.match_advance('|') {
-			s.add_token(token.OR, "||")
+			s.add_token_2(token.OR, []byte("||"))
 		} else {
-			s.add_token(token.BITOR, "|")
+			s.add_token_2(token.BITOR, []byte("|"))
 		}
 	case '/':
 		if s.match_advance('/') {
@@ -211,7 +209,7 @@ func (s *scanner) scan() {
 			s.step()
 			s.start = s.current
 		} else {
-			s.add_token(token.QUO, "/")
+			s.add_token_2(token.QUO, []byte("/"))
 		}
 
 	// string literals
@@ -238,7 +236,7 @@ func (s *scanner) scan_identifier() {
 	for is_alphanumeric(s.peek()) { s.step() }
 	value := s.source[s.start:s.current]
 	tok := token.LookupKeyword(value)
-	s.add_token(tok, value)
+	s.add_token_2(tok, []byte(value))
 }
 
 func (s *scanner) scan_number() {
@@ -255,13 +253,13 @@ func (s *scanner) scan_number() {
 		if _, err := strconv.ParseFloat(value, 64); err != nil {
 			g_err.ScanPanic(s.path, s.line, "could not parse string value")
 		}
-		s.add_token(token.F64, value)
+		s.add_token_2(token.F64, []byte(value))
 		return
 	}
 	if _, err := strconv.ParseInt(value, 10, 64); err != nil {
 		g_err.ScanPanic(s.path, s.line, "could not parse string value")
 	}
-	s.add_token(token.S64, value)
+	s.add_token_2(token.S64, []byte(value))
 }
 
 func (s *scanner) scan_string() {
@@ -273,6 +271,6 @@ func (s *scanner) scan_string() {
 	// step past the end of the string to the newline char
 	s.step()
 	// trim the surrounding quotes
-	value := s.source[s.start+1 : s.current-1]
-	s.add_token(token.STRING, value)
+	value := []byte(s.source[s.start+1 : s.current-1])
+	s.add_token_2(token.STRING, value)
 }

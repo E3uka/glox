@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"glox/ast"
+	g_err "glox/error"
 	"glox/parser"
 	"glox/scanner"
 	"os"
-	g_err "glox/error"
 )
 
 var PROGRAM_PATH string
@@ -17,9 +17,9 @@ func run() {
 	if err != nil { os.Exit(1) }
 	SOURCE_CODE = string(file)
 	scanner := scanner.New(&PROGRAM_PATH, &SOURCE_CODE)
-	parser := parser.New(&PROGRAM_PATH, scanner.Tokens())
-	interp := ast.New(&PROGRAM_PATH, parser.Parse())
-	interp.Interpret()
+	parser := parser.New(&PROGRAM_PATH, scanner.Tokens2())
+	interpreter := ast.New(&PROGRAM_PATH, parser.Parse())
+	interpreter.Interpret()
 }
 
 func main() {

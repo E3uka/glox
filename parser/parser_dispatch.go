@@ -34,7 +34,7 @@ var (
 
 	// token type -> null denotation parser i.e. dispatches a token specific
 	// parser when no expression was found left of the current token
-	null_deno = map[token.TokenType]func(*parser, token.Token) ast.Node{}
+	null_deno = map[token.TokenType]func(*parser, token.TokenType) ast.Node{}
 
 	// token type -> left denotation parser i.e. dispatches a token specific
 	// parser when an expression was found left of the current token
@@ -122,35 +122,35 @@ func init() {
 
 /* NULL DENOTATION PARSERS */
 
-func nd_parse_block_stmt(p *parser, tok token.Token) ast.Node {
+func nd_parse_block_stmt(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_block", tok)
 	list := p.parse_stmt_list()
 	return &ast.BlockStmt{List: list}
 }
 
-func nd_parse_branch_stmt(p *parser, tok token.Token) ast.Node {
+func nd_parse_branch_stmt(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_branch", tok)
-	return &ast.BranchStmt{Token: tok.Type}
+	return &ast.BranchStmt{Token: tok}
 }
 
-func nd_parse_if_stmt(p *parser, tok token.Token) ast.Node {
+func nd_parse_if_stmt(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_if", tok)
 	predicate := p.parse_until(token.LBRACE)
-	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
+	body := p.as_block(p.parse_basic_stmt(p.peek()))
 	p.expect(token.RBRACE)
 	var else_body ast.Stmt
-	if p.peek().Type == token.ELSE {
+	if p.peek() == token.ELSE {
 		p.expect(token.ELSE)
-		else_body = p.parse_basic_stmt(p.peek().Type)
+		else_body = p.parse_basic_stmt(p.peek())
 		return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
 	}
 	return &ast.IfStmt{Predicate: predicate, Body: body, Else: else_body}
 }
 
-func nd_parse_ident_expr(p *parser, tok token.Token) ast.Node {
+func nd_parse_ident_expr(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_ident", tok)
-	if tok.Type == token.CONST {
-		ident_expr := p.parse_basic_ident(tok.Type)
+	if tok == token.CONST {
+		ident_expr := p.parse_basic_ident(tok)
 		ident_expr.Obj.Kind = ast.Constant
 		ident_expr.Obj.Mutable = false
 		return ident_expr
@@ -158,7 +158,7 @@ func nd_parse_ident_expr(p *parser, tok token.Token) ast.Node {
 	typ := p.get_type(tok)
 	return &ast.Ident{
 		Obj: &ast.Object{
-			Name:    tok.Lit,
+			Name:    string(p.tokens.Lit[p.current-1]),
 			Kind:    ast.Variable,
 			Type:    typ,
 			Mutable: true,
@@ -166,43 +166,43 @@ func nd_parse_ident_expr(p *parser, tok token.Token) ast.Node {
 	}
 }
 
-func nd_parse_literal_expr(p *parser, tok token.Token) ast.Node {
+func nd_parse_literal_expr(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_literal", tok)
 	typ := p.get_type(tok)
-	return &ast.LiteralExpr{Type: typ, Value: tok.Lit}
+	return &ast.LiteralExpr{Type: typ, Value: string(p.tokens.Lit[p.current])}
 }
 
-func nd_parse_paren_expr(p *parser, tok token.Token) ast.Node {
+func nd_parse_paren_expr(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_paren", tok)
-	expr := p.parse_basic_expr(p.peek().Type)
+	expr := p.parse_basic_expr(p.peek())
 	p.expect(token.RPAREN)
 	return &ast.ParenExpr{Expr: expr}
 }
 
-func nd_parse_pointer_expr(p *parser, tok token.Token) ast.Node {
+func nd_parse_pointer_expr(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_pointer", tok)
-	ident_expr := p.parse_basic_ident(tok.Type)
+	ident_expr := p.parse_basic_ident(tok)
 	deref := false
-	if tok.Type == token.STAR { deref = true }
+	if tok == token.STAR { deref = true }
 	return &ast.PtrExpr{Ident: ident_expr, Deref: deref}
 }
 
-func nd_parse_return_stmt(p *parser, tok token.Token) ast.Node {
+func nd_parse_return_stmt(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_return", tok)
-	result_expr := p.parse_basic_expr(tok.Type)
+	result_expr := p.parse_basic_expr(tok)
 	return &ast.ReturnStmt{Result: result_expr}
 }
 
-func nd_parse_unary_expr(p *parser, tok token.Token) ast.Node {
+func nd_parse_unary_expr(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_unary", tok)
-	unary_expr := p.parse_basic_expr(tok.Type)
-	return &ast.UnOp{Operator: tok.Type, Rhs: unary_expr}
+	unary_expr := p.parse_basic_expr(tok)
+	return &ast.UnOp{Operator: tok, Rhs: unary_expr}
 }
 
-func nd_parse_while_stmt(p *parser, tok token.Token) ast.Node {
+func nd_parse_while_stmt(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_while", tok)
 	predicate := p.parse_until(token.LBRACE)
-	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
+	body := p.as_block(p.parse_basic_stmt(p.peek()))
 	return &ast.WhileStmt{Predicate: predicate, Body: body}
 }
 
@@ -250,7 +250,7 @@ func ld_parse_decl_stmt(p *parser, tok token.TokenType, lhs ast.Node) ast.Node {
 	case token.COLON:
 		decl = p.parse_typed_declaration(lhs_ident, tok)
 	case token.FUNASSIGN:
-		switch p.peek().Type {
+		switch p.peek() {
 		case token.STRUCT:
 			decl = p.parse_struct_declaration(lhs_ident, tok)
 		case token.LPAREN:
@@ -293,12 +293,12 @@ func (p *parser) parse_call_args() []ast.Expr {
 	p.expect(token.LPAREN)
 	args := []ast.Expr{}
 	var expr ast.Expr
-	for p.peek().Type != token.RPAREN {
-		if p.peek().Type == token.COMMA {
+	for p.peek() != token.RPAREN {
+		if p.peek() == token.COMMA {
 			p.expect(token.COMMA)
 			continue
 		}
-		expr = p.parse_basic_expr(p.peek().Type)
+		expr = p.parse_basic_expr(p.peek())
 		args = append(args, expr)
 	}
 	return args
@@ -307,12 +307,12 @@ func (p *parser) parse_call_args() []ast.Expr {
 func (p *parser) parse_fields_between(left, right, delim token.TokenType) *ast.Fields {
 	p.expect(left)
 	fields := ast.Fields{}
-	for p.peek().Type != right {
-		if p.peek().Type == token.SEMICOLON || p.peek().Type == token.COMMA {
+	for p.peek() != right {
+		if p.peek() == token.SEMICOLON || p.peek() == token.COMMA {
 			p.advance()
 			continue
 		}
-		name := p.parse_basic_ident(p.peek().Type)
+		name := p.parse_basic_ident(p.peek())
 		p.expect(delim)
 		typ := p.get_type(p.peek())
 		name.Obj.Kind = ast.Type
@@ -328,7 +328,7 @@ func (p *parser) parse_trait_method() *ast.Ident {
 	fields := p.parse_fields_between(token.LPAREN, token.RPAREN, token.COLON)
 	p.expect(token.RPAREN)
 	var return_type ast.ObjectType
-	if p.peek().Type == token.FUNRETURN {
+	if p.peek() == token.FUNRETURN {
 		p.expect(token.FUNRETURN)
 		return_type = p.get_type(p.peek())
 		p.advance() // step past type
@@ -351,7 +351,7 @@ func (p *parser) parse_procedure_declaration(
 	lhs_ident.Obj.Decl = env
 	p.expect(token.RPAREN)
 	var typ ast.ObjectType
-	if p.peek().Type == token.FUNRETURN {
+	if p.peek() == token.FUNRETURN {
 		p.expect(token.FUNRETURN)
 		typ = p.get_type(p.peek())
 		p.advance() // step past type
@@ -359,7 +359,7 @@ func (p *parser) parse_procedure_declaration(
 		typ = ast.NullType
 	}
 	lhs_ident.Obj.Type = typ
-	body := p.as_block(p.parse_basic_stmt(p.peek().Type))
+	body := p.as_block(p.parse_basic_stmt(p.peek()))
 	p.expect(token.RBRACE)
 	return &ast.ProcedureDecl{Ident: lhs_ident, Body: body}
 }
@@ -367,8 +367,8 @@ func (p *parser) parse_procedure_declaration(
 func (p *parser) parse_stmt_list() []ast.Stmt {
 	stmt_list := []ast.Stmt{}
 	var stmt ast.Stmt
-	for p.peek().Type != token.RBRACE && p.peek().Type != token.EOF {
-		p.trace_ld("stmt_list:", p.peek().Type)
+	for p.peek() != token.RBRACE && p.peek() != token.EOF {
+		p.trace_ld("stmt_list:", p.peek())
 		node := p.parse_node(INIT)
 		if maybe_stmt, ok := node.(ast.Stmt); !ok {
 			stmt = p.try_make_statement(node)
@@ -402,8 +402,8 @@ func (p *parser) parse_trait_declaration(
 	p.expect(token.TRAIT)
 	p.expect(token.LBRACE)
 	fields := ast.Fields{}
-	for p.peek().Type != token.RBRACE {
-		if p.peek().Type == token.SEMICOLON {
+	for p.peek() != token.RBRACE {
+		if p.peek() == token.SEMICOLON {
 			p.expect(token.SEMICOLON)
 			continue
 		}
@@ -459,12 +459,18 @@ func (p *parser) try_make_statement(node ast.Node) ast.Stmt {
 }
 
 func (p *parser) parse_until(tok token.TokenType) ast.Expr {
-	tokens := []token.Token{}
-	for p.peek().Type != tok {
-		tokens = append(tokens, p.peek())
+	tokens := token.Tokens{}
+	for p.peek() != tok {
+		tokens.Tokens = append(tokens.Tokens, p.peek())
+		tokens.Lit = append(tokens.Lit, p.tokens.Lit[p.current])
+		tokens.Line = append(tokens.Line, p.tokens.Line[p.current])
 		p.advance()
 	}
-	tokens = append(tokens, token.Token{Type: token.EOF, Lit: ""})
+	// append EOF
+	tokens.Tokens = append(tokens.Tokens, token.EOF)
+	tokens.Lit = append(tokens.Lit, []byte{})
+	tokens.Line = append(tokens.Line, uint16(p.tokens.Line[p.current]))
+
 	sub_parser := New(p.path, &tokens)
 	predicate := sub_parser.parse_node(LOWEST)
 	return p.as_expr(predicate)
@@ -472,9 +478,9 @@ func (p *parser) parse_until(tok token.TokenType) ast.Expr {
 
 /* PARSER GENERIC UTILS */
 
-func (p *parser) get_type(tok token.Token) ast.ObjectType {
+func (p *parser) get_type(tok token.TokenType) ast.ObjectType {
 	var typ ast.ObjectType
-	switch tok.Type {
+	switch tok {
 	case token.FALSE, token.TRUE, token.BOOLTYPE:
 		typ = ast.BoolType
 	case token.F64, token.F64TYPE:
@@ -483,7 +489,7 @@ func (p *parser) get_type(tok token.Token) ast.ObjectType {
 		typ = ast.S64Type
 	case token.NULL:
 		typ = ast.NullType
-	case token.STRING, token.STRINGTYPE:
+	case token.STRING, token.STRINGTYPE, token.IDENT:
 		typ = ast.StringType
 	case token.EOF, token.LBRACE, token.SEMICOLON:
 		p.report_parse_error(tok, "%v expected type")
