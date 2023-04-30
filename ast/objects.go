@@ -19,7 +19,7 @@ const (
 	F64Type
 	S64Type
 	StringType
-	Custom
+	Custom             // potentially inferred
 )
 
 type Object struct {

@@ -16,27 +16,24 @@ func New(path *string, nodes []Node) *interpreter {
 
 func (i *interpreter) Interpret() {
 	fmt.Println()
-	scopes := sc_walker()
-	// types := type_resolver()
+	scope_walker := sc_walker()
 	for _, node := range i.tree {
-		Walk(scopes, node)
-		// Walk(types, node)
+		Walk(scope_walker, node)
 	}
-	for _, item := range scopes.scope.Local {
+	for _, item := range scope_walker.scope.Local {
 		local_scope, _ := json.Marshal(item)
 		fmt.Printf("local-scope: %s\n", local_scope)
 	}
 	fmt.Println()
-	for _, item := range scopes.scope.Parent.Local {
+	for _, item := range scope_walker.scope.Parent.Local {
 		parent_scope, _ := json.Marshal(item)
 		fmt.Printf("parent-scope: %s\n", parent_scope)
 	}
 	fmt.Println()
-	for _, item := range scopes.unresolved {
+	for _, item := range scope_walker.unresolved {
 		json, _ := json.Marshal(item)
 		fmt.Printf("unresolved: %s\n", json)
 	}
 	fmt.Println()
-
 	// TODO: compile to LLVM IR
 }
