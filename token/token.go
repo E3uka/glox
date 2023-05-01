@@ -9,7 +9,7 @@ type TokenType uint16
 const (
 	// Special Tokens
 	ILLEGAL TokenType = iota
-	EOF // added to end of source file for bookeeping
+	EOF               // added to end of source file for bookeeping
 
 	// Literals
 	IDENT  // main
@@ -85,101 +85,109 @@ const (
 	keyword_end
 )
 
-var tokens = [...]string{
-	ILLEGAL: "ILLEGAL",
-	EOF:     "EOF",
+var tokens = [...][]byte{
+	ILLEGAL: []byte("ILLEGAL"),
+	EOF:     []byte("EOF"),
 
-	IDENT:  "IDENT",
-	F64:    "FLOAT64",
-	S64:    "SIGNED64",
-	STRING: "STRING",
+	IDENT:  []byte("IDENT"),
+	F64:    []byte("FLOAT64"),
+	S64:    []byte("SIGNED64"),
+	STRING: []byte("STRING"),
 
-	LPAREN: "(",
-	LBRACK: "[",
-	LBRACE: "{",
-	COMMA:  ",",
-	PERIOD: ".",
+	LPAREN: []byte("("),
+	LBRACK: []byte("["),
+	LBRACE: []byte("{"),
+	COMMA:  []byte(","),
+	PERIOD: []byte("."),
 
-	RPAREN:    ")",
-	RBRACK:    "]",
-	RBRACE:    "}",
-	SEMICOLON: ";",
-	COLON:     ":",
+	RPAREN:    []byte(")"),
+	RBRACK:    []byte("]"),
+	RBRACE:    []byte("}"),
+	SEMICOLON: []byte(";"),
+	COLON:     []byte(":"),
 
-	ADD:     "+",
-	INCR:    "++",
-	INCRBY:  "+=",
-	SUB:     "-",
-	DECR:    "--",
-	DECRYBY: "-=",
-	STAR:    "*",
-	QUO:     "/",
+	ADD:     []byte("+"),
+	INCR:    []byte("++"),
+	INCRBY:  []byte("+="),
+	SUB:     []byte("-"),
+	DECR:    []byte("--"),
+	DECRYBY: []byte("-="),
+	STAR:    []byte("*"),
+	QUO:     []byte("/"),
 
-	NEQ: "!=",
-	LSS: "<",
-	LEQ: "<=",
-	GTR: ">",
-	GEQ: ">=",
-	EQL: "==",
+	NEQ: []byte("!="),
+	LSS: []byte("<"),
+	LEQ: []byte("<="),
+	GTR: []byte(">"),
+	GEQ: []byte(">="),
+	EQL: []byte("=="),
 
-	ASSIGN:    "=",
-	WALRUS:    ":=",
-	FUNASSIGN: "::",
-	FUNRETURN: "->",
-	CAST:      "<-",
+	ASSIGN:    []byte("="),
+	WALRUS:    []byte(":="),
+	FUNASSIGN: []byte("::"),
+	FUNRETURN: []byte("->"),
+	CAST:      []byte("<-"),
 
-	NOT:    "!",
-	BITAND: "&",
-	AND:    "&&",
-	BITOR:  "|",
-	OR:     "||",
+	NOT:    []byte("!"),
+	BITAND: []byte("&"),
+	AND:    []byte("&&"),
+	BITOR:  []byte("|"),
+	OR:     []byte("||"),
 
-	CLASS:  "class",
-	STRUCT: "struct",
-	FALSE:  "false",
-	FOR:    "for",
-	BREAK:  "break",
-	TRAIT:  "trait",
+	CLASS:  []byte("class"),
+	STRUCT: []byte("struct"),
+	FALSE:  []byte("false"),
+	FOR:    []byte("for"),
+	BREAK:  []byte("break"),
+	TRAIT:  []byte("trait"),
 
-	IF:    "if",
-	ELSE:  "else",
-	CONST: "const",
-	NULL:  "NULL",
+	IF:    []byte("if"),
+	ELSE:  []byte("else"),
+	CONST: []byte("const"),
+	NULL:  []byte("NULL"),
 
-	RETURN: "return",
-	SUPER:  "super",
-	IT:     "it",
-	TRUE:   "true",
-	WHILE:  "while",
+	RETURN: []byte("return"),
+	SUPER:  []byte("super"),
+	IT:     []byte("it"),
+	TRUE:   []byte("true"),
+	WHILE:  []byte("while"),
 
-	BOOLTYPE:   "bool",
-	F64TYPE:    "f64",
-	S64TYPE:    "s64",
-	STRINGTYPE: "string",
+	BOOLTYPE:   []byte("bool"),
+	F64TYPE:    []byte("f64"),
+	S64TYPE:    []byte("s64"),
+	STRINGTYPE: []byte("string"),
 }
 
-func (tt TokenType) String() string {
+func (t TokenType) String() string {
 	s := ""
-	if tt < TokenType(len(tokens)) { s = tokens[tt] }
-	if s == "" { s = "token(" + strconv.Itoa(int(tt)) + ")" }
+	if t < TokenType(len(tokens)) {
+		s = string(tokens[t])
+	}
+	if s == "" {
+		s = "token(" + strconv.Itoa(int(t)) + ")"
+	}
 	return s
 }
 
 type Tokens struct {
 	Tokens []TokenType
-	Lit [][]byte
-	Line []uint16
+	Lit    [][]byte
+	Line   []uint16
 }
 
 // map with the exact size of number of keywords
-var keywords = make(map[string]TokenType, keyword_end - (keyword_beg + 1))
+var keywords = make(map[string]TokenType, keyword_end-(keyword_beg+1))
 
 // run on initialisation ~ gleaned from go source
 func init() {
-	for i := keyword_beg + 1; i < keyword_end; i++ { keywords[tokens[i]] = i }
+	for i := keyword_beg + 1; i < keyword_end; i++ {
+		keywords[string(tokens[i])] = i
+	}
 }
 
-func LookupKeyword(ident string) TokenType {
-	if tok, is_keyword := keywords[ident]; is_keyword { return tok }
+func LookupKeyword(ident []byte) TokenType {
+	if tok, is_keyword := keywords[string(ident)]; is_keyword {
+		return tok
+	}
 	return IDENT
 }

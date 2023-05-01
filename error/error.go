@@ -14,8 +14,8 @@ func ScanPanic(path *string, line int, reason string) {
 	panic(msg)
 }
 
-func ParsePanic(path *string, line uint16, reason string) {
-	msg := fmt.Sprintf("%s:%d: %s", *path, line, reason)
+func ParsePanic(path []byte, line uint16, reason string) {
+	msg := fmt.Sprintf("%s:%d: %s", path, line, reason)
 	panic(msg)
 }
 

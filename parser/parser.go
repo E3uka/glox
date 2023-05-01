@@ -8,15 +8,14 @@ import (
 )
 
 type parser struct {
-	path    *string
+	path    []byte
 	tokens  *token.Tokens
 	current int
-	expr    ast.Expr
 	trace   bool
 }
 
-func New(path *string, tokens *token.Tokens) *parser {
-	return &parser{path: path, tokens: tokens, current: 0, expr: nil, trace: false}
+func New(path []byte, tokens *token.Tokens) *parser {
+	return &parser{path: path, tokens: tokens, current: 0, trace: false}
 }
 
 func (p *parser) Parse() []ast.Node {
@@ -136,7 +135,7 @@ func (p *parser) parse_node(prior_precedence precedence) ast.Node {
 		cur_tok = p.peek()
 		// skip past '}'
 		if cur_tok == token.RBRACE {
-			cur_tok = p.advance()
+			p.advance()
 			continue
 		}
 		// terminate at ';'
