@@ -4,7 +4,7 @@ import (
 	"strconv"
 )
 
-type TokenType uint16
+type TokenType uint8
 
 const (
 	// Special Tokens
