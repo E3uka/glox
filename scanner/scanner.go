@@ -9,7 +9,7 @@ import (
 
 type scanner struct {
 	path    *string
-	source  string
+	source  []byte
 	tokens  token.Tokens
 	start   int
 	current int
@@ -19,7 +19,7 @@ type scanner struct {
 func New(path string, source []byte) *scanner {
 	return &scanner{
 		path:    &path,
-		source:  string(source),
+		source:  source,
 		tokens:  token.Tokens{},
 		start:   0,
 		current: 0,
@@ -243,7 +243,7 @@ func (s *scanner) scan_identifier() {
 	for is_alphanumeric(s.peek()) {
 		s.step()
 	}
-	value := []byte(s.source[s.start:s.current])
+	value := s.source[s.start:s.current]
 	tok := token.LookupKeyword(value)
 	s.add_token(tok, value)
 }
@@ -263,16 +263,16 @@ func (s *scanner) scan_number() {
 	}
 	value := s.source[s.start:s.current]
 	if is_float {
-		if _, err := strconv.ParseFloat(value, 64); err != nil {
+		if _, err := strconv.ParseFloat(string(value), 64); err != nil {
 			g_err.ScanPanic(s.path, s.line, "could not parse string value")
 		}
-		s.add_token(token.F64, []byte(value))
+		s.add_token(token.F64, value)
 		return
 	}
-	if _, err := strconv.ParseInt(value, 10, 64); err != nil {
+	if _, err := strconv.ParseInt(string(value), 10, 64); err != nil {
 		g_err.ScanPanic(s.path, s.line, "could not parse string value")
 	}
-	s.add_token(token.S64, []byte(value))
+	s.add_token(token.S64, value)
 }
 
 func (s *scanner) scan_string() {
@@ -288,6 +288,6 @@ func (s *scanner) scan_string() {
 	// step past the end of the string to the newline char
 	s.step()
 	// trim the surrounding quotes
-	value := []byte(s.source[s.start+1 : s.current-1])
+	value := s.source[s.start+1 : s.current-1]
 	s.add_token(token.STRING, value)
 }
