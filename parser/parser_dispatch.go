@@ -158,7 +158,7 @@ func nd_parse_ident_expr(p *parser, tok token.TokenType) ast.Node {
 	typ := p.get_type(tok)
 	return &ast.Ident{
 		Obj: &ast.Object{
-			Name:    string(p.tokens.Lit[p.current-1]),
+			Name:    string(p.lit[p.current-1]),
 			Kind:    ast.Variable,
 			Type:    typ,
 			Mutable: true,
@@ -169,7 +169,7 @@ func nd_parse_ident_expr(p *parser, tok token.TokenType) ast.Node {
 func nd_parse_literal_expr(p *parser, tok token.TokenType) ast.Node {
 	p.trace_nd("nd_literal", tok)
 	typ := p.get_type(tok)
-	return &ast.LiteralExpr{Type: typ, Value: string(p.tokens.Lit[p.current])}
+	return &ast.LiteralExpr{Type: typ, Value: string(p.lit[p.current])}
 }
 
 func nd_parse_paren_expr(p *parser, tok token.TokenType) ast.Node {
@@ -462,14 +462,14 @@ func (p *parser) parse_until(tok token.TokenType) ast.Expr {
 	tokens := token.Tokens{}
 	for p.peek() != tok {
 		tokens.Tokens = append(tokens.Tokens, p.peek())
-		tokens.Lit = append(tokens.Lit, p.tokens.Lit[p.current])
-		tokens.Line = append(tokens.Line, p.tokens.Line[p.current])
+		tokens.Lit = append(tokens.Lit, p.lit[p.current])
+		tokens.Line = append(tokens.Line, p.line[p.current])
 		p.advance()
 	}
 	// append EOF
 	tokens.Tokens = append(tokens.Tokens, token.EOF)
 	tokens.Lit = append(tokens.Lit, []byte{})
-	tokens.Line = append(tokens.Line, uint16(p.tokens.Line[p.current]))
+	tokens.Line = append(tokens.Line, uint16(p.line[p.current]))
 
 	sub_parser := New(p.path, &tokens)
 	predicate := sub_parser.parse_node(LOWEST)
